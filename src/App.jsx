@@ -1,0 +1,90 @@
+import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './auth/AuthContext';
+import Dashboard from './pages/Dashboard';
+import PlayerDetail from './pages/PlayerDetail';
+import Upload from './pages/Upload';
+import AddPlayer from './pages/AddPlayer';
+import Import from './pages/Import';
+import AdminReports from './pages/AdminReports';
+import Login from './pages/Login';
+import ChangePassword from './pages/ChangePassword';
+import './App.css';
+
+function AppRoutes() {
+  const { auth, logout } = useAuth();
+
+  if (!auth) return <Login />;
+  if (auth.mustChangePassword) return <ChangePassword />;
+
+  const isAdmin = auth.role === 'ADMIN' || auth.role === 'MANAGER';
+  const isPlayer = auth.role === 'PLAYER';
+
+  return (
+    <div className="app">
+      <nav className="navbar">
+        <div className="nav-brand">
+          <img src="/7maxlogo.png" alt="7MAX" style={{ height: '36px', verticalAlign: 'middle' }} />
+        </div>
+        <div className="nav-links">
+          {isAdmin && (
+            <>
+              <NavLink to="/" end>Dashboard</NavLink>
+              <NavLink to="/upload">Upload Report</NavLink>
+              <NavLink to="/import">Import Players</NavLink>
+              <NavLink to="/add-player">Add Player</NavLink>
+              <NavLink to="/admin-reports">Reports</NavLink>
+            </>
+          )}
+          {isPlayer && (
+            <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{auth.username}</span>
+          )}
+        </div>
+        <button
+          onClick={logout}
+          style={{
+            background: 'none',
+            border: '1px solid #2d3148',
+            color: '#94a3b8',
+            padding: '4px 12px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+          }}
+        >
+          יציאה
+        </button>
+      </nav>
+      <main className="main-content">
+        <Routes>
+          {isAdmin && (
+            <>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/player/:id" element={<PlayerDetail />} />
+              <Route path="/upload" element={<Upload />} />
+              <Route path="/add-player" element={<AddPlayer />} />
+              <Route path="/import" element={<Import />} />
+              <Route path="/admin-reports" element={<AdminReports />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </>
+          )}
+          {isPlayer && (
+            <>
+              <Route path="/player/:id" element={<PlayerDetail />} />
+              <Route path="*" element={<Navigate to={`/player/${auth.playerId}`} />} />
+            </>
+          )}
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthProvider>
+  );
+}
