@@ -12,8 +12,8 @@ export default function Import() {
   const balanceRef = useRef();
 
   const handleImport = async () => {
-    if (!max7File || !balanceFile) {
-      setMsg({ type: 'error', text: 'Please select both files' });
+    if (!max7File) {
+      setMsg({ type: 'error', text: 'Please select the max7.xlsx file' });
       return;
     }
     setLoading(true);
@@ -21,7 +21,7 @@ export default function Import() {
     try {
       const form = new FormData();
       form.append('max7', max7File);
-      form.append('balance', balanceFile);
+      if (balanceFile) form.append('balance', balanceFile);
       const res = await axios.post(`${import.meta.env.VITE_API_URL || 'https://7max-tracker-production.up.railway.app/api'}/import/players`, form);
       setMsg({
         type: 'success',
@@ -89,7 +89,7 @@ export default function Import() {
         className="btn btn-primary"
         style={{ fontSize: '1rem', padding: '0.7rem 2rem' }}
         onClick={handleImport}
-        disabled={loading || !max7File || !balanceFile}
+        disabled={loading || !max7File}
       >
         {loading ? 'Importing...' : '⬆ Import Players'}
       </button>
