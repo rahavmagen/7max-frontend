@@ -28,3 +28,5 @@ export const getReports = () => api.get('/reports');
 export const changePassword = (data) => api.post('/auth/change-password', data);
 export const adminResetPassword = (data) => api.post('/auth/admin/reset-password', data);
 export const getHandsReport = (params) => api.get('/reports/admin/hands-report', { params });
+
+export default api;
