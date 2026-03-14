@@ -84,7 +84,7 @@ export default function Upload() {
                   <td style={{ color: '#64748b' }}>{r.uploadedAt?.replace('T', ' ').substring(0, 16)}</td>
                   <td>
                     <a
-                      href={`http://localhost:8080/api/reports/${r.id}/download`}
+                      href={`${import.meta.env.VITE_API_URL || 'https://7max-tracker-production.up.railway.app/api'}/reports/${r.id}/download`}
                       style={{ color: '#6366f1', fontSize: '0.85rem', textDecoration: 'none' }}
                       onClick={e => e.stopPropagation()}
                     >

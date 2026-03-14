@@ -22,7 +22,7 @@ export default function Import() {
       const form = new FormData();
       form.append('max7', max7File);
       form.append('balance', balanceFile);
-      const res = await axios.post('http://localhost:8080/api/import/players', form);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || 'https://7max-tracker-production.up.railway.app/api'}/import/players`, form);
       setMsg({
         type: 'success',
         text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`
