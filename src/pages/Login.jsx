@@ -14,8 +14,16 @@ export default function Login() {
     setLoading(true);
     try {
       await login(form.username, form.password);
-    } catch {
-      setError('שם משתמש או סיסמא שגויים');
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError('שם משתמש או סיסמא שגויים');
+      } else if (err.response) {
+        setError(`שגיאת שרת: ${err.response.status}`);
+      } else if (err.request) {
+        setError('השרת לא מגיב — בדוק את חיבור הרשת');
+      } else {
+        setError(`שגיאה: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
