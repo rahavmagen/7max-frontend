@@ -29,7 +29,7 @@ export default function Dashboard() {
   );
 
   if (hideZero) {
-    filtered = filtered.filter(p => Number(p.balance) !== 0 || Number(p.currentChips) !== 0);
+    filtered = filtered.filter(p => Number(p.balance) !== 0);
   }
 
   if (sort.col) {

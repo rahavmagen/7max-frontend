@@ -6,6 +6,8 @@ import Upload from './pages/Upload';
 import AddPlayer from './pages/AddPlayer';
 import Import from './pages/Import';
 import AdminReports from './pages/AdminReports';
+import BalanceLog from './pages/BalanceLog';
+import BalanceReport from './pages/BalanceReport';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import './App.css';
@@ -32,6 +34,7 @@ function AppRoutes() {
               <NavLink to="/upload">Upload Report</NavLink>
               <NavLink to="/import">Import Players</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
+              <NavLink to="/balance-report">Balance Report</NavLink>
               <NavLink to="/admin-reports">Reports</NavLink>
             </>
           )}
@@ -64,6 +67,8 @@ function AppRoutes() {
               <Route path="/add-player" element={<AddPlayer />} />
               <Route path="/import" element={<Import />} />
               <Route path="/admin-reports" element={<AdminReports />} />
+              <Route path="/balance-log" element={<BalanceLog />} />
+              <Route path="/balance-report" element={<BalanceReport />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}

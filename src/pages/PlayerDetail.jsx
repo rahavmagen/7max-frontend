@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, addTransaction, adminResetPassword } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, addTransaction, adminResetPassword, updateCredit, addDeposit } from '../api';
 import { useAuth } from '../auth/AuthContext';
 
 export default function PlayerDetail() {
@@ -13,6 +13,11 @@ export default function PlayerDetail() {
   const [results, setResults] = useState([]);
   const [tab, setTab] = useState('results');
   const [showForm, setShowForm] = useState(false);
+  const [showCreditForm, setShowCreditForm] = useState(false);
+  const [showDepositForm, setShowDepositForm] = useState(false);
+  const [creditValue, setCreditValue] = useState('');
+  const [depositValue, setDepositValue] = useState('');
+  const [depositNotes, setDepositNotes] = useState('');
   const [showResetPass, setShowResetPass] = useState(false);
   const [newPass, setNewPass] = useState('');
   const [showNewPass, setShowNewPass] = useState(false);
@@ -50,6 +55,33 @@ export default function PlayerDetail() {
     }
   };
 
+  const handleCreditUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      await updateCredit(id, Number(creditValue));
+      setMsg({ type: 'success', text: 'Credit updated successfully' });
+      setShowCreditForm(false);
+      setCreditValue('');
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to update credit' });
+    }
+  };
+
+  const handleDeposit = async (e) => {
+    e.preventDefault();
+    try {
+      await addDeposit(id, Number(depositValue), depositNotes);
+      setMsg({ type: 'success', text: 'Deposit added successfully' });
+      setShowDepositForm(false);
+      setDepositValue('');
+      setDepositNotes('');
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to add deposit' });
+    }
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
     try {
@@ -82,10 +114,16 @@ export default function PlayerDetail() {
           {isAdmin && (
             <>
               <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                + Add Transaction
+                + Transaction
+              </button>
+              <button className="btn btn-secondary" onClick={() => { setShowCreditForm(!showCreditForm); setShowDepositForm(false); }}>
+                ✏ Credit
+              </button>
+              <button className="btn btn-secondary" onClick={() => { setShowDepositForm(!showDepositForm); setShowCreditForm(false); }}>
+                + Deposit
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowResetPass(!showResetPass); setNewPass(''); }}>
-                🔑 איפוס סיסמא
+                🔑 Reset Pass
               </button>
             </>
           )}
@@ -119,6 +157,52 @@ export default function PlayerDetail() {
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button type="submit" className="btn btn-success">אפס סיסמא</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowResetPass(false)}>ביטול</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showCreditForm && isAdmin && (
+        <div className="card">
+          <h2>Update Credit — {player.username}</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Current credit: <strong style={{ color: '#f59e0b' }}>{fmt(player.creditTotal)}</strong>
+          </p>
+          <form onSubmit={handleCreditUpdate}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>New Credit Total (₪)</label>
+                <input type="number" step="0.01" required value={creditValue}
+                  onChange={e => setCreditValue(e.target.value)} placeholder="0.00" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button type="submit" className="btn btn-success">Save</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowCreditForm(false)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showDepositForm && isAdmin && (
+        <div className="card">
+          <h2>Add Deposit — {player.username}</h2>
+          <form onSubmit={handleDeposit}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Amount (₪)</label>
+                <input type="number" step="0.01" min="0.01" required value={depositValue}
+                  onChange={e => setDepositValue(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={depositNotes}
+                  onChange={e => setDepositNotes(e.target.value)} placeholder="Optional" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button type="submit" className="btn btn-success">Add Deposit</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowDepositForm(false)}>Cancel</button>
             </div>
           </form>
         </div>
@@ -202,7 +286,7 @@ export default function PlayerDetail() {
           </div>
           <div style={{ display: 'flex', gap: '2rem', marginTop: '0.5rem' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#64748b', fontSize: '0.7rem' }}>CURRENT CHIPS</div>
+              <div style={{ color: '#64748b', fontSize: '0.7rem' }}>CURRENT CHIPS{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}</div>
               <div style={{ fontWeight: 600 }}>{fmt(player.currentChips)}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
@@ -273,7 +357,10 @@ export default function PlayerDetail() {
                   Total Hands: <strong style={{ color: '#e2e8f0' }}>{totalHands}</strong>
                 </span>
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                  Total P&L: <strong className={balanceClass(totalPnl)}>{fmt(totalPnl)}</strong>
+                  Total: <strong className={balanceClass(totalPnl)}>{fmt(totalPnl)}</strong>
+                </span>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  Current Balance{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}: <strong className={balanceClass(player.balance)}>{fmt(player.balance)}</strong>
                 </span>
               </div>
             )}

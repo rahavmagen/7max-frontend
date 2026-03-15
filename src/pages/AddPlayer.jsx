@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createPlayer } from '../api';
+import { createPlayer, updateCredit, addDeposit } from '../api';
 
 export default function AddPlayer() {
   const navigate = useNavigate();
   const [msg, setMsg] = useState(null);
   const [form, setForm] = useState({
-    username: '', fullName: '', phone: '', clubPlayerId: '', creditLimit: ''
+    username: '', fullName: '', phone: '', clubPlayerId: '',
+    initialCredit: '', initialDeposit: ''
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -15,14 +16,23 @@ export default function AddPlayer() {
     e.preventDefault();
     try {
       const payload = {
-        ...form,
-        creditLimit: form.creditLimit ? Number(form.creditLimit) : 0,
+        username: form.username,
+        fullName: form.fullName,
+        phone: form.phone,
+        clubPlayerId: form.clubPlayerId,
+        creditTotal: form.initialCredit ? Number(form.initialCredit) : 0,
         balance: 0,
         active: true
       };
       const res = await createPlayer(payload);
+      const playerId = res.data.id;
+
+      if (form.initialDeposit && Number(form.initialDeposit) > 0) {
+        await addDeposit(playerId, Number(form.initialDeposit), 'Initial deposit');
+      }
+
       setMsg({ type: 'success', text: 'Player created!' });
-      setTimeout(() => navigate(`/player/${res.data.id}`), 1000);
+      setTimeout(() => navigate(`/player/${playerId}`), 1000);
     } catch {
       setMsg({ type: 'error', text: 'Failed to create player. Username might already exist.' });
     }
@@ -59,9 +69,17 @@ export default function AddPlayer() {
               <input value={form.clubPlayerId} onChange={e => set('clubPlayerId', e.target.value)} placeholder="e.g. 2163-3811" />
             </div>
           </div>
-          <div className="form-group" style={{ maxWidth: 200 }}>
-            <label>Credit Limit (₪)</label>
-            <input type="number" min="0" value={form.creditLimit} onChange={e => set('creditLimit', e.target.value)} placeholder="0" />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Initial Credit (₪)</label>
+              <input type="number" min="0" step="0.01" value={form.initialCredit}
+                onChange={e => set('initialCredit', e.target.value)} placeholder="0.00" />
+            </div>
+            <div className="form-group">
+              <label>Initial Deposit (₪)</label>
+              <input type="number" min="0" step="0.01" value={form.initialDeposit}
+                onChange={e => set('initialDeposit', e.target.value)} placeholder="0.00" />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
             <button type="submit" className="btn btn-primary">Create Player</button>
