@@ -329,7 +329,7 @@ export default function PlayerDetail() {
                   <td>{t.transactionDate || '—'}</td>
                   <td>
                     <span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : t.type === 'CREDIT' ? 'credit' : t.type === 'REPAYMENT' ? 'repayment' : 'withdrawal'}`}>
-                      {t.type === 'CREDIT' ? 'Credit Given' : t.type === 'REPAYMENT' ? 'Repayment' : t.type}
+                      {t.type === 'CREDIT' ? 'Credit Given' : t.type === 'REPAYMENT' ? 'Payment' : t.type}
                     </span>
                   </td>
                   <td className={t.type === 'DEPOSIT' || t.type === 'CREDIT' ? 'positive' : 'negative'}>{fmt(t.amount)}</td>
