@@ -59,7 +59,7 @@ export default function PlayerDetail() {
     e.preventDefault();
     try {
       await updateCredit(id, Number(creditValue));
-      setMsg({ type: 'success', text: 'Credit updated successfully' });
+      setMsg({ type: 'success', text: `Credit ${Number(creditValue) >= 0 ? 'added' : 'subtracted'} successfully` });
       setShowCreditForm(false);
       setCreditValue('');
       load();
@@ -164,21 +164,26 @@ export default function PlayerDetail() {
 
       {showCreditForm && isAdmin && (
         <div className="card">
-          <h2>Update Credit — {player.username}</h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+          <h2>Add / Subtract Credit — {player.username}</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
             Current credit: <strong style={{ color: '#f59e0b' }}>{fmt(player.creditTotal)}</strong>
+            {creditValue !== '' && !isNaN(Number(creditValue)) && (
+              <span style={{ marginLeft: '1rem' }}>
+                → New credit: <strong style={{ color: '#f59e0b' }}>{fmt((player.creditTotal || 0) + Number(creditValue))}</strong>
+              </span>
+            )}
           </p>
           <form onSubmit={handleCreditUpdate}>
             <div className="form-row">
               <div className="form-group">
-                <label>New Credit Total (₪)</label>
+                <label>Amount to add (use negative to subtract) (₪)</label>
                 <input type="number" step="0.01" required value={creditValue}
-                  onChange={e => setCreditValue(e.target.value)} placeholder="0.00" />
+                  onChange={e => setCreditValue(e.target.value)} placeholder="e.g. 1000 or -500" />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button type="submit" className="btn btn-success">Save</button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowCreditForm(false)}>Cancel</button>
+              <button type="button" className="btn btn-secondary" onClick={() => { setShowCreditForm(false); setCreditValue(''); }}>Cancel</button>
             </div>
           </form>
         </div>
@@ -322,9 +327,13 @@ export default function PlayerDetail() {
               {transactions.map(t => (
                 <tr key={t.id}>
                   <td>{t.transactionDate || '—'}</td>
-                  <td><span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : 'withdrawal'}`}>{t.type}</span></td>
-                  <td className={t.type === 'DEPOSIT' ? 'positive' : 'negative'}>{fmt(t.amount)}</td>
-                  <td>{t.method}</td>
+                  <td>
+                    <span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : t.type === 'CREDIT' ? 'credit' : t.type === 'REPAYMENT' ? 'repayment' : 'withdrawal'}`}>
+                      {t.type === 'CREDIT' ? 'Credit Given' : t.type === 'REPAYMENT' ? 'Repayment' : t.type}
+                    </span>
+                  </td>
+                  <td className={t.type === 'DEPOSIT' || t.type === 'CREDIT' ? 'positive' : 'negative'}>{fmt(t.amount)}</td>
+                  <td>{t.method || '—'}</td>
                   <td style={{ color: '#64748b' }}>{t.notes || '—'}</td>
                 </tr>
               ))}
