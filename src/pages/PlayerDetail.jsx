@@ -307,7 +307,7 @@ export default function PlayerDetail() {
           {['transactions', 'results'].map(t => (
             <button key={t} className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setTab(t)}>
-              {t === 'transactions' ? 'Transactions' : `Game Results${filteredResults.length ? ` (${filteredResults.length})` : ''}`}
+              {t === 'transactions' ? `Transactions${transactions.length ? ` (${transactions.length})` : ''}` : `Game Results${filteredResults.length ? ` (${filteredResults.length})` : ''}`}
             </button>
           ))}
         </div>
