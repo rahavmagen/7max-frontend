@@ -332,7 +332,7 @@ export default function PlayerDetail() {
                       {t.type === 'CREDIT' ? 'Payment' : t.type === 'REPAYMENT' ? 'Cashout' : t.type}
                     </span>
                   </td>
-                  <td className={t.type === 'DEPOSIT' || t.type === 'CREDIT' ? 'positive' : 'negative'}>{fmt(t.amount)}</td>
+                  <td className={t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative'}>{fmt(t.amount)}</td>
                   <td>{t.method || '—'}</td>
                   <td style={{ color: '#64748b' }}>{t.notes || '—'}</td>
                 </tr>
