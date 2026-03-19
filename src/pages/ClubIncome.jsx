@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getIncomeReport } from '../api';
 
 const toInputDate = (d) => d.toISOString().substring(0, 10);
+
 const fmtDisplay = (isoStr) => {
   if (!isoStr) return '—';
   const s = isoStr.replace('T', ' ').substring(0, 16);
@@ -10,19 +11,19 @@ const fmtDisplay = (isoStr) => {
   return `${d}/${m}/${y} ${timePart || ''}`.trim();
 };
 
-const getLastMonthRange = () => {
+const getDefaultRange = () => {
   const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const to = new Date(now.getFullYear(), now.getMonth(), 0);
-  return { from: toInputDate(from), to: toInputDate(to) };
+  const from = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+  return { from: toInputDate(from), to: toInputDate(now) };
 };
 
 export default function ClubIncome() {
-  const defaultRange = getLastMonthRange();
+  const defaultRange = getDefaultRange();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dateFrom, setDateFrom] = useState(defaultRange.from);
   const [dateTo, setDateTo] = useState(defaultRange.to);
+  const [gameTypeFilter, setGameTypeFilter] = useState('ALL');
 
   const load = async (from, to) => {
     setLoading(true);
@@ -40,14 +41,21 @@ export default function ClubIncome() {
 
   useEffect(() => { load(defaultRange.from, defaultRange.to); }, []);
 
+  const gameTypes = useMemo(() => {
+    const types = [...new Set(rows.map(r => r.gameType).filter(Boolean))].sort();
+    return types;
+  }, [rows]);
+
+  const filtered = gameTypeFilter === 'ALL' ? rows : rows.filter(r => r.gameType === gameTypeFilter);
+
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
     const num = parseFloat(n);
     return '₪' + Math.abs(num).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const totalRake = rows.reduce((s, r) => s + parseFloat(r.totalRake || 0), 0);
-  const totalHands = rows.reduce((s, r) => s + parseInt(r.totalHands || 0), 0);
+  const totalRake = filtered.reduce((s, r) => s + parseFloat(r.totalRake || 0), 0);
+  const totalHands = filtered.reduce((s, r) => s + parseInt(r.totalHands || 0), 0);
 
   return (
     <div>
@@ -61,15 +69,20 @@ export default function ClubIncome() {
           <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
             style={{ background: '#0f1117', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }} />
+          <select value={gameTypeFilter} onChange={e => setGameTypeFilter(e.target.value)}
+            style={{ background: '#0f1117', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }}>
+            <option value="ALL">All Games</option>
+            {gameTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
           <button className="btn btn-primary" onClick={() => load(dateFrom, dateTo)} disabled={loading}>
             {loading ? 'Loading...' : 'Apply'}
           </button>
         </div>
 
-        {rows.length > 0 && (
+        {filtered.length > 0 && (
           <div style={{ display: 'flex', gap: '2rem', padding: '0.75rem 1rem', background: '#1a1d2e', borderRadius: '8px', marginBottom: '1rem', flexWrap: 'wrap' }}>
             <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-              Sessions: <strong style={{ color: '#e2e8f0' }}>{rows.length}</strong>
+              Sessions: <strong style={{ color: '#e2e8f0' }}>{filtered.length}</strong>
             </span>
             <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
               Total Hands: <strong style={{ color: '#e2e8f0' }}>{totalHands.toLocaleString()}</strong>
@@ -80,7 +93,7 @@ export default function ClubIncome() {
           </div>
         )}
 
-        {rows.length === 0 && !loading ? (
+        {filtered.length === 0 && !loading ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No data found</div>
         ) : (
           <div className="table-wrap">
@@ -96,7 +109,7 @@ export default function ClubIncome() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
+                {filtered.map((r, i) => (
                   <tr key={i}>
                     <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                       {fmtDisplay(r.startTime)}
