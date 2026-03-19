@@ -8,6 +8,7 @@ import Import from './pages/Import';
 import AdminReports from './pages/AdminReports';
 import BalanceLog from './pages/BalanceLog';
 import BalanceReport from './pages/BalanceReport';
+import ClubIncome from './pages/ClubIncome';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import './App.css';
@@ -35,6 +36,7 @@ function AppRoutes() {
               <NavLink to="/import">Import Players</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
               <NavLink to="/balance-report">Balance Report</NavLink>
+              <NavLink to="/club-income">Club Income</NavLink>
               <NavLink to="/admin-reports">Reports</NavLink>
             </>
           )}
@@ -69,6 +71,7 @@ function AppRoutes() {
               <Route path="/admin-reports" element={<AdminReports />} />
               <Route path="/balance-log" element={<BalanceLog />} />
               <Route path="/balance-report" element={<BalanceReport />} />
+              <Route path="/club-income" element={<ClubIncome />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}
