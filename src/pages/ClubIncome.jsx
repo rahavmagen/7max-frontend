@@ -1,18 +1,35 @@
 import { useState, useEffect } from 'react';
 import { getIncomeReport } from '../api';
 
+const toInputDate = (d) => d.toISOString().substring(0, 10);
+const fmtDisplay = (isoStr) => {
+  if (!isoStr) return '—';
+  const s = isoStr.replace('T', ' ').substring(0, 16);
+  const [datePart, timePart] = s.split(' ');
+  const [y, m, d] = datePart.split('-');
+  return `${d}/${m}/${y} ${timePart || ''}`.trim();
+};
+
+const getLastMonthRange = () => {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const to = new Date(now.getFullYear(), now.getMonth(), 0);
+  return { from: toInputDate(from), to: toInputDate(to) };
+};
+
 export default function ClubIncome() {
+  const defaultRange = getLastMonthRange();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(defaultRange.from);
+  const [dateTo, setDateTo] = useState(defaultRange.to);
 
-  const load = async () => {
+  const load = async (from, to) => {
     setLoading(true);
     try {
       const params = {};
-      if (dateFrom) params.dateFrom = dateFrom;
-      if (dateTo) params.dateTo = dateTo;
+      if (from) params.dateFrom = from;
+      if (to) params.dateTo = to;
       const r = await getIncomeReport(params);
       setRows(r.data);
     } catch {
@@ -21,7 +38,7 @@ export default function ClubIncome() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(defaultRange.from, defaultRange.to); }, []);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -44,14 +61,9 @@ export default function ClubIncome() {
           <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
             style={{ background: '#0f1117', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }} />
-          <button className="btn btn-primary" onClick={load} disabled={loading}>
+          <button className="btn btn-primary" onClick={() => load(dateFrom, dateTo)} disabled={loading}>
             {loading ? 'Loading...' : 'Apply'}
           </button>
-          {(dateFrom || dateTo) && (
-            <button className="btn btn-secondary" onClick={() => { setDateFrom(''); setDateTo(''); }}>
-              Clear
-            </button>
-          )}
         </div>
 
         {rows.length > 0 && (
@@ -87,7 +99,7 @@ export default function ClubIncome() {
                 {rows.map((r, i) => (
                   <tr key={i}>
                     <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                      {r.startTime ? r.startTime.replace('T', ' ').substring(0, 16) : '—'}
+                      {fmtDisplay(r.startTime)}
                     </td>
                     <td style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.tableName || '—'}</td>
                     <td>
