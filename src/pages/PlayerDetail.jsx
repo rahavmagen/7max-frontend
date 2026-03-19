@@ -320,6 +320,7 @@ export default function PlayerDetail() {
                 <th>Type</th>
                 <th>Amount</th>
                 <th>Method</th>
+                <th>By</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -334,6 +335,7 @@ export default function PlayerDetail() {
                   </td>
                   <td className={t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative'}>{fmt(t.amount)}</td>
                   <td>{t.method || '—'}</td>
+                  <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{t.createdByUsername || '—'}</td>
                   <td style={{ color: '#64748b' }}>{t.notes || '—'}</td>
                 </tr>
               ))}
