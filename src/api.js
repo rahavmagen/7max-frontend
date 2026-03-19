@@ -37,5 +37,6 @@ export const changePassword = (data) => api.post('/auth/change-password', data);
 export const adminResetPassword = (data) => api.post('/auth/admin/reset-password', data);
 export const getHandsReport = (params) => api.get('/reports/admin/hands-report', { params });
 export const getIncomeReport = (params) => api.get('/reports/admin/income', { params });
+export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');
 
 export default api;
