@@ -57,6 +57,15 @@ export default function ClubIncome() {
   const totalRake = filtered.reduce((s, r) => s + parseFloat(r.totalRake || 0), 0);
   const totalHands = filtered.reduce((s, r) => s + parseInt(r.totalHands || 0), 0);
 
+  const rakeByGameType = useMemo(() => {
+    const map = {};
+    rows.forEach(r => {
+      const type = r.gameType || 'Unknown';
+      map[type] = (map[type] || 0) + parseFloat(r.totalRake || 0);
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [rows]);
+
   return (
     <div>
       <h1>Club Income</h1>
@@ -78,6 +87,18 @@ export default function ClubIncome() {
             {loading ? 'Loading...' : 'Apply'}
           </button>
         </div>
+
+        {rakeByGameType.length > 0 && (
+          <div style={{ display: 'flex', gap: '1rem', padding: '0.75rem 1rem', background: '#12151f', border: '1px solid #2d3148', borderRadius: '8px', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rake by Type:</span>
+            {rakeByGameType.map(([type, rake]) => (
+              <span key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', color: '#e2e8f0' }}>{type}</span>
+                <strong style={{ color: '#f59e0b', fontSize: '0.9rem' }}>{fmt(rake)}</strong>
+              </span>
+            ))}
+          </div>
+        )}
 
         {filtered.length > 0 && (
           <div style={{ display: 'flex', gap: '2rem', padding: '0.75rem 1rem', background: '#1a1d2e', borderRadius: '8px', marginBottom: '1rem', flexWrap: 'wrap' }}>
