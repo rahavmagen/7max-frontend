@@ -105,6 +105,7 @@ export default function PlayerDetail() {
   });
   const totalPnl = filteredResults.reduce((s, r) => s + (r.resultAmount || 0), 0);
   const totalHands = filteredResults.reduce((s, r) => s + (r.handsPlayed || 0), 0);
+  const totalRake = filteredResults.reduce((s, r) => s + (r.rakePaid || 0), 0);
 
   return (
     <div>
@@ -412,67 +413,63 @@ export default function PlayerDetail() {
           </div>
         )}
 
-        {tab === 'income' && (() => {
-          const totalRake = filteredResults.reduce((s, r) => s + (r.rakePaid || 0), 0);
-          const totalHands = filteredResults.reduce((s, r) => s + (r.handsPlayed || 0), 0);
-          return (
-            <div>
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <label style={{ color: '#64748b', fontSize: '0.85rem' }}>From:</label>
-                <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
-                <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                {(dateFrom || dateTo) && (
-                  <button onClick={() => { setDateFrom(''); setDateTo(''); }}
-                    style={{ background: 'none', border: '1px solid #2d3148', color: '#94a3b8', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
-                    Clear
-                  </button>
+        {tab === 'income' && (
+          <div>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <label style={{ color: '#64748b', fontSize: '0.85rem' }}>From:</label>
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+              <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+              {(dateFrom || dateTo) && (
+                <button onClick={() => { setDateFrom(''); setDateTo(''); }}
+                  style={{ background: 'none', border: '1px solid #2d3148', color: '#94a3b8', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                  Clear
+                </button>
+              )}
+            </div>
+            {filteredResults.length > 0 && (
+              <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', padding: '0.75rem 1rem', background: '#1a1d2e', borderRadius: '8px', flexWrap: 'wrap' }}>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  Sessions: <strong style={{ color: '#e2e8f0' }}>{filteredResults.length}</strong>
+                </span>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  Total Hands: <strong style={{ color: '#e2e8f0' }}>{totalHands}</strong>
+                </span>
+                {isAdmin && (
+                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                    Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
+                  </span>
                 )}
               </div>
-              {filteredResults.length > 0 && (
-                <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', padding: '0.75rem 1rem', background: '#1a1d2e', borderRadius: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                    Sessions: <strong style={{ color: '#e2e8f0' }}>{filteredResults.length}</strong>
-                  </span>
-                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                    Total Hands: <strong style={{ color: '#e2e8f0' }}>{totalHands}</strong>
-                  </span>
-                  {isAdmin && (
-                    <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                      Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
-                    </span>
-                  )}
-                </div>
-              )}
-              <div className="table-wrap"><table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Table</th>
-                    <th>Game</th>
-                    <th>Hands</th>
-                    {isAdmin && <th style={{ color: '#f59e0b' }}>Rake</th>}
+            )}
+            <div className="table-wrap"><table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Table</th>
+                  <th>Game</th>
+                  <th>Hands</th>
+                  {isAdmin && <th style={{ color: '#f59e0b' }}>Rake</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredResults.map(r => (
+                  <tr key={r.id}>
+                    <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                      {r.session && r.session.startTime ? r.session.startTime.replace('T', ' ').substring(0, 16) : '-'}
+                    </td>
+                    <td style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.session ? r.session.tableName : '-'}</td>
+                    <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.session ? r.session.gameType : '-'}</span></td>
+                    <td style={{ color: '#64748b' }}>{r.handsPlayed}</td>
+                    {isAdmin && <td style={{ color: '#f59e0b' }}>{fmt(r.rakePaid)}</td>}
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredResults.map(r => (
-                    <tr key={r.id}>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                        {r.session && r.session.startTime ? r.session.startTime.replace('T', ' ').substring(0, 16) : '-'}
-                      </td>
-                      <td style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.session ? r.session.tableName : '-'}</td>
-                      <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.session ? r.session.gameType : '-'}</span></td>
-                      <td style={{ color: '#64748b' }}>{r.handsPlayed}</td>
-                      {isAdmin && <td style={{ color: '#f59e0b' }}>{fmt(r.rakePaid)}</td>}
-                    </tr>
-                  ))}
-                </tbody>
-              </table></div>
-            </div>
-          );
-        })()}
+                ))}
+              </tbody>
+            </table></div>
+          </div>
+        )}
 
         {((tab === 'transactions' && transactions.length === 0) ||
           (tab === 'results' && filteredResults.length === 0) ||
