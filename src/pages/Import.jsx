@@ -5,7 +5,6 @@ import { importPlayers } from '../api';
 export default function Import() {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
-  const [clearExisting, setClearExisting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const fileRef = useRef();
@@ -18,7 +17,7 @@ export default function Import() {
     setLoading(true);
     setMsg(null);
     try {
-      const res = await importPlayers(file, clearExisting);
+      const res = await importPlayers(file, false);
       if (res.data.error) {
         setMsg({ type: 'error', text: res.data.error });
       } else {
@@ -63,23 +62,6 @@ export default function Import() {
           <input ref={fileRef} type="file" accept=".xlsx" style={{ display: 'none' }}
             onChange={e => setFile(e.target.files[0])} />
         </div>
-      </div>
-
-      <div style={{ marginBottom: '1.5rem' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', color: '#94a3b8' }}>
-          <input
-            type="checkbox"
-            checked={clearExisting}
-            onChange={e => setClearExisting(e.target.checked)}
-            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-          />
-          <span>
-            <strong style={{ color: '#f87171' }}>Replace existing players</strong>
-            <span style={{ fontSize: '0.85rem', marginLeft: '0.5rem', color: '#64748b' }}>
-              — deletes all current players before importing
-            </span>
-          </span>
-        </label>
       </div>
 
       <button
