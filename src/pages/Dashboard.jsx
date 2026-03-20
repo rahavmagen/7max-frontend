@@ -40,13 +40,7 @@ export default function Dashboard() {
     });
   }
 
-  // Find the most recent chipsAsOf date across all players
-  const latestChipsDate = players.reduce((max, p) => {
-    if (!p.chipsAsOf) return max;
-    return !max || p.chipsAsOf > max ? p.chipsAsOf : max;
-  }, null);
-
-  const isStale = (p) => latestChipsDate && p.currentChips > 0 && p.chipsAsOf !== latestChipsDate;
+  const isStale = (p) => p.chipsStale === true;
 
   const totalChips = players.filter(p => !isStale(p)).reduce((s, p) => s + (p.currentChips || 0), 0);
   const totalCredit = players.reduce((s, p) => s + (p.creditTotal || 0), 0);
