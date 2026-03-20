@@ -3,79 +3,108 @@ import { uploadReport, getReports, deleteReport } from '../api';
 
 export default function Upload() {
   const [dragging, setDragging] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState(null);
   const [reports, setReports] = useState([]);
+  const [queue, setQueue] = useState([]); // { file, status, msg }
+  const [processing, setProcessing] = useState(false);
   const fileRef = useRef();
 
   useEffect(() => {
     getReports().then(r => setReports(r.data));
   }, []);
 
-  const handleFile = async (file) => {
-    if (!file) return;
-    if (!file.name.endsWith('.xlsx')) {
-      setMsg({ type: 'error', text: 'Only .xlsx files are supported (ClubGG export format).' });
-      return;
-    }
-    setLoading(true);
-    setMsg(null);
-    try {
-      const res = await uploadReport(file);
-      if (res.status >= 400) {
-        setMsg({ type: 'error', text: res.data?.error || 'Upload failed.' });
-      } else {
-        setMsg({ type: 'success', text: `Uploaded! Period: ${res.data.periodStart} -> ${res.data.periodEnd} | Total Rake: ${res.data.totalRake}` });
-        getReports().then(r => setReports(r.data));
+  const processFiles = async (files) => {
+    const xlsFiles = Array.from(files).filter(f => f.name.endsWith('.xlsx'));
+    if (!xlsFiles.length) return;
+
+    const initial = xlsFiles.map(f => ({ name: f.name, status: 'pending', msg: '' }));
+    setQueue(initial);
+    setProcessing(true);
+
+    const updated = [...initial];
+    for (let i = 0; i < xlsFiles.length; i++) {
+      updated[i] = { ...updated[i], status: 'uploading' };
+      setQueue([...updated]);
+      try {
+        const res = await uploadReport(xlsFiles[i]);
+        if (res.status >= 400) {
+          updated[i] = { ...updated[i], status: 'error', msg: res.data?.error || 'Upload failed.' };
+        } else {
+          updated[i] = {
+            ...updated[i], status: 'done',
+            msg: `Period: ${res.data.periodStart} → ${res.data.periodEnd} | Rake: ${res.data.totalRake}`
+          };
+        }
+      } catch (e) {
+        updated[i] = { ...updated[i], status: 'error', msg: e.response?.data?.error || 'Upload failed.' };
       }
-    } catch {
-      setMsg({ type: 'error', text: 'Upload failed. Make sure it is a valid ClubGG Excel export file.' });
+      setQueue([...updated]);
     }
-    setLoading(false);
+
+    setProcessing(false);
+    getReports().then(r => setReports(r.data));
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    processFiles(e.dataTransfer.files);
   };
 
   const handleDelete = async (id, fileName) => {
-    if (!confirm(`Remove "${fileName}"?\nThis will delete all game sessions and results from this upload, and reset player chips to 0.`)) return;
+    if (!confirm(`Remove "${fileName}"?\nThis will delete all game sessions and results from this upload.`)) return;
     try {
       await deleteReport(id);
-      setMsg({ type: 'success', text: `Removed: ${fileName}` });
       getReports().then(r => setReports(r.data));
     } catch {
-      setMsg({ type: 'error', text: 'Failed to remove report.' });
+      alert('Failed to remove report.');
     }
   };
+
+  const statusIcon = (s) => ({ pending: '⏳', uploading: '⬆', done: '✓', error: '✗' }[s] || '');
+  const statusColor = (s) => ({ done: '#22c55e', error: '#ef4444', uploading: '#6366f1', pending: '#64748b' }[s]);
 
   return (
     <div>
       <h1>Upload ClubGG Report</h1>
       <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
-        Upload the daily ClubGG export file. Must include <strong>Club Member Balance</strong> tab.
+        Upload one or multiple ClubGG export files at once. Must include <strong>Club Member Balance</strong> tab.
       </p>
-
-      {msg && (
-        <div className={`alert alert-${msg.type}`} onClick={() => setMsg(null)}>
-          {msg.text}
-        </div>
-      )}
 
       <div className="card">
         <div
           className={`upload-area ${dragging ? 'drag-over' : ''}`}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
-          onDrop={e => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]); }}
-          onClick={() => fileRef.current.click()}
+          onDrop={handleDrop}
+          onClick={() => !processing && fileRef.current.click()}
+          style={{ cursor: processing ? 'not-allowed' : 'pointer' }}
         >
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
           <div style={{ fontSize: '1.1rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
-            {loading ? 'Processing...' : 'Drop ClubGG Excel file here or click to browse'}
+            {processing ? 'Processing files...' : 'Drop one or more ClubGG Excel files here, or click to browse'}
           </div>
           <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-            Required tabs: Club Overview · Ring Game Detail · MTT Detail · Club Member Balance
+            Multiple files supported · Required tabs: Club Member Balance · Ring Game Detail · MTT Detail
           </div>
-          <input ref={fileRef} type="file" accept=".xlsx" style={{ display: 'none' }}
-            onChange={e => handleFile(e.target.files[0])} />
+          <input ref={fileRef} type="file" accept=".xlsx" multiple style={{ display: 'none' }}
+            onChange={e => { processFiles(e.target.files); e.target.value = ''; }} />
         </div>
+
+        {queue.length > 0 && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <strong style={{ color: '#e2e8f0' }}>Upload Progress ({queue.filter(q => q.status === 'done').length}/{queue.length})</strong>
+              {!processing && <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '4px 12px' }} onClick={() => setQueue([])}>Clear</button>}
+            </div>
+            {queue.map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: '1px solid #1e293b' }}>
+                <span style={{ color: statusColor(item.status), fontSize: '1rem', width: '20px', textAlign: 'center' }}>{statusIcon(item.status)}</span>
+                <span style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem', color: '#cbd5e1' }}>{item.name}</span>
+                <span style={{ fontSize: '0.8rem', color: statusColor(item.status) }}>{item.msg}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card">
