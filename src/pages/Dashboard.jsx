@@ -45,6 +45,14 @@ export default function Dashboard() {
   const totalPnl = players.reduce((s, p) => s + (p.balance || 0), 0);
   const activeCount = players.filter(p => p.active).length;
 
+  // Find the most recent chipsAsOf date across all players
+  const latestChipsDate = players.reduce((max, p) => {
+    if (!p.chipsAsOf) return max;
+    return !max || p.chipsAsOf > max ? p.chipsAsOf : max;
+  }, null);
+
+  const isStale = (p) => latestChipsDate && p.currentChips > 0 && p.chipsAsOf !== latestChipsDate;
+
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
     const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -123,7 +131,15 @@ export default function Dashboard() {
           <tbody>
             {filtered.map(p => (
               <tr key={p.id} onClick={() => navigate(`/player/${p.id}`)}>
-                <td><strong>{p.username}</strong></td>
+                <td>
+                  <strong>{p.username}</strong>
+                  {isStale(p) && (
+                    <span title={`Chips not updated in latest upload (last updated: ${p.chipsAsOf || 'unknown'})`}
+                      style={{ marginLeft: '6px', fontSize: '0.7rem', background: '#f59e0b', color: '#1e293b', borderRadius: '4px', padding: '1px 5px', fontWeight: 600, verticalAlign: 'middle' }}>
+                      STALE
+                    </span>
+                  )}
+                </td>
                 <td>{p.fullName || '—'}</td>
                 <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{p.phone || '—'}</td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem', fontFamily: 'monospace' }}>{p.clubPlayerId || '—'}</td>
