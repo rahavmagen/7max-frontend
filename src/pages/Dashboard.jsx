@@ -6,6 +6,7 @@ export default function Dashboard() {
   const [players, setPlayers] = useState([]);
   const [search, setSearch] = useState('');
   const [hideZero, setHideZero] = useState(false);
+  const [showStaleOnly, setShowStaleOnly] = useState(false);
   const [sort, setSort] = useState({ col: null, dir: 1 });
   const navigate = useNavigate();
 
@@ -22,11 +23,17 @@ export default function Dashboard() {
     return sort.dir === 1 ? ' ↑' : ' ↓';
   };
 
+  const isStale = (p) => p.chipsStale === true;
+
   let filtered = players.filter(p =>
     p.username.toLowerCase().includes(search.toLowerCase()) ||
     (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
     (p.phone && p.phone.includes(search))
   );
+
+  if (showStaleOnly) {
+    filtered = filtered.filter(p => isStale(p));
+  }
 
   if (hideZero) {
     filtered = filtered.filter(p => Number(p.balance) !== 0);
@@ -39,8 +46,6 @@ export default function Dashboard() {
       return (av - bv) * sort.dir;
     });
   }
-
-  const isStale = (p) => p.chipsStale === true;
 
   const totalChips = players.filter(p => !isStale(p)).reduce((s, p) => s + (p.currentChips || 0), 0);
   const totalCredit = players.reduce((s, p) => s + (p.creditTotal || 0), 0);
@@ -87,8 +92,13 @@ export default function Dashboard() {
           <div className={`value ${cls(totalPnl)}`}>{fmt(totalPnl)}</div>
         </div>
         {staleCount > 0 && (
-          <div className="stat-card" style={{ borderColor: '#f59e0b' }}>
-            <div className="label" style={{ color: '#f59e0b' }}>Stale Players</div>
+          <div
+            className="stat-card"
+            onClick={() => setShowStaleOnly(s => !s)}
+            style={{ borderColor: '#f59e0b', cursor: 'pointer', outline: showStaleOnly ? '2px solid #f59e0b' : 'none' }}
+            title="Click to filter stale players"
+          >
+            <div className="label" style={{ color: '#f59e0b' }}>Stale Players {showStaleOnly ? '(filtering)' : ''}</div>
             <div className="value" style={{ color: '#f59e0b' }}>{staleCount}</div>
           </div>
         )}
