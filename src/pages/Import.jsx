@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { importPlayers, cleanupHebrewPlayers } from '../api';
+import { importPlayers } from '../api';
 
 export default function Import() {
   const navigate = useNavigate();
@@ -8,20 +8,7 @@ export default function Import() {
   const [clearExisting, setClearExisting] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
-  const [cleaning, setCleaning] = useState(false);
   const fileRef = useRef();
-
-  const handleCleanup = async () => {
-    if (!window.confirm('Delete all players with Hebrew names that have no game results?')) return;
-    setCleaning(true);
-    try {
-      const res = await cleanupHebrewPlayers();
-      setMsg({ type: 'success', text: `Deleted ${res.data.deleted} players: ${res.data.names.join(', ') || 'none'}` });
-    } catch (e) {
-      setMsg({ type: 'error', text: 'Cleanup failed: ' + (e.response?.data?.error || e.message) });
-    }
-    setCleaning(false);
-  };
 
   const handleImport = async () => {
     if (!file) {
@@ -109,16 +96,6 @@ export default function Import() {
           Go to Dashboard →
         </button>
       )}
-
-      <div className="card" style={{ marginTop: '2rem', borderColor: '#7f1d1d' }}>
-        <h2 style={{ color: '#f87171' }}>Cleanup</h2>
-        <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          Delete players with Hebrew names that were accidentally imported and have no game results.
-        </p>
-        <button className="btn" style={{ background: '#7f1d1d', color: '#fca5a5' }} onClick={handleCleanup} disabled={cleaning}>
-          {cleaning ? 'Cleaning...' : 'Delete Hebrew Players'}
-        </button>
-      </div>
 
       <div className="card" style={{ marginTop: '2rem' }}>
         <h2>What gets imported</h2>
