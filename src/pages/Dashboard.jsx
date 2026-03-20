@@ -98,7 +98,7 @@ export default function Dashboard() {
             style={{ borderColor: '#f59e0b', cursor: 'pointer', outline: showStaleOnly ? '2px solid #f59e0b' : 'none' }}
             title="Click to filter stale players"
           >
-            <div className="label" style={{ color: '#f59e0b' }}>Stale Players {showStaleOnly ? '(filtering)' : ''}</div>
+            <div className="label" style={{ color: '#f59e0b' }}>Not in XLS {showStaleOnly ? '(filtering)' : ''}</div>
             <div className="value" style={{ color: '#f59e0b' }}>{staleCount}</div>
           </div>
         )}
@@ -145,9 +145,9 @@ export default function Dashboard() {
                 <td>
                   <strong>{p.username}</strong>
                   {isStale(p) && (
-                    <span title={`Chips not updated in latest upload (last updated: ${p.chipsAsOf || 'unknown'})`}
+                    <span title={`Not found in latest XLS upload (last updated: ${p.chipsAsOf || 'unknown'})`}
                       style={{ marginLeft: '6px', fontSize: '0.7rem', background: '#f59e0b', color: '#1e293b', borderRadius: '4px', padding: '1px 5px', fontWeight: 600, verticalAlign: 'middle' }}>
-                      STALE
+                      NOT IN XLS
                     </span>
                   )}
                 </td>
