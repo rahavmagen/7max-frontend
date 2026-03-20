@@ -40,11 +40,6 @@ export default function Dashboard() {
     });
   }
 
-  const totalChips = players.reduce((s, p) => s + (p.currentChips || 0), 0);
-  const totalCredit = players.reduce((s, p) => s + (p.creditTotal || 0), 0);
-  const totalPnl = players.reduce((s, p) => s + (p.balance || 0), 0);
-  const activeCount = players.filter(p => p.active).length;
-
   // Find the most recent chipsAsOf date across all players
   const latestChipsDate = players.reduce((max, p) => {
     if (!p.chipsAsOf) return max;
@@ -52,6 +47,12 @@ export default function Dashboard() {
   }, null);
 
   const isStale = (p) => latestChipsDate && p.currentChips > 0 && p.chipsAsOf !== latestChipsDate;
+
+  const totalChips = players.filter(p => !isStale(p)).reduce((s, p) => s + (p.currentChips || 0), 0);
+  const totalCredit = players.reduce((s, p) => s + (p.creditTotal || 0), 0);
+  const totalPnl = players.filter(p => !isStale(p)).reduce((s, p) => s + (p.balance || 0), 0);
+  const activeCount = players.filter(p => p.active && !isStale(p)).length;
+  const staleCount = players.filter(p => isStale(p)).length;
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -91,6 +92,12 @@ export default function Dashboard() {
           <div className="label">Net P&L (All Players)</div>
           <div className={`value ${cls(totalPnl)}`}>{fmt(totalPnl)}</div>
         </div>
+        {staleCount > 0 && (
+          <div className="stat-card" style={{ borderColor: '#f59e0b' }}>
+            <div className="label" style={{ color: '#f59e0b' }}>Stale Players</div>
+            <div className="value" style={{ color: '#f59e0b' }}>{staleCount}</div>
+          </div>
+        )}
       </div>
 
       <div className="card">
