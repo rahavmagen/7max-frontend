@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { importPlayers } from '../api';
+import { importPlayers, comparePlayersWithXls } from '../api';
 
 export default function Import() {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [comparing, setComparing] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [compareResult, setCompareResult] = useState(null);
   const fileRef = useRef();
 
   const handleImport = async () => {
@@ -21,17 +23,32 @@ export default function Import() {
       if (res.data.error) {
         setMsg({ type: 'error', text: res.data.error });
       } else {
-        const dups = res.data.duplicates;
         setMsg({
-          type: dups?.length ? 'warning' : 'success',
-          text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`,
-          duplicates: dups || []
+          type: 'success',
+          text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`
         });
       }
     } catch (e) {
       setMsg({ type: 'error', text: 'Import failed: ' + (e.response?.data?.error || e.message) });
     }
     setLoading(false);
+  };
+
+  const handleCompare = async () => {
+    if (!file) {
+      setMsg({ type: 'error', text: 'Please select the max7 xlsx file first' });
+      return;
+    }
+    setComparing(true);
+    setCompareResult(null);
+    setMsg(null);
+    try {
+      const res = await comparePlayersWithXls(file);
+      setCompareResult(res.data);
+    } catch (e) {
+      setMsg({ type: 'error', text: 'Compare failed: ' + (e.response?.data?.error || e.message) });
+    }
+    setComparing(false);
   };
 
   return (
@@ -45,19 +62,7 @@ export default function Import() {
         Current chips are set via the Upload Report page.
       </p>
 
-      {msg && (
-        <div className={`alert alert-${msg.type === 'warning' ? 'error' : msg.type}`} style={msg.type === 'warning' ? { borderColor: '#f59e0b', color: '#f59e0b' } : {}}>
-          {msg.text}
-          {msg.duplicates?.length > 0 && (
-            <div style={{ marginTop: '0.75rem' }}>
-              <strong>Skipped duplicates ({msg.duplicates.length}):</strong>
-              <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem', fontSize: '0.85rem' }}>
-                {msg.duplicates.map((d, i) => <li key={i}>{d}</li>)}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+      {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h2>max7 Management File (any .xlsx)</h2>
@@ -74,23 +79,85 @@ export default function Import() {
             : <div style={{ color: '#64748b' }}>Click to select xlsx file</div>
           }
           <input ref={fileRef} type="file" accept=".xlsx" style={{ display: 'none' }}
-            onChange={e => setFile(e.target.files[0])} />
+            onChange={e => { setFile(e.target.files[0]); setCompareResult(null); }} />
         </div>
       </div>
 
-      <button
-        className="btn btn-primary"
-        style={{ fontSize: '1rem', padding: '0.7rem 2rem' }}
-        onClick={handleImport}
-        disabled={loading || !file}
-      >
-        {loading ? 'Importing...' : '⬆ Import Players'}
-      </button>
-
-      {(msg?.type === 'success' || msg?.type === 'warning') && (
-        <button className="btn btn-secondary" style={{ marginLeft: '1rem' }} onClick={() => navigate('/')}>
-          Go to Dashboard →
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          className="btn btn-primary"
+          style={{ fontSize: '1rem', padding: '0.7rem 2rem' }}
+          onClick={handleImport}
+          disabled={loading || comparing || !file}
+        >
+          {loading ? 'Importing...' : '⬆ Import Players'}
         </button>
+
+        <button
+          className="btn btn-secondary"
+          onClick={handleCompare}
+          disabled={loading || comparing || !file}
+        >
+          {comparing ? 'Comparing...' : '🔍 Compare XLS vs DB'}
+        </button>
+
+        {msg?.type === 'success' && (
+          <button className="btn btn-secondary" onClick={() => navigate('/')}>
+            Go to Dashboard →
+          </button>
+        )}
+      </div>
+
+      {compareResult && (
+        <div className="card" style={{ marginTop: '1.5rem' }}>
+          <h2>Comparison Result</h2>
+          <div style={{ display: 'flex', gap: '2rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <span style={{ color: '#94a3b8' }}>XLS total rows: <strong style={{ color: '#e2e8f0' }}>{compareResult.xlsCount}</strong></span>
+            <span style={{ color: '#94a3b8' }}>XLS unique: <strong style={{ color: '#e2e8f0' }}>{compareResult.xlsUniqueCount}</strong></span>
+            <span style={{ color: '#94a3b8' }}>DB players: <strong style={{ color: '#e2e8f0' }}>{compareResult.dbCount}</strong></span>
+          </div>
+
+          {compareResult.xlsDuplicates?.length > 0 && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ color: '#f59e0b', marginBottom: '0.5rem' }}>Duplicate rows in XLS ({compareResult.xlsDuplicates.length})</h3>
+              <table>
+                <thead><tr><th>Row</th><th>Username</th><th>Full Name</th><th>Club ID</th><th>Reason</th></tr></thead>
+                <tbody>
+                  {compareResult.xlsDuplicates.map((p, i) => (
+                    <tr key={i}>
+                      <td style={{ color: '#64748b' }}>{p.row}</td>
+                      <td style={{ color: '#f59e0b' }}><strong>{p.username}</strong></td>
+                      <td>{p.fullName || '—'}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{p.clubPlayerId || '—'}</td>
+                      <td style={{ fontSize: '0.8rem', color: '#f59e0b' }}>{p.dupReason}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {compareResult.missingFromDb?.length === 0 ? (
+            <div style={{ color: '#22c55e', padding: '1rem 0' }}>✓ All XLS players found in DB</div>
+          ) : (
+            <div>
+              <h3 style={{ color: '#ef4444', marginBottom: '0.5rem' }}>In XLS but missing from DB ({compareResult.missingFromDb.length})</h3>
+              <table>
+                <thead><tr><th>Row</th><th>Username</th><th>Full Name</th><th>Club ID</th></tr></thead>
+                <tbody>
+                  {compareResult.missingFromDb.map((p, i) => (
+                    <tr key={i}>
+                      <td style={{ color: '#64748b' }}>{p.row}</td>
+                      <td style={{ color: '#ef4444' }}><strong>{p.username}</strong></td>
+                      <td>{p.fullName || '—'}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{p.clubPlayerId || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       <div className="card" style={{ marginTop: '2rem' }}>

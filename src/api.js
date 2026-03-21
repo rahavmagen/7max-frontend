@@ -39,5 +39,10 @@ export const getHandsReport = (params) => api.get('/reports/admin/hands-report',
 export const getIncomeReport = (params) => api.get('/reports/admin/income', { params });
 export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');
 export const getProfitSummary = () => api.get('/import/profit-summary');
+export const comparePlayersWithXls = (file) => {
+  const form = new FormData();
+  form.append('max7', file);
+  return api.post('/import/compare', form);
+};
 
 export default api;
