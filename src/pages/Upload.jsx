@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { uploadReport, getReports, deleteReport } from '../api';
+import { useNavigate } from 'react-router-dom';
 
 export default function Upload() {
   const [dragging, setDragging] = useState(false);
   const [reports, setReports] = useState([]);
   const [queue, setQueue] = useState([]); // { file, status, msg }
   const [processing, setProcessing] = useState(false);
+  const [leftClub, setLeftClub] = useState([]);
   const fileRef = useRef();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getReports().then(r => setReports(r.data));
@@ -33,6 +36,9 @@ export default function Upload() {
             ...updated[i], status: 'done',
             msg: `Period: ${res.data.periodStart} → ${res.data.periodEnd} | Rake: ${res.data.totalRake}`
           };
+          if (res.data.leftClub?.length) {
+            setLeftClub(prev => [...prev, ...res.data.leftClub]);
+          }
         }
       } catch (e) {
         updated[i] = { ...updated[i], status: 'error', msg: e.response?.data?.error || 'Upload failed.' };
@@ -106,6 +112,31 @@ export default function Upload() {
           </div>
         )}
       </div>
+
+      {leftClub.length > 0 && (
+        <div className="card" style={{ borderColor: '#f59e0b', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h2 style={{ color: '#f59e0b', margin: 0 }}>⚠ Left Club ({leftClub.length})</h2>
+            <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '4px 12px' }} onClick={() => setLeftClub([])}>Dismiss</button>
+          </div>
+          <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
+            These players were in the management system but are no longer in the Club Member Balance:
+          </p>
+          <table>
+            <thead><tr><th>Username</th><th>Full Name</th><th>Club ID</th><th></th></tr></thead>
+            <tbody>
+              {leftClub.map((p, i) => (
+                <tr key={i}>
+                  <td style={{ color: '#f59e0b' }}><strong>{p.username}</strong></td>
+                  <td>{p.fullName || '—'}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>{p.clubPlayerId}</td>
+                  <td><button onClick={() => navigate(`/player/${p.id}`)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem' }}>View</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="card">
         <h2>Upload History ({reports.length})</h2>

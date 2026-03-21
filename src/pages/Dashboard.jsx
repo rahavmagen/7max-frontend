@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [hideZero, setHideZero] = useState(false);
   const [showStaleOnly, setShowStaleOnly] = useState(false);
+  const [showLeftClubOnly, setShowLeftClubOnly] = useState(false);
   const [sort, setSort] = useState({ col: null, dir: 1 });
   const navigate = useNavigate();
 
@@ -24,6 +25,7 @@ export default function Dashboard() {
   };
 
   const isStale = (p) => (!p.clubPlayerId) && (p.currentChips || 0) > 0;
+  const isLeftClub = (p) => p.chipsStale === true && p.clubPlayerId;
 
   let filtered = players.filter(p =>
     p.username.toLowerCase().includes(search.toLowerCase()) ||
@@ -33,6 +35,10 @@ export default function Dashboard() {
 
   if (showStaleOnly) {
     filtered = filtered.filter(p => isStale(p));
+  }
+
+  if (showLeftClubOnly) {
+    filtered = filtered.filter(p => isLeftClub(p));
   }
 
   if (hideZero) {
@@ -54,6 +60,7 @@ export default function Dashboard() {
   const totalPnl = players.filter(p => !isStale(p)).reduce((s, p) => s + (p.balance || 0), 0);
   const activeCount = players.filter(p => p.active && !isStale(p)).length;
   const staleCount = players.filter(p => isStale(p)).length;
+  const leftClubCount = players.filter(p => isLeftClub(p)).length;
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -96,12 +103,23 @@ export default function Dashboard() {
         {staleCount > 0 && (
           <div
             className="stat-card"
-            onClick={() => setShowStaleOnly(s => !s)}
+            onClick={() => { setShowStaleOnly(s => !s); setShowLeftClubOnly(false); }}
             style={{ borderColor: '#f59e0b', cursor: 'pointer', outline: showStaleOnly ? '2px solid #f59e0b' : 'none' }}
-            title="Click to filter stale players"
+            title="Click to filter unknown players (no club ID)"
           >
             <div className="label" style={{ color: '#f59e0b' }}>Not Exists {showStaleOnly ? '(filtering)' : ''}</div>
             <div className="value" style={{ color: '#f59e0b' }}>{staleCount}</div>
+          </div>
+        )}
+        {leftClubCount > 0 && (
+          <div
+            className="stat-card"
+            onClick={() => { setShowLeftClubOnly(s => !s); setShowStaleOnly(false); }}
+            style={{ borderColor: '#ef4444', cursor: 'pointer', outline: showLeftClubOnly ? '2px solid #ef4444' : 'none' }}
+            title="Click to filter players who left the club"
+          >
+            <div className="label" style={{ color: '#ef4444' }}>Left Club {showLeftClubOnly ? '(filtering)' : ''}</div>
+            <div className="value" style={{ color: '#ef4444' }}>{leftClubCount}</div>
           </div>
         )}
       </div>
