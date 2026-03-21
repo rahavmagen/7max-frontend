@@ -10,6 +10,8 @@ import BalanceLog from './pages/BalanceLog';
 import BalanceReport from './pages/BalanceReport';
 import ClubIncome from './pages/ClubIncome';
 import TotalProfit from './pages/TotalProfit';
+import Games from './pages/Games';
+import GameResults from './pages/GameResults';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import './App.css';
@@ -34,6 +36,7 @@ function AppRoutes() {
             <>
               <NavLink to="/" end>Dashboard</NavLink>
               <NavLink to="/upload">Upload Report</NavLink>
+              <NavLink to="/games">Games</NavLink>
               <NavLink to="/import">Import Players</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
               <NavLink to="/balance-report">Balance Report</NavLink>
@@ -43,7 +46,10 @@ function AppRoutes() {
             </>
           )}
           {isPlayer && (
-            <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{auth.username}</span>
+            <>
+              <NavLink to="/games">Games</NavLink>
+              <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{auth.username}</span>
+            </>
           )}
         </div>
         <button
@@ -75,13 +81,17 @@ function AppRoutes() {
               <Route path="/balance-report" element={<BalanceReport />} />
               <Route path="/club-income" element={<ClubIncome />} />
               <Route path="/total-profit" element={<TotalProfit />} />
+              <Route path="/games" element={<Games />} />
+              <Route path="/game-results/:id" element={<GameResults />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}
           {isPlayer && (
             <>
               <Route path="/player/:id" element={<PlayerDetail />} />
-              <Route path="*" element={<Navigate to={`/player/${auth.playerId}`} />} />
+              <Route path="/games" element={<Games />} />
+              <Route path="/game-results/:id" element={<GameResults />} />
+              <Route path="*" element={<Navigate to="/games" />} />
             </>
           )}
         </Routes>

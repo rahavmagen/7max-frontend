@@ -13,6 +13,7 @@ api.interceptors.request.use(config => {
 });
 
 export const getPlayers = () => api.get('/players');
+export const getStalePlayers = () => api.get('/players/stale');
 export const getPlayer = (id) => api.get(`/players/${id}`);
 export const createPlayer = (data) => api.post('/players', data);
 export const updatePlayer = (id, data) => api.put(`/players/${id}`, data);
@@ -40,6 +41,8 @@ export const getIncomeReport = (params) => api.get('/reports/admin/income', { pa
 export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');
 export const getProfitSummary = () => api.get('/import/profit-summary');
 export const resetAllData = () => api.post('/import/reset-all');
+export const getGameSessions = () => api.get('/reports/sessions');
+export const getSessionResults = (id) => api.get(`/reports/sessions/${id}/results`);
 export const comparePlayersWithXls = (file) => {
   const form = new FormData();
   form.append('max7', file);

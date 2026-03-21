@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { uploadReport, getReports, deleteReport } from '../api';
+import { uploadReport, getReports, deleteReport, getStalePlayers } from '../api';
 import { useNavigate } from 'react-router-dom';
 
 export default function Upload() {
@@ -13,6 +13,7 @@ export default function Upload() {
 
   useEffect(() => {
     getReports().then(r => setReports(r.data));
+    getStalePlayers().then(r => setLeftClub(r.data));
   }, []);
 
   const processFiles = async (files) => {
@@ -34,10 +35,26 @@ export default function Upload() {
         } else {
           updated[i] = {
             ...updated[i], status: 'done',
-            msg: `Period: ${res.data.periodStart} → ${res.data.periodEnd} | Rake: ${res.data.totalRake}`
+            msg: `Period: ${res.data.periodStart} → ${res.data.periodEnd} | Rake: ${Math.round(parseFloat(res.data.totalRake))}`
           };
-          if (res.data.leftClub?.length) {
-            setLeftClub(prev => [...prev, ...res.data.leftClub]);
+          if (res.data.leftClub?.length || res.data.recovered?.length) {
+            setLeftClub(prev => {
+              // Add new left-club players (deduplicate by clubPlayerId)
+              let next = [...prev];
+              if (res.data.leftClub?.length) {
+                for (const p of res.data.leftClub) {
+                  if (!next.some(x => x.id === p.id)) {
+                    next.push(p);
+                  }
+                }
+              }
+              // Remove recovered players (found again in this balance)
+              if (res.data.recovered?.length) {
+                const recoveredIds = new Set(res.data.recovered.map(r => r.clubPlayerId).filter(Boolean));
+                next = next.filter(x => !x.clubPlayerId || !recoveredIds.has(x.clubPlayerId));
+              }
+              return next;
+            });
           }
         }
       } catch (e) {
@@ -48,6 +65,7 @@ export default function Upload() {
 
     setProcessing(false);
     getReports().then(r => setReports(r.data));
+    getStalePlayers().then(r => setLeftClub(r.data));
   };
 
   const handleDrop = (e) => {
@@ -114,9 +132,9 @@ export default function Upload() {
       </div>
 
       {leftClub.length > 0 && (
-        <div className="card" style={{ borderColor: '#f59e0b', marginTop: '1rem' }}>
+        <div className="card" style={{ marginTop: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h2 style={{ color: '#f59e0b', margin: 0 }}>⚠ Left Club ({leftClub.length})</h2>
+            <h2 style={{ margin: 0 }}>Left Club ({leftClub.length})</h2>
             <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '4px 12px' }} onClick={() => setLeftClub([])}>Dismiss</button>
           </div>
           <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
@@ -127,9 +145,9 @@ export default function Upload() {
             <tbody>
               {leftClub.map((p, i) => (
                 <tr key={i}>
-                  <td style={{ color: '#f59e0b' }}><strong>{p.username}</strong></td>
+                  <td><strong>{p.username}</strong></td>
                   <td>{p.fullName || '—'}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>{p.clubPlayerId}</td>
+                  <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>{p.clubPlayerId || '—'}</td>
                   <td><button onClick={() => navigate(`/player/${p.id}`)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem' }}>View</button></td>
                 </tr>
               ))}
@@ -159,7 +177,7 @@ export default function Upload() {
                 <tr key={r.id}>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{r.fileName}</td>
                   <td>{r.periodStart} to {r.periodEnd}</td>
-                  <td className="positive">{r.totalRake}</td>
+                  <td className="positive">{Math.round(parseFloat(r.totalRake))}</td>
                   <td style={{ color: '#64748b' }}>{r.uploadedAt?.replace('T', ' ').substring(0, 16)}</td>
                   <td>
                     <a

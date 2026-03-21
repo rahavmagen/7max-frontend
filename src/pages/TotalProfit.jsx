@@ -36,8 +36,9 @@ export default function TotalProfit() {
 
   // Calculations
   const moneyIn = totalCredit + bankDeposits;
-  const clubEarning = bankDeposits + totalCredit + willExpense - totalChips;
-  const totalExpenses = generalExpenses;
+  const chipsPlayersPaidFor = totalChips - willExpense;
+  const clubEarning = bankDeposits + totalCredit - chipsPlayersPaidFor;
+  const netProfit = clubEarning - willExpense - generalExpenses;
 
   return (
     <div>
@@ -70,25 +71,31 @@ export default function TotalProfit() {
           <div className="value" style={{ color: '#818cf8' }}>{fmt(moneyIn)}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Total Chips in System</div>
-          <div className="value neutral">{fmt(totalChips)}</div>
+          <div className="label">Total Chips Players Paid For</div>
+          <div className="value neutral">{fmt(chipsPlayersPaidFor)}</div>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+            Chips ({fmt(totalChips)}) − Will & Free Roll ({fmt(willExpense)})
+          </div>
         </div>
       </div>
 
       <div className="stats-grid" style={{ marginTop: '1rem' }}>
         <div className="stat-card">
-          <div className="label">Will Expense (גלגל)</div>
-          <div className="value neutral">{fmt(willExpense)}</div>
-        </div>
-        <div className="stat-card">
           <div className="label">General Expenses</div>
           <div className={`value ${cls(-generalExpenses)}`}>{fmt(generalExpenses)}</div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#22c55e' }}>
-          <div className="label" style={{ color: '#4ade80' }}>Club Earning</div>
-          <div className={`value ${cls(clubEarning)}`} style={{ fontSize: '1.6rem' }}>{fmt(clubEarning)}</div>
+        <div className="stat-card" style={{ borderColor: '#6366f1' }}>
+          <div className="label" style={{ color: '#818cf8' }}>Club Earning</div>
+          <div className={`value ${cls(clubEarning)}`} style={{ fontSize: '1.4rem' }}>{fmt(clubEarning)}</div>
           <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-            Deposits + Credit + Will − Chips
+            Deposits + Credit − Chips Players Paid For
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderColor: '#22c55e' }}>
+          <div className="label" style={{ color: '#4ade80' }}>Net Profit</div>
+          <div className={`value ${cls(netProfit)}`} style={{ fontSize: '1.6rem' }}>{fmt(netProfit)}</div>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+            Club Earning − Will & Free Roll − General Expenses
           </div>
         </div>
       </div>
@@ -100,7 +107,7 @@ export default function TotalProfit() {
             <tr>
               <td style={{ color: '#94a3b8' }}>Bank Deposits</td>
               <td className="neutral"><strong>{fmt(bankDeposits)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>מעקב הפקדות ומשיכות</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>מיקום הכסף B2+I2</td>
             </tr>
             <tr>
               <td style={{ color: '#94a3b8' }}>+ Total Credit Given</td>
@@ -108,14 +115,11 @@ export default function TotalProfit() {
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Sum of all player credits</td>
             </tr>
             <tr>
-              <td style={{ color: '#94a3b8' }}>+ Will Expense (גלגל)</td>
-              <td className="neutral"><strong>{fmt(willExpense)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>הוצאות col H</td>
-            </tr>
-            <tr>
-              <td style={{ color: '#94a3b8' }}>− Total Chips in System</td>
-              <td className="negative"><strong>({fmt(totalChips)})</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Club Member Balance</td>
+              <td style={{ color: '#94a3b8' }}>− Chips Players Paid For</td>
+              <td className="negative"><strong>({fmt(chipsPlayersPaidFor)})</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                Chips ({fmt(totalChips)}) − Will & Free Roll ({fmt(willExpense)})
+              </td>
             </tr>
             <tr style={{ borderTop: '2px solid #334155' }}>
               <td><strong style={{ color: '#e2e8f0' }}>= Club Earning</strong></td>
@@ -123,13 +127,18 @@ export default function TotalProfit() {
               <td></td>
             </tr>
             <tr style={{ marginTop: '1rem' }}>
-              <td style={{ color: '#94a3b8', paddingTop: '1rem' }}>General Expenses</td>
-              <td className="negative" style={{ paddingTop: '1rem' }}><strong>{fmt(generalExpenses)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>הוצאות col C</td>
+              <td style={{ color: '#94a3b8', paddingTop: '1rem' }}>− Will & Free Roll Expenses</td>
+              <td className="negative" style={{ paddingTop: '1rem' }}><strong>({fmt(willExpense)})</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>הוצאות col H</td>
+            </tr>
+            <tr>
+              <td style={{ color: '#94a3b8' }}>− General Expenses</td>
+              <td className="negative"><strong>({fmt(generalExpenses)})</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>הוצאות col C</td>
             </tr>
             <tr style={{ borderTop: '1px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>Net Profit (after expenses)</strong></td>
-              <td><strong className={cls(clubEarning - totalExpenses)} style={{ fontSize: '1.1rem' }}>{fmt(clubEarning - totalExpenses)}</strong></td>
+              <td><strong style={{ color: '#e2e8f0' }}>= Net Profit</strong></td>
+              <td><strong className={cls(netProfit)} style={{ fontSize: '1.1rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
           </tbody>

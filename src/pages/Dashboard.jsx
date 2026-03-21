@@ -115,11 +115,11 @@ export default function Dashboard() {
           <div
             className="stat-card"
             onClick={() => { setShowLeftClubOnly(s => !s); setShowStaleOnly(false); }}
-            style={{ borderColor: '#ef4444', cursor: 'pointer', outline: showLeftClubOnly ? '2px solid #ef4444' : 'none' }}
+            style={{ cursor: 'pointer', outline: showLeftClubOnly ? '2px solid #6366f1' : 'none' }}
             title="Click to filter players who left the club"
           >
-            <div className="label" style={{ color: '#ef4444' }}>Left Club {showLeftClubOnly ? '(filtering)' : ''}</div>
-            <div className="value" style={{ color: '#ef4444' }}>{leftClubCount}</div>
+            <div className="label">Left Club {showLeftClubOnly ? '(filtering)' : ''}</div>
+            <div className="value">{leftClubCount}</div>
           </div>
         )}
       </div>

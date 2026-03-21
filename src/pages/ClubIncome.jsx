@@ -135,7 +135,7 @@ export default function ClubIncome() {
                     <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                       {fmtDisplay(r.startTime)}
                     </td>
-                    <td style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.tableName || '—'}</td>
+                    <td dir="rtl" style={{ textAlign: 'right' }}>{r.tableName || '—'}</td>
                     <td>
                       <span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
                         {r.gameType || '—'}

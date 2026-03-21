@@ -393,12 +393,16 @@ export default function PlayerDetail() {
               </thead>
               <tbody>
                 {filteredResults.map(r => (
-                  <tr key={r.id}>
+                  <tr key={r.id}
+                    onClick={() => r.session && navigate(`/game-results/${r.session.id}`, { state: { session: r.session } })}
+                    style={{ cursor: r.session ? 'pointer' : 'default' }}
+                    className={r.session ? 'hoverable-row' : ''}
+                  >
                     <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                       {r.session && r.session.startTime ? r.session.startTime.replace('T', ' ').substring(0, 16) : '-'}
                     </td>
-                    <td style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.session ? r.session.tableName : '-'}</td>
-                    <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', unicodeBidi: 'bidi-override', direction: 'ltr' }}>{r.session ? r.session.gameType : '-'}</span></td>
+                    <td dir="rtl" style={{ textAlign: 'right' }}>{r.session ? r.session.tableName : '-'}</td>
+                    <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{r.session ? r.session.gameType : '-'}</span></td>
                     <td>{fmt(r.buyIn)}</td>
                     <td>{fmt(r.cashout)}</td>
                     <td style={{ color: '#64748b' }}>{r.handsPlayed}</td>
