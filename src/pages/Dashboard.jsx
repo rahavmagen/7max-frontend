@@ -23,7 +23,7 @@ export default function Dashboard() {
     return sort.dir === 1 ? ' ↑' : ' ↓';
   };
 
-  const isStale = (p) => p.chipsStale === true && (p.currentChips || 0) > 0;
+  const isStale = (p) => ((p.chipsStale === true) || (!p.clubPlayerId)) && (p.currentChips || 0) > 0;
 
   let filtered = players.filter(p =>
     p.username.toLowerCase().includes(search.toLowerCase()) ||
@@ -41,6 +41,11 @@ export default function Dashboard() {
 
   if (sort.col) {
     filtered = [...filtered].sort((a, b) => {
+      if (sort.col === 'clubPlayerId') {
+        const av = a.clubPlayerId || '';
+        const bv = b.clubPlayerId || '';
+        return av.localeCompare(bv) * sort.dir;
+      }
       const av = Number(a[sort.col]) || 0;
       const bv = Number(b[sort.col]) || 0;
       return (av - bv) * sort.dir;
@@ -133,7 +138,7 @@ export default function Dashboard() {
               <th>Username</th>
               <th>Full Name</th>
               <th>Phone</th>
-              <th>Club ID</th>
+              {thSort('clubPlayerId', 'Club ID')}
               {thSort('currentChips', 'Current Chips')}
               {thSort('creditTotal', 'Credit Given')}
               {thSort('balance', 'P&L (Balance)')}
