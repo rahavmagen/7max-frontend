@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { importPlayers, comparePlayersWithXls } from '../api';
+import { importPlayers, comparePlayersWithXls, resetAllData } from '../api';
 
 export default function Import() {
   const navigate = useNavigate();
@@ -32,6 +32,17 @@ export default function Import() {
       setMsg({ type: 'error', text: 'Import failed: ' + (e.response?.data?.error || e.message) });
     }
     setLoading(false);
+  };
+
+  const handleReset = async () => {
+    if (!confirm('Delete ALL players, reports, sessions, results and transactions? This cannot be undone.')) return;
+    try {
+      await resetAllData();
+      setMsg({ type: 'success', text: 'All data deleted. Ready for fresh import.' });
+      setCompareResult(null);
+    } catch (e) {
+      setMsg({ type: 'error', text: 'Reset failed: ' + (e.response?.data?.error || e.message) });
+    }
   };
 
   const handleCompare = async () => {
@@ -99,6 +110,13 @@ export default function Import() {
           disabled={loading || comparing || !file}
         >
           {comparing ? 'Comparing...' : '🔍 Compare XLS vs DB'}
+        </button>
+
+        <button
+          onClick={handleReset}
+          style={{ background: 'none', border: '1px solid #ef4444', color: '#ef4444', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}
+        >
+          🗑 Reset All Data
         </button>
 
         {msg?.type === 'success' && (
