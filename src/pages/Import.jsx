@@ -21,9 +21,11 @@ export default function Import() {
       if (res.data.error) {
         setMsg({ type: 'error', text: res.data.error });
       } else {
+        const dups = res.data.duplicates;
         setMsg({
-          type: 'success',
-          text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`
+          type: dups?.length ? 'warning' : 'success',
+          text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`,
+          duplicates: dups || []
         });
       }
     } catch (e) {
@@ -43,7 +45,19 @@ export default function Import() {
         Current chips are set via the Upload Report page.
       </p>
 
-      {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
+      {msg && (
+        <div className={`alert alert-${msg.type === 'warning' ? 'error' : msg.type}`} style={msg.type === 'warning' ? { borderColor: '#f59e0b', color: '#f59e0b' } : {}}>
+          {msg.text}
+          {msg.duplicates?.length > 0 && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <strong>Skipped duplicates ({msg.duplicates.length}):</strong>
+              <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem', fontSize: '0.85rem' }}>
+                {msg.duplicates.map((d, i) => <li key={i}>{d}</li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h2>max7 Management File (any .xlsx)</h2>
@@ -73,7 +87,7 @@ export default function Import() {
         {loading ? 'Importing...' : '⬆ Import Players'}
       </button>
 
-      {msg?.type === 'success' && (
+      {(msg?.type === 'success' || msg?.type === 'warning') && (
         <button className="btn btn-secondary" style={{ marginLeft: '1rem' }} onClick={() => navigate('/')}>
           Go to Dashboard →
         </button>
