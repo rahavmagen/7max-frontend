@@ -39,16 +39,13 @@ export default function Dashboard() {
     filtered = filtered.filter(p => Number(p.balance) !== 0);
   }
 
+  const strCols = ['username', 'fullName', 'phone', 'clubPlayerId'];
   if (sort.col) {
     filtered = [...filtered].sort((a, b) => {
-      if (sort.col === 'clubPlayerId') {
-        const av = a.clubPlayerId || '';
-        const bv = b.clubPlayerId || '';
-        return av.localeCompare(bv) * sort.dir;
+      if (strCols.includes(sort.col)) {
+        return (a[sort.col] || '').localeCompare(b[sort.col] || '') * sort.dir;
       }
-      const av = Number(a[sort.col]) || 0;
-      const bv = Number(b[sort.col]) || 0;
-      return (av - bv) * sort.dir;
+      return ((Number(a[sort.col]) || 0) - (Number(b[sort.col]) || 0)) * sort.dir;
     });
   }
 
@@ -135,9 +132,9 @@ export default function Dashboard() {
         <div className="table-wrap"><table>
           <thead>
             <tr>
-              <th>Username</th>
-              <th>Full Name</th>
-              <th>Phone</th>
+              {thSort('username', 'Username')}
+              {thSort('fullName', 'Full Name')}
+              {thSort('phone', 'Phone')}
               {thSort('clubPlayerId', 'Club ID')}
               {thSort('currentChips', 'Current Chips')}
               {thSort('creditTotal', 'Credit Given')}
