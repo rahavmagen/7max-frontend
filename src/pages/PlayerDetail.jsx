@@ -269,10 +269,10 @@ export default function PlayerDetail() {
           <div>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <label style={{ color: '#64748b', fontSize: '0.85rem' }}>From:</label>
-              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              <input type="date" lang="he" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
                 style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
               <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
-              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              <input type="date" lang="he" value={dateTo} onChange={e => setDateTo(e.target.value)}
                 style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
               {(dateFrom || dateTo) && (
                 <button onClick={() => { setDateFrom(''); setDateTo(''); }}

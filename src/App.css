@@ -1,5 +1,16 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+input[type="date"] { cursor: pointer; }
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.4);
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background: rgba(255,255,255,0.1);
+}
+
 body {
   font-family: 'Segoe UI', sans-serif;
   background: #0f1117;

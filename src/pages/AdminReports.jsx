@@ -45,11 +45,11 @@ export default function AdminReports() {
           <div className="form-row" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <div className="form-group">
               <label>מתאריך</label>
-              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} required />
+              <input type="date" lang="he" value={dateFrom} onChange={e => setDateFrom(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>עד תאריך</label>
-              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} required />
+              <input type="date" lang="he" value={dateTo} onChange={e => setDateTo(e.target.value)} required />
             </div>
             <div className="form-group">
               <label>מינימום ידיים</label>
