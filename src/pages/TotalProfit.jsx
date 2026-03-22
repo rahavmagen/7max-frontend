@@ -57,61 +57,18 @@ export default function TotalProfit() {
         </div>
       )}
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="label">Bank Deposits</div>
-          <div className="value neutral">{fmt(bankDeposits)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="label">Total Credit Given</div>
-          <div className="value neutral">{fmt(totalCredit)}</div>
-        </div>
-        <div className="stat-card" style={{ borderTopColor: '#6366f1' }}>
-          <div className="label" style={{ color: '#818cf8' }}>Money In (Credit + Deposits)</div>
-          <div className="value" style={{ color: '#818cf8' }}>{fmt(moneyIn)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="label">Total Chips Players Paid For</div>
-          <div className="value neutral">{fmt(chipsPlayersPaidFor)}</div>
-          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-            Chips ({fmt(totalChips)}) − Will & Free Roll ({fmt(willExpense)})
-          </div>
-        </div>
-      </div>
-
-      <div className="stats-grid" style={{ marginTop: '1rem' }}>
-        <div className="stat-card">
-          <div className="label">General Expenses</div>
-          <div className={`value ${cls(-generalExpenses)}`}>{fmt(generalExpenses)}</div>
-        </div>
-        <div className="stat-card" style={{ borderTopColor: '#6366f1' }}>
-          <div className="label" style={{ color: '#818cf8' }}>Club Earning</div>
-          <div className={`value ${cls(clubEarning)}`} style={{ fontSize: '1.4rem' }}>{fmt(clubEarning)}</div>
-          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-            Deposits + Credit − Chips Players Paid For
-          </div>
-        </div>
-        <div className="stat-card" style={{ borderTopColor: '#22c55e' }}>
-          <div className="label" style={{ color: '#4ade80' }}>Net Profit</div>
-          <div className={`value ${cls(netProfit)}`} style={{ fontSize: '1.6rem' }}>{fmt(netProfit)}</div>
-          <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-            Club Earning − Will & Free Roll − General Expenses
-          </div>
-        </div>
-      </div>
-
-      <div className="card" style={{ marginTop: '1.5rem' }}>
+      <div className="card">
         <h2>Calculation Breakdown</h2>
         <table>
           <tbody>
             <tr>
               <td style={{ color: '#94a3b8' }}>Bank Deposits</td>
-              <td className="neutral"><strong>{fmt(bankDeposits)}</strong></td>
+              <td className="positive"><strong>{fmt(bankDeposits)}</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>מיקום הכסף B2+I2</td>
             </tr>
             <tr>
               <td style={{ color: '#94a3b8' }}>+ Total Credit Given</td>
-              <td className="neutral"><strong>{fmt(totalCredit)}</strong></td>
+              <td className="positive"><strong>{fmt(totalCredit)}</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Sum of all player credits</td>
             </tr>
             <tr>
