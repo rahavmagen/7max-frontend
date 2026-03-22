@@ -66,7 +66,7 @@ export default function TotalProfit() {
           <div className="label">Total Credit Given</div>
           <div className="value neutral">{fmt(totalCredit)}</div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#6366f1' }}>
+        <div className="stat-card" style={{ borderTopColor: '#6366f1' }}>
           <div className="label" style={{ color: '#818cf8' }}>Money In (Credit + Deposits)</div>
           <div className="value" style={{ color: '#818cf8' }}>{fmt(moneyIn)}</div>
         </div>
@@ -84,14 +84,14 @@ export default function TotalProfit() {
           <div className="label">General Expenses</div>
           <div className={`value ${cls(-generalExpenses)}`}>{fmt(generalExpenses)}</div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#6366f1' }}>
+        <div className="stat-card" style={{ borderTopColor: '#6366f1' }}>
           <div className="label" style={{ color: '#818cf8' }}>Club Earning</div>
           <div className={`value ${cls(clubEarning)}`} style={{ fontSize: '1.4rem' }}>{fmt(clubEarning)}</div>
           <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>
             Deposits + Credit − Chips Players Paid For
           </div>
         </div>
-        <div className="stat-card" style={{ borderColor: '#22c55e' }}>
+        <div className="stat-card" style={{ borderTopColor: '#22c55e' }}>
           <div className="label" style={{ color: '#4ade80' }}>Net Profit</div>
           <div className={`value ${cls(netProfit)}`} style={{ fontSize: '1.6rem' }}>{fmt(netProfit)}</div>
           <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.25rem' }}>

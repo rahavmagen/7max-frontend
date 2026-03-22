@@ -170,28 +170,28 @@ export default function PlayerDetail() {
 
 
       <div className="player-balance-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div className="card">
+        <div className="card" style={{ borderTopColor: '#4a5568' }}>
           <h2>Player Info</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
             <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem' }}>USERNAME</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>USERNAME</div>
               <div style={{ fontWeight: 600 }}>{player.username}</div>
             </div>
             <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem' }}>FULL NAME</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>FULL NAME</div>
               <div>{player.fullName || '—'}</div>
             </div>
             <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem' }}>PHONE</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>PHONE</div>
               <div>{player.phone || '—'}</div>
             </div>
             <div>
-              <div style={{ color: '#64748b', fontSize: '0.75rem' }}>CLUB ID</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>CLUB ID</div>
               <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
             </div>
             {isAdmin && loginStats && (
               <div>
-                <div style={{ color: '#64748b', fontSize: '0.75rem' }}>SITE LOGINS</div>
+                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>SITE LOGINS</div>
                 <div style={{ color: '#94a3b8' }}>
                   {loginStats.loginCount || 0} times
                   {loginStats.lastLoginAt && (
@@ -204,18 +204,18 @@ export default function PlayerDetail() {
             )}
           </div>
         </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Current Balance</div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderTopColor: player.balance > 0 ? '#22c55e' : player.balance < 0 ? '#ef4444' : '#64748b' }}>
+          <div style={{ color: '#7a8499', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Current Balance</div>
           <div className={balanceClass(player.balance)} style={{ fontSize: 'clamp(2rem, 8vw, 3rem)', fontWeight: 700, margin: '0.5rem 0' }}>
             {fmt(player.balance)}
           </div>
           <div style={{ display: 'flex', gap: '2rem', marginTop: '0.5rem' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#64748b', fontSize: '0.7rem' }}>CURRENT CHIPS{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}</div>
+              <div style={{ color: '#7a8499', fontSize: '0.7rem', letterSpacing: '1px' }}>CURRENT CHIPS{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}</div>
               <div style={{ fontWeight: 600 }}>{fmt(player.currentChips)}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#64748b', fontSize: '0.7rem' }}>CREDIT GIVEN</div>
+              <div style={{ color: '#7a8499', fontSize: '0.7rem', letterSpacing: '1px' }}>CREDIT GIVEN</div>
               <div style={{ fontWeight: 600, color: player.creditTotal > 0 ? '#f59e0b' : '#94a3b8' }}>{fmt(player.creditTotal)}</div>
             </div>
           </div>
