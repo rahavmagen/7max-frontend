@@ -110,10 +110,14 @@ export default function Transfers() {
   // Credit submit
   const handleCreditSubmit = async (e) => {
     e.preventDefault();
-    if (!creditPlayerId || !creditAmount) return;
+    const delta = parseFloat(creditAmount);
+    if (!creditPlayerId || creditAmount === '' || isNaN(delta) || delta === 0) {
+      setMsg({ type: 'error', text: 'Select a player and enter a non-zero amount' });
+      return;
+    }
     setSubmitting(true);
     try {
-      await updateCredit(creditPlayerId, Number(creditAmount), creditNotes || null);
+      await updateCredit(creditPlayerId, delta, creditNotes || null);
       setMsg({ type: 'success', text: 'Credit updated successfully' });
       setCreditPlayerId(''); setCreditAmount(''); setCreditNotes('');
       load();
