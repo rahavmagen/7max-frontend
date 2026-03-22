@@ -19,10 +19,25 @@ import ChangePassword from './pages/ChangePassword';
 import Lesson from './pages/Lesson';
 import './App.css';
 
+function PlayerDefaultRedirect({ auth }) {
+  const pending = sessionStorage.getItem('redirectAfterLogin');
+  if (pending) {
+    sessionStorage.removeItem('redirectAfterLogin');
+    return <Navigate to={pending} replace />;
+  }
+  return <Navigate to={auth.playerId ? `/player/${auth.playerId}` : '/games'} replace />;
+}
+
 function AppRoutes() {
   const { auth, logout } = useAuth();
 
-  if (!auth) return <Login />;
+  if (!auth) {
+    const path = window.location.pathname;
+    if (path && path !== '/' && !sessionStorage.getItem('redirectAfterLogin')) {
+      sessionStorage.setItem('redirectAfterLogin', path);
+    }
+    return <Login />;
+  }
   if (auth.mustChangePassword) return <ChangePassword />;
 
   const isAdmin = auth.role === 'ADMIN' || auth.role === 'MANAGER';
@@ -103,7 +118,7 @@ function AppRoutes() {
               <Route path="/game-results/:id" element={<GameResults />} />
               <Route path="/active-players" element={<ActivePlayers />} />
               <Route path="/lesson" element={<Lesson />} />
-              <Route path="*" element={<Navigate to={auth.playerId ? `/player/${auth.playerId}` : '/games'} />} />
+              <Route path="*" element={<PlayerDefaultRedirect auth={auth} />} />
             </>
           )}
         </Routes>
