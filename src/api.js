@@ -13,6 +13,8 @@ api.interceptors.request.use(config => {
 });
 
 export const getPlayers = () => api.get('/players');
+export const getActivePlayers = () => api.get('/players/active');
+export const getLoginStats = (id) => api.get(`/players/${id}/login-stats`);
 export const getStalePlayers = () => api.get('/players/stale');
 export const getPlayer = (id) => api.get(`/players/${id}`);
 export const createPlayer = (data) => api.post('/players', data);
@@ -36,6 +38,7 @@ export const getReports = () => api.get('/reports');
 export const deleteReport = (id) => api.delete(`/reports/${id}`);
 export const changePassword = (data) => api.post('/auth/change-password', data);
 export const adminResetPassword = (data) => api.post('/auth/admin/reset-password', data);
+export const changeUserRole = (username, role) => api.post('/auth/admin/change-role', { username, role });
 export const getHandsReport = (params) => api.get('/reports/admin/hands-report', { params });
 export const getIncomeReport = (params) => api.get('/reports/admin/income', { params });
 export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');
@@ -48,5 +51,9 @@ export const comparePlayersWithXls = (file) => {
   form.append('max7', file);
   return api.post('/import/compare', form);
 };
+
+export const createTransfer = (data) => api.post('/transfers', data);
+export const getPendingTransfers = () => api.get('/transfers/pending');
+export const confirmTransfer = (id) => api.post(`/transfers/${id}/confirm`);
 
 export default api;
