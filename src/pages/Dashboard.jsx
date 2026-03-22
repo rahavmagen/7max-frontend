@@ -97,7 +97,7 @@ export default function Dashboard() {
           <div className="value neutral">{fmt(totalCredit)}</div>
         </div>
         <div className="stat-card">
-          <div className="label">Net P&L (All Players)</div>
+          <div className="label">Total Profit / Loss</div>
           <div className={`value ${cls(totalPnl)}`}>{fmt(totalPnl)}</div>
         </div>
         {staleCount > 0 && (
@@ -156,7 +156,7 @@ export default function Dashboard() {
               {thSort('clubPlayerId', 'Club ID')}
               {thSort('currentChips', 'Current Chips')}
               {thSort('creditTotal', 'Credit Given')}
-              {thSort('balance', 'P&L (Balance)')}
+              {thSort('balance', 'Profit / Loss')}
             </tr>
           </thead>
           <tbody>

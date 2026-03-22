@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, addTransaction, adminResetPassword, updateCredit, addDeposit } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole } from '../api';
 import { useAuth } from '../auth/AuthContext';
 
 export default function PlayerDetail() {
@@ -9,27 +9,29 @@ export default function PlayerDetail() {
   const { auth } = useAuth();
   const isAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
   const [player, setPlayer] = useState(null);
+  const [loadError, setLoadError] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [results, setResults] = useState([]);
   const [tab, setTab] = useState('results');
-  const [showForm, setShowForm] = useState(false);
-  const [showCreditForm, setShowCreditForm] = useState(false);
-  const [showDepositForm, setShowDepositForm] = useState(false);
-  const [creditValue, setCreditValue] = useState('');
-  const [depositValue, setDepositValue] = useState('');
-  const [depositNotes, setDepositNotes] = useState('');
   const [showResetPass, setShowResetPass] = useState(false);
   const [newPass, setNewPass] = useState('');
   const [showNewPass, setShowNewPass] = useState(false);
+  const [loginStats, setLoginStats] = useState(null);
+  const [showRoleForm, setShowRoleForm] = useState(false);
+  const [newRole, setNewRole] = useState('');
   const [msg, setMsg] = useState(null);
-  const [dateFrom, setDateFrom] = useState('');
+  const defaultDateFrom = !isAdmin
+    ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10)
+    : '';
+  const [dateFrom, setDateFrom] = useState(defaultDateFrom);
   const [dateTo, setDateTo] = useState('');
-  const [form, setForm] = useState({ type: 'DEPOSIT', amount: '', method: 'BIT', notes: '' });
 
   const load = () => {
-    getPlayer(id).then(r => setPlayer(r.data));
-    getPlayerTransactions(id).then(r => setTransactions(r.data));
-    getPlayerResults(id).then(r => setResults(r.data));
+    setLoadError(false);
+    getPlayer(id).then(r => setPlayer(r.data)).catch(() => setLoadError(true));
+    getPlayerTransactions(id).then(r => setTransactions(r.data)).catch(() => {});
+    getPlayerResults(id).then(r => setResults(r.data)).catch(() => {});
+    if (isAdmin) getLoginStats(id).then(r => setLoginStats(r.data)).catch(() => {});
   };
 
   useEffect(() => { load(); }, [id]);
@@ -42,43 +44,18 @@ export default function PlayerDetail() {
 
   const balanceClass = (b) => b > 0 ? 'positive' : b < 0 ? 'negative' : 'zero';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await addTransaction({ playerId: Number(id), ...form, amount: Number(form.amount) });
-      setMsg({ type: 'success', text: `${form.type === 'DEPOSIT' ? 'Deposit' : 'Withdrawal'} added successfully` });
-      setShowForm(false);
-      setForm({ type: 'DEPOSIT', amount: '', method: 'BIT', notes: '' });
-      load();
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to add transaction' });
-    }
-  };
 
-  const handleCreditUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      await updateCredit(id, Number(creditValue));
-      setMsg({ type: 'success', text: `Credit ${Number(creditValue) >= 0 ? 'added' : 'subtracted'} successfully` });
-      setShowCreditForm(false);
-      setCreditValue('');
-      load();
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to update credit' });
-    }
-  };
 
-  const handleDeposit = async (e) => {
+
+  const handleChangeRole = async (e) => {
     e.preventDefault();
     try {
-      await addDeposit(id, Number(depositValue), depositNotes);
-      setMsg({ type: 'success', text: 'Deposit added successfully' });
-      setShowDepositForm(false);
-      setDepositValue('');
-      setDepositNotes('');
-      load();
+      await changeUserRole(player.username, newRole);
+      setMsg({ type: 'success', text: `Role changed to ${newRole} for ${player.username}` });
+      setShowRoleForm(false);
+      setNewRole('');
     } catch {
-      setMsg({ type: 'error', text: 'Failed to add deposit' });
+      setMsg({ type: 'error', text: 'Failed to change role' });
     }
   };
 
@@ -94,10 +71,12 @@ export default function PlayerDetail() {
     }
   };
 
+  if (loadError) return <div style={{ padding: '2rem', color: '#ef4444' }}>Could not load player data. Please try again.</div>;
   if (!player) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
   const filteredResults = results.filter(r => {
-    if (!r.session?.startTime) return true;
+    if (!r.session) return false;
+    if (!r.session?.startTime) return false;
     const d = r.session.startTime.substring(0, 10);
     if (dateFrom && d < dateFrom) return false;
     if (dateTo && d > dateTo) return false;
@@ -114,18 +93,14 @@ export default function PlayerDetail() {
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {isAdmin && (
             <>
-              <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                + Transaction
-              </button>
-              <button className="btn btn-secondary" onClick={() => { setShowCreditForm(!showCreditForm); setShowDepositForm(false); }}>
-                ✏ Credit
-              </button>
-              <button className="btn btn-secondary" onClick={() => { setShowDepositForm(!showDepositForm); setShowCreditForm(false); }}>
-                + Deposit
-              </button>
               <button className="btn btn-secondary" onClick={() => { setShowResetPass(!showResetPass); setNewPass(''); }}>
                 🔑 Reset Pass
               </button>
+              {auth?.role === 'ADMIN' && (
+                <button className="btn btn-secondary" onClick={() => { setShowRoleForm(!showRoleForm); setNewRole(''); }}>
+                  👑 Change Role
+                </button>
+              )}
             </>
           )}
         </div>
@@ -163,56 +138,29 @@ export default function PlayerDetail() {
         </div>
       )}
 
-      {showCreditForm && isAdmin && (
+      {showRoleForm && auth?.role === 'ADMIN' && (
         <div className="card">
-          <h2>Add / Subtract Credit — {player.username}</h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-            Current credit: <strong style={{ color: '#f59e0b' }}>{fmt(player.creditTotal)}</strong>
-            {creditValue !== '' && !isNaN(Number(creditValue)) && (
-              <span style={{ marginLeft: '1rem' }}>
-                → New credit: <strong style={{ color: '#f59e0b' }}>{fmt((player.creditTotal || 0) + Number(creditValue))}</strong>
-              </span>
-            )}
-          </p>
-          <form onSubmit={handleCreditUpdate}>
+          <h2>Change Role — {player.username}</h2>
+          <form onSubmit={handleChangeRole}>
             <div className="form-row">
               <div className="form-group">
-                <label>Amount to add (use negative to subtract) (₪)</label>
-                <input type="number" step="0.01" required value={creditValue}
-                  onChange={e => setCreditValue(e.target.value)} placeholder="e.g. 1000 or -500" />
+                <label>New Role</label>
+                <select required value={newRole} onChange={e => setNewRole(e.target.value)}>
+                  <option value="">Select role...</option>
+                  <option value="ADMIN">ADMIN</option>
+                  <option value="PLAYER">PLAYER</option>
+                </select>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="submit" className="btn btn-success">Save</button>
-              <button type="button" className="btn btn-secondary" onClick={() => { setShowCreditForm(false); setCreditValue(''); }}>Cancel</button>
+              <button type="submit" className="btn btn-success" disabled={!newRole}>Save</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowRoleForm(false)}>Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {showDepositForm && isAdmin && (
-        <div className="card">
-          <h2>Add Deposit — {player.username}</h2>
-          <form onSubmit={handleDeposit}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Amount (₪)</label>
-                <input type="number" step="0.01" min="0.01" required value={depositValue}
-                  onChange={e => setDepositValue(e.target.value)} placeholder="0.00" />
-              </div>
-              <div className="form-group">
-                <label>Notes</label>
-                <input type="text" value={depositNotes}
-                  onChange={e => setDepositNotes(e.target.value)} placeholder="Optional" />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="submit" className="btn btn-success">Add Deposit</button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowDepositForm(false)}>Cancel</button>
-            </div>
-          </form>
-        </div>
-      )}
+
 
       {msg && (
         <div className={`alert alert-${msg.type}`} onClick={() => setMsg(null)}>
@@ -220,48 +168,6 @@ export default function PlayerDetail() {
         </div>
       )}
 
-      {showForm && (
-        <div className="card">
-          <h2>Add Deposit / Withdrawal</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Type</label>
-                <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
-                  <option value="DEPOSIT">Deposit</option>
-                  <option value="WITHDRAWAL">Withdrawal</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Amount (₪)</label>
-                <input type="number" min="0" step="0.01" required value={form.amount}
-                  onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="0.00" />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Method</label>
-                <select value={form.method} onChange={e => setForm({ ...form, method: e.target.value })}>
-                  <option value="BIT">Bit</option>
-                  <option value="PAYBOX">Paybox</option>
-                  <option value="CASH">Cash</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Notes</label>
-                <input type="text" value={form.notes}
-                  onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Optional" />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button type="submit" className="btn btn-success">Save</button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-            </div>
-          </form>
-        </div>
-      )}
 
       <div className="player-balance-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card">
@@ -283,10 +189,23 @@ export default function PlayerDetail() {
               <div style={{ color: '#64748b', fontSize: '0.75rem' }}>CLUB ID</div>
               <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
             </div>
+            {isAdmin && loginStats && (
+              <div>
+                <div style={{ color: '#64748b', fontSize: '0.75rem' }}>SITE LOGINS</div>
+                <div style={{ color: '#94a3b8' }}>
+                  {loginStats.loginCount || 0} times
+                  {loginStats.lastLoginAt && (
+                    <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', color: '#64748b' }}>
+                      (last: {loginStats.lastLoginAt.replace('T', ' ').substring(0, 16)})
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>P&L (Balance)</div>
+          <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Current Balance</div>
           <div className={balanceClass(player.balance)} style={{ fontSize: 'clamp(2rem, 8vw, 3rem)', fontWeight: 700, margin: '0.5rem 0' }}>
             {fmt(player.balance)}
           </div>
@@ -381,18 +300,22 @@ export default function PlayerDetail() {
             <div className="table-wrap"><table>
               <thead>
                 <tr>
-                  <th>Date</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Date</th>
                   <th>Table</th>
                   <th>Game</th>
-                  <th>Buy-in</th>
-                  <th>Cashout</th>
-                  <th>Hands</th>
-                  {isAdmin && <th style={{ color: '#f59e0b' }}>Rake</th>}
-                  <th>P&L</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Buy-in</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Prize</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Hands</th>
+                  {isAdmin && <th style={{ color: '#f59e0b', whiteSpace: 'nowrap' }}>Rake</th>}
+                  <th style={{ whiteSpace: 'nowrap' }}>Profit / Loss</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredResults.map(r => (
+                {filteredResults.map(r => {
+                  const isTournament = r.session && ['MTT', 'SNG', 'AoF', 'SPIN_GOLD'].includes(r.session.gameType);
+                  const displayCashout = isTournament ? (r.resultAmount || 0) : (r.cashout || 0);
+                  const pnl = isTournament ? ((r.resultAmount || 0) - (r.buyIn || 0)) : (r.resultAmount || 0);
+                  return (
                   <tr key={r.id}
                     onClick={() => r.session && navigate(`/game-results/${r.session.id}`, { state: { session: r.session } })}
                     style={{ cursor: r.session ? 'pointer' : 'default' }}
@@ -403,13 +326,14 @@ export default function PlayerDetail() {
                     </td>
                     <td dir="rtl" style={{ textAlign: 'right' }}>{r.session ? r.session.tableName : '-'}</td>
                     <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{r.session ? r.session.gameType : '-'}</span></td>
-                    <td>{fmt(r.buyIn)}</td>
-                    <td>{fmt(r.cashout)}</td>
-                    <td style={{ color: '#64748b' }}>{r.handsPlayed}</td>
-                    {isAdmin && <td style={{ color: '#f59e0b' }}>{fmt(r.rakePaid)}</td>}
-                    <td className={balanceClass(r.resultAmount)}><strong>{fmt(r.resultAmount)}</strong></td>
+                    <td style={{ color: '#ef4444', whiteSpace: 'nowrap' }}>{fmt(-(r.buyIn || 0))}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{fmt(displayCashout)}</td>
+                    <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{r.handsPlayed}</td>
+                    {isAdmin && <td style={{ color: '#f59e0b', whiteSpace: 'nowrap' }}>{fmt(r.rakePaid)}</td>}
+                    <td style={{ whiteSpace: 'nowrap' }} className={balanceClass(pnl)}><strong>{fmt(pnl)}</strong></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table></div>
           </div>

@@ -8,10 +8,12 @@ import Import from './pages/Import';
 import AdminReports from './pages/AdminReports';
 import BalanceLog from './pages/BalanceLog';
 import BalanceReport from './pages/BalanceReport';
+import Transfers from './pages/Transfers';
 import ClubIncome from './pages/ClubIncome';
 import TotalProfit from './pages/TotalProfit';
 import Games from './pages/Games';
 import GameResults from './pages/GameResults';
+import ActivePlayers from './pages/ActivePlayers';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import './App.css';
@@ -39,6 +41,7 @@ function AppRoutes() {
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/import">Import Players</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
+              <NavLink to="/transfers">Transfers</NavLink>
               <NavLink to="/balance-report">Balance Report</NavLink>
               <NavLink to="/club-income">Club Income</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
@@ -49,6 +52,7 @@ function AppRoutes() {
             <>
               <NavLink to="/games">Games</NavLink>
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
+              <NavLink to="/active-players">Players</NavLink>
               <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{auth.username}</span>
             </>
           )}
@@ -79,6 +83,7 @@ function AppRoutes() {
               <Route path="/import" element={<Import />} />
               <Route path="/admin-reports" element={<AdminReports />} />
               <Route path="/balance-log" element={<BalanceLog />} />
+              <Route path="/transfers" element={<Transfers />} />
               <Route path="/balance-report" element={<BalanceReport />} />
               <Route path="/club-income" element={<ClubIncome />} />
               <Route path="/total-profit" element={<TotalProfit />} />
@@ -92,6 +97,7 @@ function AppRoutes() {
               <Route path="/player/:id" element={<PlayerDetail />} />
               <Route path="/games" element={<Games />} />
               <Route path="/game-results/:id" element={<GameResults />} />
+              <Route path="/active-players" element={<ActivePlayers />} />
               <Route path="*" element={<Navigate to={auth.playerId ? `/player/${auth.playerId}` : '/games'} />} />
             </>
           )}

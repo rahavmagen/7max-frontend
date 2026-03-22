@@ -55,5 +55,6 @@ export const comparePlayersWithXls = (file) => {
 export const createTransfer = (data) => api.post('/transfers', data);
 export const getPendingTransfers = () => api.get('/transfers/pending');
 export const confirmTransfer = (id) => api.post(`/transfers/${id}/confirm`);
+export const getLastNightMtt = (date) => api.get('/transfers/last-night-mtt', { params: { date } });
 
 export default api;
