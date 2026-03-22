@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getPendingTransfers, confirmTransfer, getLastNightMtt } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getPendingTransfers, confirmTransfer } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -67,7 +67,6 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
   );
 }
 
-const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
 
 export default function Transfers() {
   const [players, setPlayers] = useState([]);
@@ -83,10 +82,8 @@ export default function Transfers() {
   const [creditNotes, setCreditNotes] = useState('');
 
   // Promotion form
-  const [promoDate, setPromoDate] = useState(yesterday);
-  const [lastNightMtt, setLastNightMtt] = useState(null);
-  const [promoMttLoading, setPromoMttLoading] = useState(false);
-  const [promoChecked, setPromoChecked] = useState({});
+  const [promoPlayerId, setPromoPlayerId] = useState('');
+  const [promoAmount, setPromoAmount] = useState('');
   const [promoNotes, setPromoNotes] = useState('');
 
   // Transfer form
@@ -126,49 +123,21 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
-  // Promotion: load MTT
-  const loadMtt = async () => {
-    setPromoMttLoading(true);
-    setLastNightMtt(null);
-    setPromoChecked({});
-    try {
-      const r = await getLastNightMtt(promoDate);
-      if (r.data && r.data.id) {
-        setLastNightMtt(r.data);
-        const checked = {};
-        r.data.participants.forEach(p => { checked[p.playerId] = true; });
-        setPromoChecked(checked);
-      } else {
-        setMsg({ type: 'error', text: 'No 9PM MTT found for that date' });
-      }
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to load MTT data' });
-    }
-    setPromoMttLoading(false);
-  };
-
   // Promotion submit
   const handlePromoSubmit = async (e) => {
     e.preventDefault();
-    if (!lastNightMtt) return;
-    const selected = lastNightMtt.participants.filter(p => promoChecked[p.playerId]);
-    if (selected.length === 0) {
-      setMsg({ type: 'error', text: 'Select at least one player' });
-      return;
-    }
+    if (!promoPlayerId || !promoAmount) return;
     setSubmitting(true);
     try {
-      await Promise.all(selected.map(p =>
-        addTransaction({
-          playerId: p.playerId,
-          type: 'DEPOSIT',
-          amount: p.cost,
-          method: 'OTHER',
-          notes: `Promotion - ${lastNightMtt.tableName}${promoNotes ? ' - ' + promoNotes : ''}`,
-        })
-      ));
-      setMsg({ type: 'success', text: `Promotion recorded for ${selected.length} player${selected.length !== 1 ? 's' : ''}` });
-      setLastNightMtt(null); setPromoChecked({}); setPromoNotes('');
+      await addTransaction({
+        playerId: promoPlayerId,
+        type: 'DEPOSIT',
+        amount: Number(promoAmount),
+        method: 'OTHER',
+        notes: 'Promotion' + (promoNotes ? ' - ' + promoNotes : ''),
+      });
+      setMsg({ type: 'success', text: 'Promotion recorded' });
+      setPromoPlayerId(''); setPromoAmount(''); setPromoNotes('');
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record promotion' });
@@ -214,8 +183,6 @@ export default function Transfers() {
     }
   };
 
-  const allChecked = lastNightMtt && lastNightMtt.participants.every(p => promoChecked[p.playerId]);
-  const checkedCount = Object.values(promoChecked).filter(Boolean).length;
 
   return (
     <div>
@@ -268,73 +235,25 @@ export default function Transfers() {
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <h2>Promotion — MTT Cost</h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Look up last night's 9PM MTT (±40 min) and record the promotion for participating players.
+            Record a promotion for a player (e.g. MTT buy-in refund). The XLS upload will automatically match this against the tournament.
           </p>
-          <div className="form-row" style={{ alignItems: 'flex-end', marginBottom: '1rem' }}>
-            <div className="form-group">
-              <label>Date</label>
-              <input type="date" value={promoDate}
-                onChange={e => { setPromoDate(e.target.value); setLastNightMtt(null); setPromoChecked({}); }}
-                style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }} />
-            </div>
-            <div className="form-group">
-              <button type="button" className="btn btn-secondary" onClick={loadMtt} disabled={promoMttLoading}>
-                {promoMttLoading ? 'Loading...' : 'Load 9PM MTT'}
-              </button>
-            </div>
-          </div>
-
-          {lastNightMtt && (
-            <form onSubmit={handlePromoSubmit}>
-              <div style={{ background: '#1a1d2e', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
-                <div style={{ color: '#f59e0b', fontWeight: 600, marginBottom: '0.75rem' }}>
-                  {lastNightMtt.tableName} — {lastNightMtt.startTime?.substring(0, 16).replace('T', ' ')}
-                </div>
-                <table style={{ width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 400, padding: '4px 0' }}>
-                        <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <input type="checkbox" checked={!!allChecked}
-                            onChange={e => {
-                              const c = {};
-                              lastNightMtt.participants.forEach(p => { c[p.playerId] = e.target.checked; });
-                              setPromoChecked(c);
-                            }} />
-                          Player
-                        </label>
-                      </th>
-                      <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 400, padding: '4px 0' }}>Buy-in + Rake</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lastNightMtt.participants.map(p => (
-                      <tr key={p.playerId}>
-                        <td style={{ padding: '5px 0' }}>
-                          <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <input type="checkbox" checked={!!promoChecked[p.playerId]}
-                              onChange={e => setPromoChecked(prev => ({ ...prev, [p.playerId]: e.target.checked }))} />
-                            <strong>{p.username}</strong>
-                            {p.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{p.fullName}</span>}
-                          </label>
-                        </td>
-                        <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 600 }}>{fmt(p.cost)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <form onSubmit={handlePromoSubmit}>
+            <div className="form-row">
+              <PlayerSelect label="Player" value={promoPlayerId} onChange={setPromoPlayerId} players={players} />
+              <div className="form-group">
+                <label>Amount (₪) *</label>
+                <input type="number" min="0.01" step="0.01" required value={promoAmount}
+                  onChange={e => setPromoAmount(e.target.value)} placeholder="0.00" />
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Notes</label>
-                  <input type="text" value={promoNotes} onChange={e => setPromoNotes(e.target.value)} placeholder="Optional" />
-                </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={promoNotes} onChange={e => setPromoNotes(e.target.value)} placeholder="Optional" />
               </div>
-              <button type="submit" className="btn btn-primary" disabled={submitting || checkedCount === 0}>
-                {submitting ? 'Recording...' : `Record Promotion (${checkedCount} player${checkedCount !== 1 ? 's' : ''})`}
-              </button>
-            </form>
-          )}
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={submitting || !promoPlayerId}>
+              {submitting ? 'Recording...' : 'Record Promotion'}
+            </button>
+          </form>
         </div>
       )}
 
