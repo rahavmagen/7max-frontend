@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getPendingTransfers, confirmTransfer } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getPendingTransfers, confirmTransfer, updateTransfer, getRecentTransactions, updateTransaction } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -71,10 +71,16 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
 export default function Transfers() {
   const [players, setPlayers] = useState([]);
   const [pending, setPending] = useState([]);
+  const [recent, setRecent] = useState([]);
   const [activeForm, setActiveForm] = useState(null);
   const [msg, setMsg] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  // Edit transfer state
+  const [editingTransfer, setEditingTransfer] = useState(null); // { id, amount, notes, method }
+  // Edit transaction state
+  const [editingTx, setEditingTx] = useState(null); // { id, amount, notes }
 
   // Credit form
   const [creditPlayerId, setCreditPlayerId] = useState('');
@@ -92,6 +98,7 @@ export default function Transfers() {
   const load = () => {
     getPlayers().then(r => setPlayers(r.data));
     getPendingTransfers().then(r => setPending(r.data));
+    getRecentTransactions(30).then(r => setRecent(r.data));
   };
 
   useEffect(() => { load(); }, []);
@@ -175,6 +182,34 @@ export default function Transfers() {
     } catch {
       setMsg({ type: 'error', text: 'Failed to record transfer' });
     }
+    setSubmitting(false);
+  };
+
+  const handleEditTransferSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(editingTransfer.amount);
+    if (isNaN(amount) || amount <= 0) { setMsg({ type: 'error', text: 'Amount must be positive' }); return; }
+    setSubmitting(true);
+    try {
+      await updateTransfer(editingTransfer.id, { amount, notes: editingTransfer.notes || null, method: editingTransfer.method || null });
+      setMsg({ type: 'success', text: 'Transfer updated' });
+      setEditingTransfer(null);
+      load();
+    } catch { setMsg({ type: 'error', text: 'Failed to update transfer' }); }
+    setSubmitting(false);
+  };
+
+  const handleEditTxSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(editingTx.amount);
+    if (isNaN(amount) || amount <= 0) { setMsg({ type: 'error', text: 'Amount must be positive' }); return; }
+    setSubmitting(true);
+    try {
+      await updateTransaction(editingTx.id, { amount, notes: editingTx.notes || null });
+      setMsg({ type: 'success', text: 'Transaction updated' });
+      setEditingTx(null);
+      load();
+    } catch { setMsg({ type: 'error', text: 'Failed to update transaction' }); }
     setSubmitting(false);
   };
 
@@ -323,27 +358,132 @@ export default function Transfers() {
             </thead>
             <tbody>
               {pending.map(t => (
-                <tr key={t.id}>
-                  <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{t.transferDate || t.createdAt?.substring(0, 10)}</td>
-                  <td onClick={() => t.fromPlayerId && navigate(`/player/${t.fromPlayerId}`)} style={{ cursor: t.fromPlayerId ? 'pointer' : 'default' }}>
-                    <strong style={{ color: t.fromPlayerId ? '#6366f1' : '#f59e0b' }}>{t.fromPlayerName}</strong>
-                    {t.fromPlayerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{t.fromPlayerFullName}</span> : null}
-                  </td>
-                  <td onClick={() => t.toPlayerId && navigate(`/player/${t.toPlayerId}`)} style={{ cursor: t.toPlayerId ? 'pointer' : 'default' }}>
-                    <strong style={{ color: t.toPlayerId ? '#6366f1' : '#f59e0b' }}>{t.toPlayerName}</strong>
-                    {t.toPlayerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{t.toPlayerFullName}</span> : null}
-                  </td>
-                  <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{METHOD_LABELS[t.method] || t.method}</span></td>
-                  <td className="positive" style={{ whiteSpace: 'nowrap' }}><strong>{fmt(t.amount)}</strong></td>
-                  <td style={{ color: '#64748b' }}>{t.notes || '—'}</td>
-                  <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{t.createdByUsername || '—'}</td>
-                  <td>
-                    <button className="btn" style={{ padding: '4px 12px', fontSize: '0.8rem', background: '#ef4444', color: '#fff', border: 'none' }}
-                      onClick={() => handleConfirm(t.id)}>
-                      Approve
-                    </button>
-                  </td>
-                </tr>
+                <>
+                  <tr key={t.id}>
+                    <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{t.transferDate || t.createdAt?.substring(0, 10)}</td>
+                    <td onClick={() => t.fromPlayerId && navigate(`/player/${t.fromPlayerId}`)} style={{ cursor: t.fromPlayerId ? 'pointer' : 'default' }}>
+                      <strong style={{ color: t.fromPlayerId ? '#6366f1' : '#f59e0b' }}>{t.fromPlayerName}</strong>
+                      {t.fromPlayerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{t.fromPlayerFullName}</span> : null}
+                    </td>
+                    <td onClick={() => t.toPlayerId && navigate(`/player/${t.toPlayerId}`)} style={{ cursor: t.toPlayerId ? 'pointer' : 'default' }}>
+                      <strong style={{ color: t.toPlayerId ? '#6366f1' : '#f59e0b' }}>{t.toPlayerName}</strong>
+                      {t.toPlayerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{t.toPlayerFullName}</span> : null}
+                    </td>
+                    <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{METHOD_LABELS[t.method] || t.method}</span></td>
+                    <td className="positive" style={{ whiteSpace: 'nowrap' }}><strong>{fmt(t.amount)}</strong></td>
+                    <td style={{ color: '#64748b' }}>{t.notes || '—'}</td>
+                    <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{t.createdByUsername || '—'}</td>
+                    <td style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button className="btn" style={{ padding: '4px 10px', fontSize: '0.8rem', background: '#ef4444', color: '#fff', border: 'none' }}
+                        onClick={() => handleConfirm(t.id)}>
+                        Approve
+                      </button>
+                      <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                        onClick={() => setEditingTransfer(editingTransfer?.id === t.id ? null : { id: t.id, amount: t.amount, notes: t.notes || '', method: t.method })}>
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                  {editingTransfer?.id === t.id && (
+                    <tr key={`edit-${t.id}`}>
+                      <td colSpan={8} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                        <form onSubmit={handleEditTransferSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Amount (₪)</label>
+                            <input type="number" min="0.01" step="0.01" value={editingTransfer.amount}
+                              onChange={e => setEditingTransfer(f => ({ ...f, amount: e.target.value }))}
+                              style={{ width: '120px' }} />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Method</label>
+                            <select value={editingTransfer.method} onChange={e => setEditingTransfer(f => ({ ...f, method: e.target.value }))}>
+                              {METHODS.map(m => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}
+                            </select>
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Notes</label>
+                            <input type="text" value={editingTransfer.notes}
+                              onChange={e => setEditingTransfer(f => ({ ...f, notes: e.target.value }))} />
+                          </div>
+                          <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} disabled={submitting}>
+                            Save
+                          </button>
+                          <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditingTransfer(null)}>
+                            Cancel
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table></div>
+        )}
+      </div>
+
+      {/* Recent Credits & Promotions */}
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <h2>Recent Credits &amp; Promotions <span style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 400 }}>(last 30 days)</span></h2>
+        {recent.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>No recent records</div>
+        ) : (
+          <div className="table-wrap"><table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Player</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map(tx => (
+                <>
+                  <tr key={tx.id}>
+                    <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
+                    <td onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
+                      <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
+                      {tx.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{tx.playerFullName}</span> : null}
+                    </td>
+                    <td><span style={{ background: tx.type === 'CREDIT' ? '#7c3aed33' : '#166534', color: tx.type === 'CREDIT' ? '#a78bfa' : '#4ade80', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{tx.type === 'CREDIT' ? 'Manual Credit' : 'Promotion'}</span></td>
+                    <td className="negative" style={{ whiteSpace: 'nowrap' }}><strong>{fmt(tx.amount)}</strong></td>
+                    <td style={{ color: '#64748b' }}>{tx.notes || '—'}</td>
+                    <td>
+                      <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                        onClick={() => setEditingTx(editingTx?.id === tx.id ? null : { id: tx.id, amount: tx.amount, notes: tx.notes || '' })}>
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                  {editingTx?.id === tx.id && (
+                    <tr key={`edit-tx-${tx.id}`}>
+                      <td colSpan={6} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                        <form onSubmit={handleEditTxSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Amount (₪)</label>
+                            <input type="number" min="0.01" step="0.01" value={editingTx.amount}
+                              onChange={e => setEditingTx(f => ({ ...f, amount: e.target.value }))}
+                              style={{ width: '120px' }} />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Notes</label>
+                            <input type="text" value={editingTx.notes}
+                              onChange={e => setEditingTx(f => ({ ...f, notes: e.target.value }))} />
+                          </div>
+                          <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} disabled={submitting}>
+                            Save
+                          </button>
+                          <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditingTx(null)}>
+                            Cancel
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table></div>
