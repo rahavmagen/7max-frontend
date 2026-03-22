@@ -40,8 +40,6 @@ export default function Lesson() {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ fullName: '', phone: '' });
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState(null);
   const [adminDate, setAdminDate] = useState('');
@@ -64,23 +62,13 @@ export default function Lesson() {
     setRegistrations(res.data);
   }
 
-  async function openForm() {
-    setMsg(null);
-    try {
-      const res = await getMyPlayerInfo();
-      setForm({ fullName: res.data.fullName || '', phone: res.data.phone || '' });
-    } catch { setForm({ fullName: '', phone: '' }); }
-    setShowForm(true);
-  }
-
-  async function handleRegister(e) {
-    e.preventDefault();
+  async function handleRegister() {
     setSubmitting(true);
     setMsg(null);
     try {
-      await registerLesson({ fullName: form.fullName, phone: form.phone });
+      const profile = await getMyPlayerInfo();
+      await registerLesson({ fullName: profile.data.fullName || '', phone: profile.data.phone || '' });
       setMsg({ type: 'success', text: 'נרשמת בהצלחה! 🎉' });
-      setShowForm(false);
       loadEvent();
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.error || 'שגיאה בהרשמה' });
@@ -336,36 +324,6 @@ export default function Lesson() {
                     ביטול הרשמה
                   </button>
                 </div>
-              ) : showForm ? (
-                <form onSubmit={handleRegister} style={{ maxWidth: 400, margin: '0 auto', textAlign: 'right' }}>
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ color: '#64748b', fontSize: '0.82rem', display: 'block', marginBottom: 6 }}>שם מלא</label>
-                    <input style={inputStyle} value={form.fullName}
-                      onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-                      required placeholder="השם שלך" />
-                  </div>
-                  <div style={{ marginBottom: 22 }}>
-                    <label style={{ color: '#64748b', fontSize: '0.82rem', display: 'block', marginBottom: 6 }}>טלפון</label>
-                    <input style={inputStyle} value={form.phone}
-                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                      placeholder="מספר טלפון" />
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={() => setShowForm(false)} style={{
-                      background: 'transparent', color: '#64748b',
-                      border: '1px solid rgba(100,116,139,0.3)',
-                      borderRadius: 8, padding: '12px 22px', fontSize: '0.9rem', cursor: 'pointer',
-                    }}>ביטול</button>
-                    <button type="submit" disabled={submitting} style={{
-                      background: 'linear-gradient(135deg, #f59e0b, #f97316)',
-                      color: '#000', border: 'none', borderRadius: 8,
-                      padding: '12px 28px', fontSize: '0.95rem', fontWeight: 900, cursor: 'pointer',
-                      boxShadow: '0 4px 20px rgba(245,158,11,0.4)',
-                    }}>
-                      {submitting ? '...' : 'אישור הרשמה ✓'}
-                    </button>
-                  </div>
-                </form>
               ) : (
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <div style={{
@@ -373,15 +331,15 @@ export default function Lesson() {
                     background: 'linear-gradient(135deg, #f59e0b, #f97316, #ef4444, #f59e0b)',
                     filter: 'blur(8px)', opacity: 0.7, zIndex: 0,
                   }} />
-                  <button onClick={openForm} style={{
+                  <button onClick={handleRegister} disabled={submitting} style={{
                     position: 'relative', zIndex: 1,
                     background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
                     color: '#000', border: 'none', borderRadius: 12,
                     padding: '17px 52px', fontSize: '1.15rem', fontWeight: 900,
-                    cursor: 'pointer', letterSpacing: '0.2px',
+                    cursor: submitting ? 'wait' : 'pointer', letterSpacing: '0.2px',
                     boxShadow: '0 6px 30px rgba(245,158,11,0.5)',
                   }}>
-                    הרשמה לאימון ←
+                    {submitting ? '...' : 'הרשמה לאימון ←'}
                   </button>
                 </div>
               )}
