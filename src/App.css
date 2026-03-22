@@ -46,17 +46,18 @@ h2 { font-size: 1.1rem; margin-bottom: 1rem; color: #cbd5e1; }
 .card { background: #1a1d27; border: 1px solid #2d3148; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-.stat-card { background: #1a1d27; border: 1px solid #2d3148; border-radius: 12px; padding: 1.2rem 1.5rem; text-align: center; }
-.stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
-.stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 0.3rem; }
+.stat-card { background: #1a1d27; border: 1px solid #2d3148; border-top: 2px solid #f6c90e; border-radius: 12px; padding: 1.2rem 1.5rem; text-align: center; }
+.stat-card .label { font-size: 0.72rem; color: #7a8499; text-transform: uppercase; letter-spacing: 1.2px; }
+.stat-card .value { font-size: 2rem; font-weight: 700; margin-top: 0.4rem; letter-spacing: -0.5px; }
 .positive { color: #22c55e; }
 .negative { color: #ef4444; }
 .zero { color: #64748b; }
 .neutral { color: #f6c90e; }
 
 table { width: 100%; border-collapse: collapse; }
-th { text-align: left; padding: 0.7rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; border-bottom: 1px solid #2d3148; }
-td { padding: 0.8rem 1rem; border-bottom: 1px solid #1e2235; font-size: 0.9rem; }
+th { text-align: left; padding: 0.7rem 1rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.1px; color: #7a8499; border-bottom: 2px solid #2d3148; }
+td { padding: 0.85rem 1rem; border-bottom: 1px solid #1e2235; font-size: 0.9rem; }
+tbody tr:nth-child(odd) td { background: rgba(255,255,255,0.018); }
 tr:hover td { background: #1e2235; cursor: pointer; }
 tr:last-child td { border-bottom: none; }
 

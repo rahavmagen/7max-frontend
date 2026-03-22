@@ -96,7 +96,7 @@ export default function Dashboard() {
           <div className="label">Total Credit Given</div>
           <div className="value neutral">{fmt(totalCredit)}</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card" style={{ borderTopColor: totalPnl > 0 ? '#22c55e' : totalPnl < 0 ? '#ef4444' : '#64748b' }}>
           <div className="label">Total Profit / Loss</div>
           <div className={`value ${cls(totalPnl)}`}>{fmt(totalPnl)}</div>
         </div>
@@ -104,7 +104,7 @@ export default function Dashboard() {
           <div
             className="stat-card"
             onClick={() => { setShowStaleOnly(s => !s); setShowLeftClubOnly(false); }}
-            style={{ borderColor: '#f59e0b', cursor: 'pointer', outline: showStaleOnly ? '2px solid #f59e0b' : 'none' }}
+            style={{ borderTopColor: '#f59e0b', borderColor: showStaleOnly ? '#f59e0b' : '#2d3148', cursor: 'pointer', outline: showStaleOnly ? '2px solid #f59e0b' : 'none' }}
             title="Click to filter unknown players (no club ID)"
           >
             <div className="label" style={{ color: '#f59e0b' }}>Not Exists {showStaleOnly ? '(filtering)' : ''}</div>
@@ -115,7 +115,7 @@ export default function Dashboard() {
           <div
             className="stat-card"
             onClick={() => { setShowLeftClubOnly(s => !s); setShowStaleOnly(false); }}
-            style={{ cursor: 'pointer', outline: showLeftClubOnly ? '2px solid #6366f1' : 'none' }}
+            style={{ borderTopColor: '#6366f1', cursor: 'pointer', outline: showLeftClubOnly ? '2px solid #6366f1' : 'none' }}
             title="Click to filter players who left the club"
           >
             <div className="label">Left Club {showLeftClubOnly ? '(filtering)' : ''}</div>
