@@ -48,6 +48,7 @@ function AppRoutes() {
           {isPlayer && (
             <>
               <NavLink to="/games">Games</NavLink>
+              {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
               <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{auth.username}</span>
             </>
           )}
@@ -91,7 +92,7 @@ function AppRoutes() {
               <Route path="/player/:id" element={<PlayerDetail />} />
               <Route path="/games" element={<Games />} />
               <Route path="/game-results/:id" element={<GameResults />} />
-              <Route path="*" element={<Navigate to="/games" />} />
+              <Route path="*" element={<Navigate to={auth.playerId ? `/player/${auth.playerId}` : '/games'} />} />
             </>
           )}
         </Routes>

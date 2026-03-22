@@ -5,6 +5,8 @@ import { getPlayers } from '../api';
 export default function BalanceReport() {
   const [players, setPlayers] = useState([]);
   const [threshold, setThreshold] = useState('');
+  const [sortCol, setSortCol] = useState('balance');
+  const [sortDir, setSortDir] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,12 +21,26 @@ export default function BalanceReport() {
 
   const balanceClass = (b) => b > 0 ? 'positive' : b < 0 ? 'negative' : 'zero';
 
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d * -1);
+    else { setSortCol(col); setSortDir(1); }
+  };
+
+  const arrow = (col) => sortCol === col ? (sortDir === 1 ? ' ↑' : ' ↓') : '';
+
+  const thStyle = { cursor: 'pointer', userSelect: 'none' };
+
   const t = parseFloat(threshold) || 0;
   const filtered = t > 0
     ? players.filter(p => (p.balance || 0) > t || (p.balance || 0) < -t)
     : players;
 
-  const sorted = [...filtered].sort((a, b) => (a.balance || 0) - (b.balance || 0));
+  const sorted = [...filtered].sort((a, b) => {
+    const av = sortCol === 'username' ? (a.username || '') : sortCol === 'fullName' ? (a.fullName || '') : (a[sortCol] || 0);
+    const bv = sortCol === 'username' ? (b.username || '') : sortCol === 'fullName' ? (b.fullName || '') : (b[sortCol] || 0);
+    if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
+    return (av - bv) * sortDir;
+  });
 
   return (
     <div>
@@ -66,11 +82,11 @@ export default function BalanceReport() {
           <table>
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Full Name</th>
-                <th>Current Chips</th>
-                <th>Credit</th>
-                <th>Balance</th>
+                <th style={thStyle} onClick={() => handleSort('username')}>Username{arrow('username')}</th>
+                <th style={thStyle} onClick={() => handleSort('fullName')}>Full Name{arrow('fullName')}</th>
+                <th style={thStyle} onClick={() => handleSort('currentChips')}>Current Chips{arrow('currentChips')}</th>
+                <th style={thStyle} onClick={() => handleSort('creditTotal')}>Credit{arrow('creditTotal')}</th>
+                <th style={thStyle} onClick={() => handleSort('balance')}>Balance{arrow('balance')}</th>
               </tr>
             </thead>
             <tbody>
