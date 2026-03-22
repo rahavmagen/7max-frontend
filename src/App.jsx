@@ -46,8 +46,11 @@ function AppRoutes() {
   return (
     <div className="app">
       <nav className="navbar">
-        <div className="nav-brand">
+        <div className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img src="/7maxlogo.png" alt="7MAX" style={{ height: '36px', verticalAlign: 'middle' }} />
+          {isPlayer && (
+            <span style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 500 }}>{auth.username}</span>
+          )}
         </div>
         <div className="nav-links">
           {isAdmin && (
@@ -67,11 +70,10 @@ function AppRoutes() {
           )}
           {isPlayer && (
             <>
-              <NavLink to="/games">Games</NavLink>
-              <NavLink to="/lesson">אימון קאש</NavLink>
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
+              <NavLink to="/games">Games</NavLink>
               <NavLink to="/active-players">Players</NavLink>
-              <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{auth.username}</span>
+              <NavLink to="/lesson">אימון קאש</NavLink>
             </>
           )}
         </div>
