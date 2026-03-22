@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getPendingTransfers, confirmTransfer, updateTransfer, getRecentTransactions, updateTransaction } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -67,20 +67,22 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
   );
 }
 
+const TYPE_BADGE = {
+  TRANSFER: { bg: '#1e3a5f', color: '#60a5fa', label: 'Transfer' },
+  CREDIT:   { bg: '#3b1f5e', color: '#c084fc', label: 'Manual Credit' },
+  PROMOTION:{ bg: '#14532d', color: '#4ade80', label: 'Promotion' },
+};
 
 export default function Transfers() {
   const [players, setPlayers] = useState([]);
   const [pending, setPending] = useState([]);
-  const [recent, setRecent] = useState([]);
   const [activeForm, setActiveForm] = useState(null);
   const [msg, setMsg] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  // Edit transfer state
-  const [editingTransfer, setEditingTransfer] = useState(null); // { id, amount, notes, method }
-  // Edit transaction state
-  const [editingTx, setEditingTx] = useState(null); // { id, amount, notes }
+  // Edit state: { pendingType, id, amount, notes, method }
+  const [editing, setEditing] = useState(null);
 
   // Credit form
   const [creditPlayerId, setCreditPlayerId] = useState('');
@@ -97,8 +99,7 @@ export default function Transfers() {
 
   const load = () => {
     getPlayers().then(r => setPlayers(r.data));
-    getPendingTransfers().then(r => setPending(r.data));
-    getRecentTransactions(30).then(r => setRecent(r.data));
+    getAllPending().then(r => setPending(r.data));
   };
 
   useEffect(() => { load(); }, []);
@@ -146,6 +147,8 @@ export default function Transfers() {
         amount: Number(promoAmount),
         method: 'OTHER',
         notes: 'Promotion' + (promoNotes ? ' - ' + promoNotes : ''),
+        pendingConfirmation: true,
+        sourceRef: 'SCREEN:PROMO',
       });
       setMsg({ type: 'success', text: 'Promotion recorded' });
       setPromoPlayerId(''); setPromoAmount(''); setPromoNotes('');
@@ -185,43 +188,38 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
-  const handleEditTransferSubmit = async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(editingTransfer.amount);
-    if (isNaN(amount) || amount <= 0) { setMsg({ type: 'error', text: 'Amount must be positive' }); return; }
-    setSubmitting(true);
+  const handleApprove = async (item) => {
     try {
-      await updateTransfer(editingTransfer.id, { amount, notes: editingTransfer.notes || null, method: editingTransfer.method || null });
-      setMsg({ type: 'success', text: 'Transfer updated' });
-      setEditingTransfer(null);
-      load();
-    } catch { setMsg({ type: 'error', text: 'Failed to update transfer' }); }
-    setSubmitting(false);
-  };
-
-  const handleEditTxSubmit = async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(editingTx.amount);
-    if (isNaN(amount) || amount <= 0) { setMsg({ type: 'error', text: 'Amount must be positive' }); return; }
-    setSubmitting(true);
-    try {
-      await updateTransaction(editingTx.id, { amount, notes: editingTx.notes || null });
-      setMsg({ type: 'success', text: 'Transaction updated' });
-      setEditingTx(null);
-      load();
-    } catch { setMsg({ type: 'error', text: 'Failed to update transaction' }); }
-    setSubmitting(false);
-  };
-
-  const handleConfirm = async (id) => {
-    try {
-      await confirmTransfer(id);
-      setPending(prev => prev.filter(t => t.id !== id));
+      if (item.pendingType === 'TRANSFER') {
+        await confirmTransfer(item.id);
+      } else {
+        await confirmTransaction(item.id);
+      }
+      setPending(prev => prev.filter(p => p.id !== item.id || p.pendingType !== item.pendingType));
     } catch {
-      setMsg({ type: 'error', text: 'Failed to confirm transfer' });
+      setMsg({ type: 'error', text: 'Failed to approve' });
     }
   };
 
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(editing.amount);
+    if (isNaN(amount) || amount <= 0) { setMsg({ type: 'error', text: 'Amount must be positive' }); return; }
+    setSubmitting(true);
+    try {
+      if (editing.pendingType === 'TRANSFER') {
+        await updateTransfer(editing.id, { amount, notes: editing.notes || null, method: editing.method || null });
+      } else {
+        await updateTransaction(editing.id, { amount, notes: editing.notes || null });
+      }
+      setMsg({ type: 'success', text: 'Updated successfully' });
+      setEditing(null);
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to update' });
+    }
+    setSubmitting(false);
+  };
 
   return (
     <div>
@@ -334,89 +332,21 @@ export default function Transfers() {
         </div>
       )}
 
-      {/* Recent Credits & Promotions */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h2>Recent Credits &amp; Promotions <span style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 400 }}>(last 30 days)</span></h2>
-        {recent.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>No recent records</div>
-        ) : (
-          <div className="table-wrap"><table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Player</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Notes</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map(tx => (
-                <>
-                  <tr key={tx.id}>
-                    <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
-                    <td onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
-                      <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
-                      {tx.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{tx.playerFullName}</span> : null}
-                    </td>
-                    <td><span style={{ background: tx.type === 'CREDIT' ? '#7c3aed33' : '#166534', color: tx.type === 'CREDIT' ? '#a78bfa' : '#4ade80', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{tx.type === 'CREDIT' ? 'Manual Credit' : 'Promotion'}</span></td>
-                    <td style={{ whiteSpace: 'nowrap' }}><strong>{fmt(tx.amount)}</strong></td>
-                    <td style={{ color: '#64748b' }}>{tx.notes || '—'}</td>
-                    <td>
-                      <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}
-                        onClick={() => setEditingTx(editingTx?.id === tx.id ? null : { id: tx.id, amount: tx.amount, notes: tx.notes || '' })}>
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                  {editingTx?.id === tx.id && (
-                    <tr key={`edit-tx-${tx.id}`}>
-                      <td colSpan={6} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
-                        <form onSubmit={handleEditTxSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Amount (₪)</label>
-                            <input type="number" min="0.01" step="0.01" value={editingTx.amount}
-                              onChange={e => setEditingTx(f => ({ ...f, amount: e.target.value }))}
-                              style={{ width: '120px' }} />
-                          </div>
-                          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Notes</label>
-                            <input type="text" value={editingTx.notes}
-                              onChange={e => setEditingTx(f => ({ ...f, notes: e.target.value }))} />
-                          </div>
-                          <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} disabled={submitting}>
-                            Save
-                          </button>
-                          <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditingTx(null)}>
-                            Cancel
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table></div>
-        )}
-      </div>
-
-      {/* Pending Transfers */}
+      {/* Unified Pending Section */}
       <div className="card">
         <h2>
-          Pending Transfers
+          Pending
           {pending.length > 0 && <span style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 400, marginLeft: '0.5rem' }}>({pending.length} unconfirmed)</span>}
         </h2>
         {pending.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>No pending transfers</div>
+          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>No pending items</div>
         ) : (
           <div className="table-wrap"><table>
             <thead>
               <tr>
                 <th>Date</th>
-                <th>From</th>
-                <th>To</th>
+                <th>Type</th>
+                <th>Player / From → To</th>
                 <th>Method</th>
                 <th>Amount</th>
                 <th>Notes</th>
@@ -425,71 +355,101 @@ export default function Transfers() {
               </tr>
             </thead>
             <tbody>
-              {pending.map(t => (
-                <>
-                  <tr key={t.id}>
-                    <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{t.transferDate || t.createdAt?.substring(0, 10)}</td>
-                    <td onClick={() => t.fromPlayerId && navigate(`/player/${t.fromPlayerId}`)} style={{ cursor: t.fromPlayerId ? 'pointer' : 'default' }}>
-                      <strong style={{ color: t.fromPlayerId ? '#6366f1' : '#f59e0b' }}>{t.fromPlayerName}</strong>
-                      {t.fromPlayerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{t.fromPlayerFullName}</span> : null}
-                    </td>
-                    <td onClick={() => t.toPlayerId && navigate(`/player/${t.toPlayerId}`)} style={{ cursor: t.toPlayerId ? 'pointer' : 'default' }}>
-                      <strong style={{ color: t.toPlayerId ? '#6366f1' : '#f59e0b' }}>{t.toPlayerName}</strong>
-                      {t.toPlayerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{t.toPlayerFullName}</span> : null}
-                    </td>
-                    <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{METHOD_LABELS[t.method] || t.method}</span></td>
-                    <td className="positive" style={{ whiteSpace: 'nowrap' }}><strong>{fmt(t.amount)}</strong></td>
-                    <td style={{ color: '#64748b' }}>{t.notes || '—'}</td>
-                    <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{t.createdByUsername || '—'}</td>
-                    <td style={{ display: 'flex', gap: '0.4rem' }}>
-                      <button className="btn" style={{ padding: '4px 10px', fontSize: '0.8rem', background: '#ef4444', color: '#fff', border: 'none' }}
-                        onClick={() => handleConfirm(t.id)}>
-                        Approve
-                      </button>
-                      <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}
-                        onClick={() => setEditingTransfer(editingTransfer?.id === t.id ? null : { id: t.id, amount: t.amount, notes: t.notes || '', method: t.method })}>
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                  {editingTransfer?.id === t.id && (
-                    <tr key={`edit-${t.id}`}>
-                      <td colSpan={8} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
-                        <form onSubmit={handleEditTransferSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Amount (₪)</label>
-                            <input type="number" min="0.01" step="0.01" value={editingTransfer.amount}
-                              onChange={e => setEditingTransfer(f => ({ ...f, amount: e.target.value }))}
-                              style={{ width: '120px' }} />
-                          </div>
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Method</label>
-                            <select value={editingTransfer.method} onChange={e => setEditingTransfer(f => ({ ...f, method: e.target.value }))}>
-                              {METHODS.map(m => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}
-                            </select>
-                          </div>
-                          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Notes</label>
-                            <input type="text" value={editingTransfer.notes}
-                              onChange={e => setEditingTransfer(f => ({ ...f, notes: e.target.value }))} />
-                          </div>
-                          <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} disabled={submitting}>
-                            Save
-                          </button>
-                          <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditingTransfer(null)}>
-                            Cancel
-                          </button>
-                        </form>
+              {pending.map((item, idx) => {
+                const badge = TYPE_BADGE[item.pendingType] || TYPE_BADGE.CREDIT;
+                const isEditing = editing && editing.id === item.id && editing.pendingType === item.pendingType;
+                return (
+                  <>
+                    <tr key={`${item.pendingType}-${item.id}`}>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        {item.transferDate || item.transactionDate || item.createdAt?.substring(0, 10) || '—'}
+                      </td>
+                      <td>
+                        <span style={{ background: badge.bg, color: badge.color, padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                          {badge.label}
+                        </span>
+                      </td>
+                      <td>
+                        {item.pendingType === 'TRANSFER' ? (
+                          <span>
+                            <span onClick={() => item.fromPlayerId && navigate(`/player/${item.fromPlayerId}`)}
+                              style={{ color: item.fromPlayerId ? '#6366f1' : '#f59e0b', cursor: item.fromPlayerId ? 'pointer' : 'default', fontWeight: 600 }}>
+                              {item.fromPlayerName}
+                            </span>
+                            <span style={{ color: '#64748b', margin: '0 0.4rem' }}>→</span>
+                            <span onClick={() => item.toPlayerId && navigate(`/player/${item.toPlayerId}`)}
+                              style={{ color: item.toPlayerId ? '#6366f1' : '#f59e0b', cursor: item.toPlayerId ? 'pointer' : 'default', fontWeight: 600 }}>
+                              {item.toPlayerName}
+                            </span>
+                          </span>
+                        ) : (
+                          <span onClick={() => navigate(`/player/${item.playerId}`)} style={{ cursor: 'pointer' }}>
+                            <strong style={{ color: '#6366f1' }}>{item.playerName}</strong>
+                            {item.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{item.playerFullName}</span> : null}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {item.method
+                          ? <span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{METHOD_LABELS[item.method] || item.method}</span>
+                          : <span style={{ color: '#64748b' }}>—</span>}
+                      </td>
+                      <td className="positive" style={{ whiteSpace: 'nowrap' }}><strong>{fmt(item.amount)}</strong></td>
+                      <td style={{ color: '#64748b' }}>{item.notes || '—'}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{item.createdByUsername || '—'}</td>
+                      <td style={{ display: 'flex', gap: '0.4rem' }}>
+                        <button className="btn" style={{ padding: '4px 10px', fontSize: '0.8rem', background: '#ef4444', color: '#fff', border: 'none' }}
+                          onClick={() => handleApprove(item)}>
+                          Approve
+                        </button>
+                        <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                          onClick={() => setEditing(isEditing ? null : {
+                            pendingType: item.pendingType,
+                            id: item.id,
+                            amount: item.amount,
+                            notes: item.notes || '',
+                            method: item.method || '',
+                          })}>
+                          Edit
+                        </button>
                       </td>
                     </tr>
-                  )}
-                </>
-              ))}
+                    {isEditing && (
+                      <tr key={`edit-${item.pendingType}-${item.id}`}>
+                        <td colSpan={8} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                          <form onSubmit={handleEditSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <div className="form-group" style={{ marginBottom: 0 }}>
+                              <label style={{ fontSize: '0.8rem' }}>Amount (₪)</label>
+                              <input type="number" min="0.01" step="0.01" value={editing.amount}
+                                onChange={e => setEditing(f => ({ ...f, amount: e.target.value }))}
+                                style={{ width: '120px' }} />
+                            </div>
+                            {item.pendingType === 'TRANSFER' && (
+                              <div className="form-group" style={{ marginBottom: 0 }}>
+                                <label style={{ fontSize: '0.8rem' }}>Method</label>
+                                <select value={editing.method} onChange={e => setEditing(f => ({ ...f, method: e.target.value }))}>
+                                  {METHODS.map(m => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}
+                                </select>
+                              </div>
+                            )}
+                            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                              <label style={{ fontSize: '0.8rem' }}>Notes</label>
+                              <input type="text" value={editing.notes}
+                                onChange={e => setEditing(f => ({ ...f, notes: e.target.value }))} />
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} disabled={submitting}>Save</button>
+                            <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditing(null)}>Cancel</button>
+                          </form>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
             </tbody>
           </table></div>
         )}
       </div>
-
     </div>
   );
 }
