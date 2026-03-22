@@ -334,6 +334,74 @@ export default function Transfers() {
         </div>
       )}
 
+      {/* Recent Credits & Promotions */}
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <h2>Recent Credits &amp; Promotions <span style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 400 }}>(last 30 days)</span></h2>
+        {recent.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>No recent records</div>
+        ) : (
+          <div className="table-wrap"><table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Player</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Notes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map(tx => (
+                <>
+                  <tr key={tx.id}>
+                    <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
+                    <td onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
+                      <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
+                      {tx.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{tx.playerFullName}</span> : null}
+                    </td>
+                    <td><span style={{ background: tx.type === 'CREDIT' ? '#7c3aed33' : '#166534', color: tx.type === 'CREDIT' ? '#a78bfa' : '#4ade80', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{tx.type === 'CREDIT' ? 'Manual Credit' : 'Promotion'}</span></td>
+                    <td style={{ whiteSpace: 'nowrap' }}><strong>{fmt(tx.amount)}</strong></td>
+                    <td style={{ color: '#64748b' }}>{tx.notes || '—'}</td>
+                    <td>
+                      <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                        onClick={() => setEditingTx(editingTx?.id === tx.id ? null : { id: tx.id, amount: tx.amount, notes: tx.notes || '' })}>
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                  {editingTx?.id === tx.id && (
+                    <tr key={`edit-tx-${tx.id}`}>
+                      <td colSpan={6} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                        <form onSubmit={handleEditTxSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <div className="form-group" style={{ marginBottom: 0 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Amount (₪)</label>
+                            <input type="number" min="0.01" step="0.01" value={editingTx.amount}
+                              onChange={e => setEditingTx(f => ({ ...f, amount: e.target.value }))}
+                              style={{ width: '120px' }} />
+                          </div>
+                          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                            <label style={{ fontSize: '0.8rem' }}>Notes</label>
+                            <input type="text" value={editingTx.notes}
+                              onChange={e => setEditingTx(f => ({ ...f, notes: e.target.value }))} />
+                          </div>
+                          <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} disabled={submitting}>
+                            Save
+                          </button>
+                          <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditingTx(null)}>
+                            Cancel
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              ))}
+            </tbody>
+          </table></div>
+        )}
+      </div>
+
       {/* Pending Transfers */}
       <div className="card">
         <h2>
@@ -422,73 +490,6 @@ export default function Transfers() {
         )}
       </div>
 
-      {/* Recent Credits & Promotions */}
-      <div className="card" style={{ marginTop: '1.5rem' }}>
-        <h2>Recent Credits &amp; Promotions <span style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 400 }}>(last 30 days)</span></h2>
-        {recent.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>No recent records</div>
-        ) : (
-          <div className="table-wrap"><table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Player</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Notes</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map(tx => (
-                <>
-                  <tr key={tx.id}>
-                    <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
-                    <td onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
-                      <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
-                      {tx.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{tx.playerFullName}</span> : null}
-                    </td>
-                    <td><span style={{ background: tx.type === 'CREDIT' ? '#7c3aed33' : '#166534', color: tx.type === 'CREDIT' ? '#a78bfa' : '#4ade80', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{tx.type === 'CREDIT' ? 'Manual Credit' : 'Promotion'}</span></td>
-                    <td className="negative" style={{ whiteSpace: 'nowrap' }}><strong>{fmt(tx.amount)}</strong></td>
-                    <td style={{ color: '#64748b' }}>{tx.notes || '—'}</td>
-                    <td>
-                      <button className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: '0.8rem' }}
-                        onClick={() => setEditingTx(editingTx?.id === tx.id ? null : { id: tx.id, amount: tx.amount, notes: tx.notes || '' })}>
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                  {editingTx?.id === tx.id && (
-                    <tr key={`edit-tx-${tx.id}`}>
-                      <td colSpan={6} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
-                        <form onSubmit={handleEditTxSubmit} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                          <div className="form-group" style={{ marginBottom: 0 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Amount (₪)</label>
-                            <input type="number" min="0.01" step="0.01" value={editingTx.amount}
-                              onChange={e => setEditingTx(f => ({ ...f, amount: e.target.value }))}
-                              style={{ width: '120px' }} />
-                          </div>
-                          <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Notes</label>
-                            <input type="text" value={editingTx.notes}
-                              onChange={e => setEditingTx(f => ({ ...f, notes: e.target.value }))} />
-                          </div>
-                          <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} disabled={submitting}>
-                            Save
-                          </button>
-                          <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditingTx(null)}>
-                            Cancel
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  )}
-                </>
-              ))}
-            </tbody>
-          </table></div>
-        )}
-      </div>
     </div>
   );
 }
