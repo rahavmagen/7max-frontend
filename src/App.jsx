@@ -16,6 +16,7 @@ import GameResults from './pages/GameResults';
 import ActivePlayers from './pages/ActivePlayers';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
+import Lesson from './pages/Lesson';
 import './App.css';
 
 function AppRoutes() {
@@ -46,11 +47,13 @@ function AppRoutes() {
               <NavLink to="/club-income">Club Income</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
               <NavLink to="/admin-reports">Reports</NavLink>
+              <NavLink to="/lesson">אימון קאש</NavLink>
             </>
           )}
           {isPlayer && (
             <>
               <NavLink to="/games">Games</NavLink>
+              <NavLink to="/lesson">אימון קאש</NavLink>
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
               <NavLink to="/active-players">Players</NavLink>
               <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>{auth.username}</span>
@@ -89,6 +92,7 @@ function AppRoutes() {
               <Route path="/total-profit" element={<TotalProfit />} />
               <Route path="/games" element={<Games />} />
               <Route path="/game-results/:id" element={<GameResults />} />
+              <Route path="/lesson" element={<Lesson />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}
@@ -98,6 +102,7 @@ function AppRoutes() {
               <Route path="/games" element={<Games />} />
               <Route path="/game-results/:id" element={<GameResults />} />
               <Route path="/active-players" element={<ActivePlayers />} />
+              <Route path="/lesson" element={<Lesson />} />
               <Route path="*" element={<Navigate to={auth.playerId ? `/player/${auth.playerId}` : '/games'} />} />
             </>
           )}

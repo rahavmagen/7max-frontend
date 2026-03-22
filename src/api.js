@@ -62,4 +62,11 @@ export const getLastNightMtt = (date) => api.get('/transfers/last-night-mtt', { 
 export const getRecentTransactions = (days) => api.get('/transactions/recent', { params: { days } });
 export const updateTransaction = (id, data) => api.put(`/transactions/${id}`, data);
 
+export const getLessonEvent = () => api.get('/lesson/event');
+export const setLessonEvent = (data) => api.post('/lesson/event', data);
+export const getLessonRegistrations = () => api.get('/lesson/registrations');
+export const registerLesson = (data) => api.post('/lesson/register', data);
+export const unregisterLesson = () => api.delete('/lesson/register');
+export const getMyPlayerInfo = () => api.get('/lesson/my-player');
+
 export default api;
