@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer } from '../api';
 import { useAuth } from '../auth/AuthContext';
 
 export default function PlayerDetail() {
@@ -19,6 +19,9 @@ export default function PlayerDetail() {
   const [loginStats, setLoginStats] = useState(null);
   const [showRoleForm, setShowRoleForm] = useState(false);
   const [newRole, setNewRole] = useState('');
+  const [showEditInfo, setShowEditInfo] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [msg, setMsg] = useState(null);
   const defaultDateFrom = !isAdmin
     ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10)
@@ -59,6 +62,18 @@ export default function PlayerDetail() {
     }
   };
 
+  const handleEditInfo = async (e) => {
+    e.preventDefault();
+    try {
+      await updatePlayer(id, { ...player, fullName: editName, phone: editPhone });
+      setPlayer(p => ({ ...p, fullName: editName, phone: editPhone }));
+      setMsg({ type: 'success', text: 'פרטי השחקן עודכנו' });
+      setShowEditInfo(false);
+    } catch {
+      setMsg({ type: 'error', text: 'שגיאה בעדכון הפרטים' });
+    }
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
     try {
@@ -94,6 +109,9 @@ export default function PlayerDetail() {
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
+              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); }}>
+                ✏️ Edit Info
+              </button>
               <button className="btn btn-secondary" onClick={() => { setShowResetPass(!showResetPass); setNewPass(''); }}>
                 🔑 Reset Pass
               </button>
@@ -162,6 +180,28 @@ export default function PlayerDetail() {
       )}
 
 
+
+      {showEditInfo && isAdmin && (
+        <div className="card">
+          <h2>עריכת פרטים — {player.username}</h2>
+          <form onSubmit={handleEditInfo}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>שם מלא</label>
+                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="שם מלא" />
+              </div>
+              <div className="form-group">
+                <label>טלפון</label>
+                <input type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="מספר טלפון" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button type="submit" className="btn btn-success">שמור</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowEditInfo(false)}>ביטול</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {msg && (
         <div className={`alert alert-${msg.type}`} onClick={() => setMsg(null)}>
