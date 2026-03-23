@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { changePassword } from '../api';
+import mammoth from 'mammoth';
 
 export default function ChangePassword() {
   const { auth, clearMustChange, logout } = useAuth();
@@ -10,6 +11,16 @@ export default function ChangePassword() {
   const [loading, setLoading] = useState(false);
   const [takanonOpen, setTakanonOpen] = useState(false);
   const [takanonApproved, setTakanonApproved] = useState(false);
+  const [takanonHtml, setTakanonHtml] = useState('');
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    fetch('/takanon.docx')
+      .then(r => r.arrayBuffer())
+      .then(buf => mammoth.convertToHtml({ arrayBuffer: buf }))
+      .then(result => setTakanonHtml(result.value))
+      .catch(() => setTakanonHtml('<p style="color:#ef4444">שגיאה בטעינת התקנון</p>'));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,17 +94,16 @@ export default function ChangePassword() {
           <div style={{ background: '#0f1117', border: '1px solid #2d3148', borderRadius: '8px', padding: '0.75rem 1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: takanonOpen ? '0.75rem' : 0 }}>
               <span style={{ color: '#94a3b8', fontSize: '0.875rem', fontWeight: 600 }}>תקנון המועדון</span>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <a href="/takanon.docx" download style={{ color: '#f59e0b', fontSize: '0.8rem', textDecoration: 'none' }}>⬇ הורדה</a>
-                <button type="button" onClick={() => setTakanonOpen(o => !o)}
-                  style={{ background: 'none', border: '1px solid #334155', borderRadius: '4px', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', padding: '0.2rem 0.5rem' }}>
-                  {takanonOpen ? 'סגור ▲' : 'קרא ▼'}
-                </button>
-              </div>
+              <button type="button" onClick={() => setTakanonOpen(o => !o)}
+                style={{ background: 'none', border: '1px solid #334155', borderRadius: '4px', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', padding: '0.2rem 0.5rem' }}>
+                {takanonOpen ? 'סגור ▲' : 'קרא ▼'}
+              </button>
             </div>
             {takanonOpen && (
-              <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/takanon.docx')}`}
-                style={{ width: '100%', height: '300px', border: 'none', borderRadius: '4px' }} title="תקנון המועדון" />
+              <div ref={scrollRef}
+                style={{ height: '300px', overflowY: 'scroll', background: '#fff', borderRadius: '6px', padding: '1rem', color: '#1a1a1a', fontSize: '0.85rem', direction: 'rtl', textAlign: 'right', lineHeight: 1.6 }}
+                dangerouslySetInnerHTML={{ __html: takanonHtml }}
+              />
             )}
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.75rem', cursor: 'pointer' }}>
               <input type="checkbox" checked={takanonApproved} onChange={e => setTakanonApproved(e.target.checked)}
