@@ -64,7 +64,7 @@ export default function Dashboard() {
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
-    const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     return (n < 0 ? '-' : '') + '₪' + abs;
   };
 
