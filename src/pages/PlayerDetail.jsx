@@ -91,6 +91,7 @@ export default function PlayerDetail() {
       <div className="page-header">
         {isAdmin && <button className="back-btn" onClick={() => navigate('/')}>← Back to Dashboard</button>}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
               <button className="btn btn-secondary" onClick={() => { setShowResetPass(!showResetPass); setNewPass(''); }}>

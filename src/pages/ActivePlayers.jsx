@@ -16,7 +16,10 @@ export default function ActivePlayers() {
 
   return (
     <div>
-      <h1>Active Players</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <h1 style={{ margin: 0 }}>Active Players</h1>
+        <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none', fontSize: '0.875rem' }}>📄 תקנון המועדון</a>
+      </div>
       <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
         Players who participated in at least one game in the last 30 days.
       </p>

@@ -8,10 +8,13 @@ export default function ChangePassword() {
   const [show, setShow] = useState({ old: false, new: false, confirm: false });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [takanonOpen, setTakanonOpen] = useState(false);
+  const [takanonApproved, setTakanonApproved] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!takanonApproved) { setError('עליך לאשר את תקנון המועדון'); return; }
     if (form.newPassword !== form.confirm) { setError('הסיסמאות אינן תואמות'); return; }
     if (form.newPassword.length < 4) { setError('הסיסמא חייבת להכיל לפחות 4 תווים'); return; }
     setLoading(true);
@@ -77,8 +80,32 @@ export default function ChangePassword() {
               </button>
             </div>
           </div>
-          <button type="submit" disabled={loading}
-            style={{ background: loading ? '#334155' : '#f59e0b', color: '#000', border: 'none', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', marginTop: '0.5rem' }}>
+          <div style={{ background: '#0f1117', border: '1px solid #2d3148', borderRadius: '8px', padding: '0.75rem 1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: takanonOpen ? '0.75rem' : 0 }}>
+              <span style={{ color: '#94a3b8', fontSize: '0.875rem', fontWeight: 600 }}>תקנון המועדון</span>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <a href="/takanon.docx" download style={{ color: '#f59e0b', fontSize: '0.8rem', textDecoration: 'none' }}>⬇ הורדה</a>
+                <button type="button" onClick={() => setTakanonOpen(o => !o)}
+                  style={{ background: 'none', border: '1px solid #334155', borderRadius: '4px', color: '#94a3b8', fontSize: '0.75rem', cursor: 'pointer', padding: '0.2rem 0.5rem' }}>
+                  {takanonOpen ? 'סגור ▲' : 'קרא ▼'}
+                </button>
+              </div>
+            </div>
+            {takanonOpen && (
+              <iframe src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(window.location.origin + '/takanon.docx')}`}
+                style={{ width: '100%', height: '300px', border: 'none', borderRadius: '4px' }} title="תקנון המועדון" />
+            )}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.75rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={takanonApproved} onChange={e => setTakanonApproved(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }} />
+              <span style={{ color: takanonApproved ? '#e2e8f0' : '#94a3b8', fontSize: '0.875rem' }}>
+                קראתי ואני מאשר את תקנון המועדון
+              </span>
+            </label>
+          </div>
+
+          <button type="submit" disabled={loading || !takanonApproved}
+            style={{ background: (loading || !takanonApproved) ? '#334155' : '#f59e0b', color: (loading || !takanonApproved) ? '#64748b' : '#000', border: 'none', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem', fontWeight: 700, cursor: (loading || !takanonApproved) ? 'not-allowed' : 'pointer', marginTop: '0.5rem' }}>
             {loading ? 'שומר...' : 'שמור סיסמא חדשה'}
           </button>
         </form>
