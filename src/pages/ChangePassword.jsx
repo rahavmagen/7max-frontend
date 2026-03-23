@@ -12,7 +12,16 @@ export default function ChangePassword() {
   const [takanonOpen, setTakanonOpen] = useState(false);
   const [takanonApproved, setTakanonApproved] = useState(false);
   const [takanonHtml, setTakanonHtml] = useState('');
+  const [takanonRead, setTakanonRead] = useState(false);
   const scrollRef = useRef(null);
+
+  const handleTakanonScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
+      setTakanonRead(true);
+    }
+  };
 
   useEffect(() => {
     fetch('/takanon.docx')
@@ -100,14 +109,19 @@ export default function ChangePassword() {
               </button>
             </div>
             {takanonOpen && (
-              <div ref={scrollRef}
+              <div ref={scrollRef} onScroll={handleTakanonScroll}
                 style={{ height: '300px', overflowY: 'scroll', background: '#fff', borderRadius: '6px', padding: '1rem', color: '#1a1a1a', fontSize: '0.85rem', direction: 'rtl', textAlign: 'right', lineHeight: 1.6 }}
                 dangerouslySetInnerHTML={{ __html: takanonHtml }}
               />
+              {!takanonRead && (
+                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem' }}>
+                  ↓ גלול עד לסוף התקנון כדי לאשר
+                </div>
+              )}
             )}
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.75rem', cursor: 'pointer' }}>
-              <input type="checkbox" checked={takanonApproved} onChange={e => setTakanonApproved(e.target.checked)}
-                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.75rem', cursor: takanonRead ? 'pointer' : 'not-allowed', opacity: takanonRead ? 1 : 0.4 }}>
+              <input type="checkbox" checked={takanonApproved} disabled={!takanonRead} onChange={e => setTakanonApproved(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: takanonRead ? 'pointer' : 'not-allowed', accentColor: '#f59e0b' }} />
               <span style={{ color: takanonApproved ? '#e2e8f0' : '#94a3b8', fontSize: '0.875rem' }}>
                 קראתי ואני מאשר את תקנון המועדון
               </span>
