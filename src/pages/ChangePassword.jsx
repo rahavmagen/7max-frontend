@@ -109,15 +109,17 @@ export default function ChangePassword() {
               </button>
             </div>
             {takanonOpen && (
-              <div ref={scrollRef} onScroll={handleTakanonScroll}
-                style={{ height: '300px', overflowY: 'scroll', background: '#fff', borderRadius: '6px', padding: '1rem', color: '#1a1a1a', fontSize: '0.85rem', direction: 'rtl', textAlign: 'right', lineHeight: 1.6 }}
-                dangerouslySetInnerHTML={{ __html: takanonHtml }}
-              />
-              {!takanonRead && (
-                <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem' }}>
-                  ↓ גלול עד לסוף התקנון כדי לאשר
-                </div>
-              )}
+              <>
+                <div ref={scrollRef} onScroll={handleTakanonScroll}
+                  style={{ height: '300px', overflowY: 'scroll', background: '#fff', borderRadius: '6px', padding: '1rem', color: '#1a1a1a', fontSize: '0.85rem', direction: 'rtl', textAlign: 'right', lineHeight: 1.6 }}
+                  dangerouslySetInnerHTML={{ __html: takanonHtml }}
+                />
+                {!takanonRead && (
+                  <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem' }}>
+                    ↓ גלול עד לסוף התקנון כדי לאשר
+                  </div>
+                )}
+              </>
             )}
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.75rem', cursor: takanonRead ? 'pointer' : 'not-allowed', opacity: takanonRead ? 1 : 0.4 }}>
               <input type="checkbox" checked={takanonApproved} disabled={!takanonRead} onChange={e => setTakanonApproved(e.target.checked)}
