@@ -188,7 +188,7 @@ export default function Lesson() {
             letterSpacing: '0.3px',
             boxShadow: '0 0 16px rgba(245,158,11,0.2)',
           }}>
-            ✦ בלעדי לקהילת מקס7
+            ✦ חינם לשחקני 7מקס פעילים
           </span>
         </div>
 
