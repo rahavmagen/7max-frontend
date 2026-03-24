@@ -23,7 +23,8 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
     p.id !== excludeId &&
     (search === '' ||
       p.username.toLowerCase().includes(search.toLowerCase()) ||
-      (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())))
+      (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
+      (p.phone && p.phone.includes(search)))
   );
 
   const handleSelect = (val) => { onChange(val); setOpen(false); setSearch(''); };
