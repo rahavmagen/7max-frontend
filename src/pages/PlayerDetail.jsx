@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance } from '../api';
 import { useAuth } from '../auth/AuthContext';
 
 export default function PlayerDetail() {
@@ -22,6 +22,9 @@ export default function PlayerDetail() {
   const [showEditInfo, setShowEditInfo] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [showSetBalance, setShowSetBalance] = useState(false);
+  const [newBalance, setNewBalance] = useState('');
+  const [balanceNotes, setBalanceNotes] = useState('');
   const [msg, setMsg] = useState(null);
   const defaultDateFrom = !isAdmin
     ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10)
@@ -74,6 +77,21 @@ export default function PlayerDetail() {
     }
   };
 
+  const handleSetBalance = async (e) => {
+    e.preventDefault();
+    try {
+      const updated = await setPlayerBalance(id, parseFloat(newBalance), balanceNotes);
+      setPlayer(updated.data);
+      setMsg({ type: 'success', text: `Balance updated to ${fmt(parseFloat(newBalance))}` });
+      setShowSetBalance(false);
+      setNewBalance('');
+      setBalanceNotes('');
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to update balance' });
+    }
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
     try {
@@ -111,6 +129,9 @@ export default function PlayerDetail() {
             <>
               <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); }}>
                 ✏️ Edit Info
+              </button>
+              <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
+                ⚖️ Set Balance
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowResetPass(!showResetPass); setNewPass(''); }}>
                 🔑 Reset Pass
@@ -198,6 +219,31 @@ export default function PlayerDetail() {
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button type="submit" className="btn btn-success">שמור</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowEditInfo(false)}>ביטול</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {showSetBalance && isAdmin && (
+        <div className="card" style={{ borderTop: '2px solid #ef4444' }}>
+          <h2>⚖️ Set Balance — {player.username}</h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Current balance: <strong className={balanceClass(player.balance)}>{fmt(player.balance)}</strong>. This directly overwrites the balance (use only to fix errors).
+          </p>
+          <form onSubmit={handleSetBalance}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>New Balance (₪)</label>
+                <input type="number" step="0.01" required value={newBalance} onChange={e => setNewBalance(e.target.value)} placeholder="e.g. -1500" />
+              </div>
+              <div className="form-group">
+                <label>Reason / Notes</label>
+                <input type="text" value={balanceNotes} onChange={e => setBalanceNotes(e.target.value)} placeholder="Why are you adjusting?" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button type="submit" className="btn btn-danger">Set Balance</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowSetBalance(false)}>Cancel</button>
             </div>
           </form>
         </div>

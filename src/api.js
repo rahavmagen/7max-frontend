@@ -20,6 +20,7 @@ export const getPlayer = (id) => api.get(`/players/${id}`);
 export const createPlayer = (data) => api.post('/players', data);
 export const updatePlayer = (id, data) => api.put(`/players/${id}`, data);
 export const updateCredit = (id, delta, notes) => api.patch(`/players/${id}/credit`, { delta, notes });
+export const setPlayerBalance = (id, balance, notes) => api.patch(`/players/${id}/balance`, { balance, notes });
 export const addDeposit = (id, amount, notes) => api.post(`/players/${id}/deposit`, { amount, notes });
 export const getPlayerTransactions = (id) => api.get(`/players/${id}/transactions`);
 export const getPlayerResults = (id) => api.get(`/reports/player/${id}/results`);
