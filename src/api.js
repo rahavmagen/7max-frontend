@@ -53,6 +53,7 @@ export const comparePlayersWithXls = (file) => {
 };
 
 export const createTransfer = (data) => api.post('/transfers', data);
+export const createSettlement = (data) => api.post('/transfers/settlement', data);
 export const getPendingTransfers = () => api.get('/transfers/pending');
 export const getAllPending = () => api.get('/transfers/all-pending');
 export const confirmTransfer = (id) => api.post(`/transfers/${id}/confirm`);

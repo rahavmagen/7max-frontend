@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, createTransfer } from '../api';
+import { getPlayers, createSettlement } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -54,21 +54,25 @@ export default function BalanceReport() {
   const [minPayment, setMinPayment] = useState('');
   const [sortCol, setSortCol] = useState('balance');
   const [sortDir, setSortDir] = useState(1);
-  const [settlements, setSettlements] = useState([]);
+  const [settlements, setSettlements] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('settlementsList') || '[]'); } catch { return []; }
+  });
   const [statuses, setStatuses] = useState(() => {
     try { return JSON.parse(localStorage.getItem('settlementStatuses') || '{}'); } catch { return {}; }
   });
   const [recording, setRecording] = useState({});
-  const [recorded, setRecorded] = useState({});
+  const [recorded, setRecorded] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('settlementRecorded') || '{}'); } catch { return {}; }
+  });
   const [defaultMethod, setDefaultMethod] = useState('CASH');
   const [noTransfer, setNoTransfer] = useState(new Set());
   const navigate = useNavigate();
 
   useEffect(() => { getPlayers().then(r => setPlayers(r.data)); }, []);
 
-  useEffect(() => {
-    localStorage.setItem('settlementStatuses', JSON.stringify(statuses));
-  }, [statuses]);
+  useEffect(() => { localStorage.setItem('settlementStatuses', JSON.stringify(statuses)); }, [statuses]);
+  useEffect(() => { localStorage.setItem('settlementsList', JSON.stringify(settlements)); }, [settlements]);
+  useEffect(() => { localStorage.setItem('settlementRecorded', JSON.stringify(recorded)); }, [recorded]);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '0';
@@ -95,23 +99,46 @@ export default function BalanceReport() {
   });
 
   const handleCalculate = () => {
-    setSettlements([]);
     setStatuses({});
     setRecorded({});
     localStorage.removeItem('settlementStatuses');
+    localStorage.removeItem('settlementRecorded');
     const result = calculateSettlements(filtered.filter(p => !noTransfer.has(p.id)), minPayment);
     setSettlements(result);
   };
 
-  const setStatus = (id, status) => {
+  const setStatus = async (id, status) => {
     setStatuses(prev => ({ ...prev, [id]: status }));
     setSettlements(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+    // When marking complete, auto-record transfer and refresh balances
+    if (status === 'complete' && !recorded[id]) {
+      const s = settlements.find(x => x.id === id);
+      if (s) {
+        setRecording(prev => ({ ...prev, [id]: true }));
+        try {
+          await createSettlement({
+            fromPlayerId: s.fromId,
+            toPlayerId: s.toId,
+            amount: s.amount,
+            method: defaultMethod,
+            notes: `Settlement: ${s.fromName} → ${s.toName}`,
+          });
+          setRecorded(prev => ({ ...prev, [id]: true }));
+          // Refresh player balances
+          getPlayers().then(r => setPlayers(r.data));
+        } catch (e) {
+          alert('Failed to record transfer: ' + (e.response?.data?.error || e.message));
+        } finally {
+          setRecording(prev => ({ ...prev, [id]: false }));
+        }
+      }
+    }
   };
 
   const handleRecord = async (s) => {
     setRecording(prev => ({ ...prev, [s.id]: true }));
     try {
-      await createTransfer({
+      await createSettlement({
         fromPlayerId: s.fromId,
         toPlayerId: s.toId,
         amount: s.amount,
@@ -119,6 +146,7 @@ export default function BalanceReport() {
         notes: `Settlement: ${s.fromName} → ${s.toName}`,
       });
       setRecorded(prev => ({ ...prev, [s.id]: true }));
+      getPlayers().then(r => setPlayers(r.data));
     } catch (e) {
       alert('Failed to record transfer: ' + (e.response?.data?.error || e.message));
     } finally {
