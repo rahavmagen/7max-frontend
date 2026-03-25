@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername } from '../api';
 import { useAuth } from '../auth/AuthContext';
 
 export default function PlayerDetail() {
@@ -22,6 +22,7 @@ export default function PlayerDetail() {
   const [showEditInfo, setShowEditInfo] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editUsername, setEditUsername] = useState('');
   const [showSetBalance, setShowSetBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
   const [balanceNotes, setBalanceNotes] = useState('');
@@ -68,12 +69,18 @@ export default function PlayerDetail() {
   const handleEditInfo = async (e) => {
     e.preventDefault();
     try {
+      const usernameChanged = editUsername.trim() && editUsername.trim() !== player.username;
+      if (usernameChanged) {
+        const renamed = await renamePlayerUsername(id, editUsername.trim());
+        setPlayer(p => ({ ...p, username: renamed.data.username }));
+      }
       await updatePlayer(id, { ...player, fullName: editName, phone: editPhone });
       setPlayer(p => ({ ...p, fullName: editName, phone: editPhone }));
       setMsg({ type: 'success', text: 'פרטי השחקן עודכנו' });
       setShowEditInfo(false);
-    } catch {
-      setMsg({ type: 'error', text: 'שגיאה בעדכון הפרטים' });
+      load();
+    } catch (err) {
+      setMsg({ type: 'error', text: err?.response?.data?.error || 'שגיאה בעדכון הפרטים' });
     }
   };
 
@@ -127,7 +134,7 @@ export default function PlayerDetail() {
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
-              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); }}>
+              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); }}>
                 ✏️ Edit Info
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
@@ -207,6 +214,10 @@ export default function PlayerDetail() {
           <h2>עריכת פרטים — {player.username}</h2>
           <form onSubmit={handleEditInfo}>
             <div className="form-row">
+              <div className="form-group">
+                <label>Username</label>
+                <input type="text" value={editUsername} onChange={e => setEditUsername(e.target.value)} placeholder="Username" />
+              </div>
               <div className="form-group">
                 <label>שם מלא</label>
                 <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="שם מלא" />
