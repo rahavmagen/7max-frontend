@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getHandsReport } from '../api';
+import { getHandsReport, getFridayRakeReport } from '../api';
 
 export default function AdminReports() {
   const navigate = useNavigate();
@@ -14,6 +14,17 @@ export default function AdminReports() {
   const [rows, setRows] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [fridayRows, setFridayRows] = useState(null);
+  const [fridayLoading, setFridayLoading] = useState(true);
+  const [fridayError, setFridayError] = useState('');
+
+  useEffect(() => {
+    getFridayRakeReport()
+      .then(res => setFridayRows(res.data))
+      .catch(() => setFridayError('שגיאה בטעינת דוח ריק שישי'))
+      .finally(() => setFridayLoading(false));
+  }, []);
 
   const run = async (e) => {
     e.preventDefault();
@@ -120,6 +131,77 @@ export default function AdminReports() {
               </table></div>
             )}
           </div>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <h2 style={{ marginTop: 0, color: '#e2e8f0' }}>ריק שישי — משחקים מ-18:00</h2>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+          כל הגיימים שהתחילו ביום שישי החל מ-18:00 ואילך
+        </p>
+
+        {fridayLoading && <div style={{ color: '#64748b' }}>טוען...</div>}
+        {fridayError && (
+          <div style={{ color: '#ef4444', padding: '0.75rem', background: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>
+            {fridayError}
+          </div>
+        )}
+        {fridayRows !== null && !fridayLoading && (
+          fridayRows.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>לא נמצאו משחקי שישי</div>
+          ) : (
+            <>
+              <div style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                <strong style={{ color: '#e2e8f0' }}>{fridayRows.length}</strong> גיימים
+                &nbsp;|&nbsp; סה"כ ריק:&nbsp;
+                <strong style={{ color: '#a5b4fc' }}>
+                  {fridayRows.reduce((s, r) => s + Number(r.totalRake || 0), 0).toLocaleString()}
+                </strong>
+              </div>
+              <div className="table-wrap"><table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>תאריך</th>
+                    <th>שעת התחלה</th>
+                    <th>שולחן</th>
+                    <th>סוג</th>
+                    <th>שחקנים</th>
+                    <th>ריק</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fridayRows.map((r, i) => {
+                    const dt = r.startTime ? new Date(r.startTime) : null;
+                    const dateStr = dt ? dt.toLocaleDateString('he-IL') : '—';
+                    const timeStr = dt ? dt.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '—';
+                    return (
+                      <tr key={r.sessionId}>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{i + 1}</td>
+                        <td>{dateStr}</td>
+                        <td style={{ color: '#94a3b8' }}>{timeStr}</td>
+                        <td><strong>{r.tableName || '—'}</strong></td>
+                        <td style={{ color: '#94a3b8' }}>{r.gameType || '—'}</td>
+                        <td style={{ color: '#64748b' }}>{r.playerCount}</td>
+                        <td>
+                          <span style={{
+                            background: Number(r.totalRake) > 0 ? '#2d3148' : 'rgba(100,116,139,0.15)',
+                            padding: '2px 10px',
+                            borderRadius: '20px',
+                            fontWeight: 700,
+                            color: Number(r.totalRake) > 0 ? '#a5b4fc' : '#64748b',
+                            fontSize: '0.95rem',
+                          }}>
+                            {Number(r.totalRake).toLocaleString()}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table></div>
+            </>
+          )
         )}
       </div>
     </div>
