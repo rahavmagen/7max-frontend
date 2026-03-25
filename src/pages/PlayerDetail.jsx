@@ -448,6 +448,11 @@ export default function PlayerDetail() {
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                   Total: <strong className={balanceClass(totalPnl)}>{fmt(totalPnl)}</strong>
                 </span>
+                {isAdmin && (
+                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                    Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
+                  </span>
+                )}
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                   Current Balance{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}: <strong className={balanceClass(player.balance)}>{fmt(player.balance)}</strong>
                 </span>
