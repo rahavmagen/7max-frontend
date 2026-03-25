@@ -32,6 +32,8 @@ export default function PlayerDetail() {
     : '';
   const [dateFrom, setDateFrom] = useState(defaultDateFrom);
   const [dateTo, setDateTo] = useState('');
+  const [gameTypeFilter, setGameTypeFilter] = useState('');
+  const [resultsSort, setResultsSort] = useState({ col: 'date', dir: -1 });
 
   const load = () => {
     setLoadError(false);
@@ -114,15 +116,48 @@ export default function PlayerDetail() {
   if (loadError) return <div style={{ padding: '2rem', color: '#ef4444' }}>Could not load player data. Please try again.</div>;
   if (!player) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
-  const filteredResults = results.filter(r => {
-    if (!r.session) return false;
-    if (!r.session?.startTime) return false;
-    const d = r.session.startTime.substring(0, 10);
-    if (dateFrom && d < dateFrom) return false;
-    if (dateTo && d > dateTo) return false;
-    return true;
-  });
-  const totalPnl = filteredResults.reduce((s, r) => s + (r.resultAmount || 0), 0);
+  const gameTypes = [...new Set(results.filter(r => r.session?.gameType).map(r => r.session.gameType))].sort();
+
+  const filteredResults = (() => {
+    let list = results.filter(r => {
+      if (!r.session) return false;
+      if (!r.session?.startTime) return false;
+      const d = r.session.startTime.substring(0, 10);
+      if (dateFrom && d < dateFrom) return false;
+      if (dateTo && d > dateTo) return false;
+      if (gameTypeFilter && r.session.gameType !== gameTypeFilter) return false;
+      return true;
+    });
+    const isTournament = (r) => r.session && ['MTT', 'SNG', 'AoF', 'SPIN_GOLD'].includes(r.session.gameType);
+    const getPnl = (r) => isTournament(r) ? ((r.resultAmount || 0) - (r.buyIn || 0)) : (r.resultAmount || 0);
+    list = [...list].sort((a, b) => {
+      const { col, dir } = resultsSort;
+      if (col === 'date') return (a.session?.startTime || '').localeCompare(b.session?.startTime || '') * dir;
+      if (col === 'table') return (a.session?.tableName || '').localeCompare(b.session?.tableName || '') * dir;
+      if (col === 'game') return (a.session?.gameType || '').localeCompare(b.session?.gameType || '') * dir;
+      if (col === 'buyin') return ((a.buyIn || 0) - (b.buyIn || 0)) * dir;
+      if (col === 'prize') return ((a.resultAmount || 0) - (b.resultAmount || 0)) * dir;
+      if (col === 'hands') return ((a.handsPlayed || 0) - (b.handsPlayed || 0)) * dir;
+      if (col === 'rake') return ((a.rakePaid || 0) - (b.rakePaid || 0)) * dir;
+      if (col === 'pnl') return (getPnl(a) - getPnl(b)) * dir;
+      return 0;
+    });
+    return list;
+  })();
+
+  const toggleResultsSort = (col) => setResultsSort(s => s.col === col ? { col, dir: s.dir * -1 } : { col, dir: -1 });
+  const sortArrow = (col) => resultsSort.col === col ? (resultsSort.dir === 1 ? ' ↑' : ' ↓') : ' ↕';
+  const thSort = (col, label, style = {}) => (
+    <th onClick={() => toggleResultsSort(col)}
+      style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap', ...style }}>
+      {label}<span style={{ opacity: 0.45, fontSize: '0.75em' }}>{sortArrow(col)}</span>
+    </th>
+  );
+
+  const totalPnl = filteredResults.reduce((s, r) => {
+    const isTournament = r.session && ['MTT', 'SNG', 'AoF', 'SPIN_GOLD'].includes(r.session.gameType);
+    return s + (isTournament ? ((r.resultAmount || 0) - (r.buyIn || 0)) : (r.resultAmount || 0));
+  }, 0);
   const totalHands = filteredResults.reduce((s, r) => s + (r.handsPlayed || 0), 0);
   const totalRake = filteredResults.reduce((s, r) => s + (r.rakePaid || 0), 0);
 
@@ -381,13 +416,27 @@ export default function PlayerDetail() {
               <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
               <input type="date" lang="he" value={dateTo} onChange={e => setDateTo(e.target.value)}
                 style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-              {(dateFrom || dateTo) && (
-                <button onClick={() => { setDateFrom(''); setDateTo(''); }}
+              {(dateFrom || dateTo || gameTypeFilter) && (
+                <button onClick={() => { setDateFrom(''); setDateTo(''); setGameTypeFilter(''); }}
                   style={{ background: 'none', border: '1px solid #2d3148', color: '#94a3b8', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
                   Clear
                 </button>
               )}
             </div>
+            {gameTypes.length > 1 && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                <button onClick={() => setGameTypeFilter('')}
+                  style={{ background: gameTypeFilter === '' ? '#6366f1' : '#1a1d2e', border: '1px solid #2d3148', color: gameTypeFilter === '' ? '#fff' : '#94a3b8', padding: '3px 12px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                  All
+                </button>
+                {gameTypes.map(gt => (
+                  <button key={gt} onClick={() => setGameTypeFilter(gt === gameTypeFilter ? '' : gt)}
+                    style={{ background: gameTypeFilter === gt ? '#6366f1' : '#1a1d2e', border: '1px solid #2d3148', color: gameTypeFilter === gt ? '#fff' : '#94a3b8', padding: '3px 12px', borderRadius: '20px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                    {gt}
+                  </button>
+                ))}
+              </div>
+            )}
             {filteredResults.length > 0 && (
               <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', padding: '0.75rem 1rem', background: '#1a1d2e', borderRadius: '8px', flexWrap: 'wrap' }}>
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
@@ -407,14 +456,14 @@ export default function PlayerDetail() {
             <div className="table-wrap"><table>
               <thead>
                 <tr>
-                  <th style={{ whiteSpace: 'nowrap' }}>Date</th>
-                  <th>Table</th>
-                  <th>Game</th>
-                  <th style={{ whiteSpace: 'nowrap' }}>Buy-in</th>
-                  <th style={{ whiteSpace: 'nowrap' }}>Prize</th>
-                  <th style={{ whiteSpace: 'nowrap' }}>Hands</th>
-                  {isAdmin && <th style={{ color: '#f59e0b', whiteSpace: 'nowrap' }}>Rake</th>}
-                  <th style={{ whiteSpace: 'nowrap' }}>Profit / Loss</th>
+                  {thSort('date', 'Date')}
+                  {thSort('table', 'Table')}
+                  {thSort('game', 'Game')}
+                  {thSort('buyin', 'Buy-in')}
+                  {thSort('prize', 'Prize')}
+                  {thSort('hands', 'Hands')}
+                  {isAdmin && thSort('rake', 'Rake', { color: '#f59e0b' })}
+                  {thSort('pnl', 'Profit / Loss')}
                 </tr>
               </thead>
               <tbody>
