@@ -334,7 +334,15 @@ export default function PlayerDetail() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map(t => (
+              {transactions.map(t => {
+                const isTransfer = t.sourceRef && (t.sourceRef.startsWith('TRANSFER:') || t.sourceRef.startsWith('SETTLEMENT:'));
+                const isOutgoing = isTransfer && t.notes && /^(Payment to|Transfer to|Settlement payment to)/i.test(t.notes);
+                const isIncoming = isTransfer && t.notes && /^(Cashout from|Transfer from|Settlement received from)/i.test(t.notes);
+                const amountClass = isTransfer
+                  ? (isOutgoing ? 'negative' : isIncoming ? 'positive' : (t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative'))
+                  : (t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative');
+                const displayAmount = isOutgoing ? fmt(-t.amount) : fmt(t.amount);
+                return (
                 <tr key={t.id}>
                   <td>{t.transactionDate || '—'}</td>
                   <td>
@@ -342,12 +350,13 @@ export default function PlayerDetail() {
                       {t.type === 'CREDIT' ? 'Payment' : t.type === 'REPAYMENT' ? 'Cashout' : t.type}
                     </span>
                   </td>
-                  <td className={t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative'}>{fmt(t.amount)}</td>
+                  <td className={amountClass}>{displayAmount}</td>
                   <td>{t.method || '—'}</td>
                   <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{t.createdByUsername || '—'}</td>
                   <td style={{ color: '#64748b' }}>{t.notes || '—'}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table></div>
         )}
