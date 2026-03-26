@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
 
-function PlayerSelect({ label, value, onChange, players, excludeId, includeClub = false }) {
+function PlayerSelect({ label, value, onChange, players, bankAccounts = [], excludeId, includeClub = false }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const ref = useRef();
@@ -16,8 +16,14 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const selected = value === 'CLUB' ? { username: 'CLUB', fullName: '' } : players.find(p => p.id === value);
-  const displayText = selected ? (selected.username + (selected.fullName ? ` — ${selected.fullName}` : '')) : '';
+  const isBankValue = typeof value === 'string' && value.startsWith('BANK_');
+  const bankId = isBankValue ? parseInt(value.slice(5)) : null;
+  const selectedBank = bankAccounts.find(b => b.id === bankId);
+  const selectedPlayer = !isBankValue && value !== 'CLUB' ? players.find(p => p.id === value) : null;
+  const displayText = value === 'CLUB' ? 'CLUB'
+    : selectedBank ? `🏦 ${selectedBank.name}`
+    : selectedPlayer ? (selectedPlayer.username + (selectedPlayer.fullName ? ` — ${selectedPlayer.fullName}` : ''))
+    : '';
 
   const filteredPlayers = players.filter(p =>
     p.id !== excludeId &&
@@ -25,6 +31,10 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
       p.username.toLowerCase().includes(search.toLowerCase()) ||
       (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
       (p.phone && p.phone.includes(search)))
+  );
+
+  const filteredBanks = bankAccounts.filter(b =>
+    search === '' || b.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleSelect = (val) => { onChange(val); setOpen(false); setSearch(''); };
@@ -39,7 +49,7 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
         {value ? displayText : `Select ${label}...`}
       </div>
       {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a1d2e', border: '1px solid #2d3148', borderRadius: '6px', zIndex: 100, maxHeight: '220px', overflowY: 'auto' }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a1d2e', border: '1px solid #2d3148', borderRadius: '6px', zIndex: 100, maxHeight: '260px', overflowY: 'auto' }}>
           <input
             autoFocus
             value={search}
@@ -53,15 +63,38 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
               CLUB
             </div>
           )}
-          {filteredPlayers.map(p => (
-            <div key={p.id} onClick={() => handleSelect(p.id)}
-              style={{ padding: '8px 12px', cursor: 'pointer', color: '#e2e8f0', borderBottom: '1px solid #1a1d2e' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#2d3148'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <strong>{p.username}</strong>{p.fullName ? <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>{p.fullName}</span> : null}
-            </div>
-          ))}
+          {filteredBanks.length > 0 && (
+            <>
+              <div style={{ padding: '4px 12px', fontSize: '0.75rem', color: '#64748b', background: '#12151f', borderBottom: '1px solid #2d3148' }}>
+                חשבון בנק
+              </div>
+              {filteredBanks.map(b => (
+                <div key={`bank-${b.id}`} onClick={() => handleSelect(`BANK_${b.id}`)}
+                  style={{ padding: '8px 12px', cursor: 'pointer', color: '#34d399', borderBottom: '1px solid #1a1d2e' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#2d3148'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  🏦 <strong>{b.name}</strong>{b.accountNumber ? <span style={{ color: '#64748b', marginLeft: '0.5rem', fontSize: '0.8rem' }}>{b.accountNumber}</span> : null}
+                </div>
+              ))}
+            </>
+          )}
+          {filteredPlayers.length > 0 && (
+            <>
+              <div style={{ padding: '4px 12px', fontSize: '0.75rem', color: '#64748b', background: '#12151f', borderBottom: '1px solid #2d3148' }}>
+                שחקנים
+              </div>
+              {filteredPlayers.map(p => (
+                <div key={p.id} onClick={() => handleSelect(p.id)}
+                  style={{ padding: '8px 12px', cursor: 'pointer', color: '#e2e8f0', borderBottom: '1px solid #1a1d2e' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#2d3148'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <strong>{p.username}</strong>{p.fullName ? <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>{p.fullName}</span> : null}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
     </div>
@@ -77,6 +110,7 @@ const TYPE_BADGE = {
 
 export default function Transfers() {
   const [players, setPlayers] = useState([]);
+  const [bankAccounts, setBankAccounts] = useState([]);
   const [pending, setPending] = useState([]);
   const [activeForm, setActiveForm] = useState(null);
   const [msg, setMsg] = useState(null);
@@ -107,6 +141,7 @@ export default function Transfers() {
   const load = () => {
     getPlayers().then(r => setPlayers(r.data));
     getAllPending().then(r => setPending(r.data));
+    getBankAccounts().then(r => setBankAccounts(r.data));
   };
 
   useEffect(() => { load(); }, []);
@@ -182,6 +217,12 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
+  const resolveParty = (id) => {
+    if (!id || id === 'CLUB') return { playerId: null, bankAccountId: null };
+    if (typeof id === 'string' && id.startsWith('BANK_')) return { playerId: null, bankAccountId: parseInt(id.slice(5)) };
+    return { playerId: id, bankAccountId: null };
+  };
+
   // Transfer submit
   const handleTransferSubmit = async (e) => {
     e.preventDefault();
@@ -194,10 +235,14 @@ export default function Transfers() {
       return;
     }
     setSubmitting(true);
+    const from = resolveParty(transferForm.fromId);
+    const to = resolveParty(transferForm.toId);
     try {
       await createTransfer({
-        fromPlayerId: transferForm.fromId === 'CLUB' ? null : transferForm.fromId,
-        toPlayerId: transferForm.toId === 'CLUB' ? null : transferForm.toId,
+        fromPlayerId: from.playerId,
+        fromBankAccountId: from.bankAccountId,
+        toPlayerId: to.playerId,
+        toBankAccountId: to.bankAccountId,
         method: transferForm.method,
         amount: parseFloat(transferForm.amount),
         notes: transferForm.notes || null,
@@ -358,8 +403,8 @@ export default function Transfers() {
           </p>
           <form onSubmit={handleTransferSubmit}>
             <div className="form-row">
-              <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v }))} players={players} excludeId={transferForm.toId} includeClub />
-              <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v }))} players={players} excludeId={transferForm.fromId} includeClub />
+              <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.toId} includeClub />
+              <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.fromId} includeClub />
             </div>
             <div className="form-row">
               <div className="form-group">
