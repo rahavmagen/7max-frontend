@@ -42,7 +42,7 @@ function AccountingDropdown() {
         className={`nav-dropdown-trigger${open ? ' open' : ''}${isActive ? ' active' : ''}`}
         onClick={() => setOpen(o => !o)}
       >
-        חשבונאות ▾
+        Accounting ▾
       </span>
       {open && (
         <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>

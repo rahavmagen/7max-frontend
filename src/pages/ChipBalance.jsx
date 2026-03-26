@@ -9,7 +9,7 @@ export default function ChipBalance() {
   useEffect(() => {
     getChipBalance()
       .then(res => setData(res.data))
-      .catch(() => setError('שגיאה בטעינת נתוני ב্যালנס'))
+      .catch(() => setError('שגיאה בטעינת Balance'))
       .finally(() => setLoading(false));
   }, []);
 
