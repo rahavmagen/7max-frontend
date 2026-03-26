@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { uploadReport, getReports, deleteReport, getStalePlayers } from '../api';
+import api from '../api';
 import { useNavigate, Link } from 'react-router-dom';
 
 export default function Upload() {
@@ -80,6 +81,22 @@ export default function Upload() {
     e.preventDefault();
     setDragging(false);
     processFiles(e.dataTransfer.files);
+  };
+
+  const handleDownload = async (id, fileName) => {
+    try {
+      const res = await api.get(`/reports/${id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Failed to download report.');
+    }
   };
 
   const handleDelete = async (id, fileName) => {
@@ -213,13 +230,12 @@ export default function Upload() {
                   <td className="positive">{Math.round(parseFloat(r.totalRake))}</td>
                   <td style={{ color: '#64748b' }}>{r.uploadedAt?.replace('T', ' ').substring(0, 16)}</td>
                   <td>
-                    <a
-                      href={`${import.meta.env.VITE_API_URL || 'https://7max-tracker-production.up.railway.app/api'}/reports/${r.id}/download`}
-                      style={{ color: '#6366f1', fontSize: '0.85rem', textDecoration: 'none' }}
-                      onClick={e => e.stopPropagation()}
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDownload(r.id, r.fileName); }}
+                      style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.85rem', padding: 0 }}
                     >
                       Download
-                    </a>
+                    </button>
                   </td>
                   <td>
                     <button
