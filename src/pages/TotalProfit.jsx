@@ -75,7 +75,7 @@ export default function TotalProfit() {
               <td style={{ color: '#94a3b8' }}>− Chips Players Paid For</td>
               <td className="negative"><strong>({fmt(chipsPlayersPaidFor)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                Chips ({fmt(totalChips)}) − Will & Free Roll ({fmt(willExpense)})
+                Chips ({fmt(totalChips)}) − גלגל / Wheel ({fmt(willExpense)})
               </td>
             </tr>
             <tr style={{ borderTop: '2px solid #334155' }}>
@@ -84,7 +84,7 @@ export default function TotalProfit() {
               <td></td>
             </tr>
             <tr style={{ marginTop: '1rem' }}>
-              <td style={{ color: '#94a3b8', paddingTop: '1rem' }}>− Will & Free Roll Expenses</td>
+              <td style={{ color: '#94a3b8', paddingTop: '1rem' }}>− גלגל / Wheel Expenses</td>
               <td className="negative" style={{ paddingTop: '1rem' }}><strong>({fmt(willExpense)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>הוצאות col H</td>
             </tr>

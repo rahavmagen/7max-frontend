@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
+import { useState, useEffect, useRef } from 'react';
 import Dashboard from './pages/Dashboard';
 import PlayerDetail from './pages/PlayerDetail';
 import Upload from './pages/Upload';
@@ -17,7 +18,43 @@ import ActivePlayers from './pages/ActivePlayers';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import Lesson from './pages/Lesson';
+import ChipBalance from './pages/ChipBalance';
+import PlayerValidation from './pages/PlayerValidation';
 import './App.css';
+
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation'];
+
+function AccountingDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  const location = useLocation();
+  const isActive = ACCOUNTING_PATHS.some(p => location.pathname.startsWith(p));
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="nav-dropdown" ref={ref}>
+      <span
+        className={`nav-dropdown-trigger${open ? ' open' : ''}${isActive ? ' active' : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        חשבונאות ▾
+      </span>
+      {open && (
+        <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
+          <NavLink to="/club-income">Club Income</NavLink>
+          <NavLink to="/admin-reports">Reports</NavLink>
+          <NavLink to="/chip-balance">Balance</NavLink>
+          <NavLink to="/player-validation">Validation</NavLink>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PlayerDefaultRedirect({ auth }) {
   const pending = sessionStorage.getItem('redirectAfterLogin');
@@ -62,9 +99,8 @@ function AppRoutes() {
               <NavLink to="/add-player">Add Player</NavLink>
               <NavLink to="/transfers">Transfers</NavLink>
               <NavLink to="/balance-report">Balance Report</NavLink>
-              <NavLink to="/club-income">Club Income</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
-              <NavLink to="/admin-reports">Reports</NavLink>
+              <AccountingDropdown />
               <NavLink to="/lesson">אימון קאש</NavLink>
             </>
           )}
@@ -109,6 +145,8 @@ function AppRoutes() {
               <Route path="/total-profit" element={<TotalProfit />} />
               <Route path="/games" element={<Games />} />
               <Route path="/game-results/:id" element={<GameResults />} />
+              <Route path="/chip-balance" element={<ChipBalance />} />
+              <Route path="/player-validation" element={<PlayerValidation />} />
               <Route path="/lesson" element={<Lesson />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>

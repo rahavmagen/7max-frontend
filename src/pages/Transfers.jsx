@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -69,9 +69,10 @@ function PlayerSelect({ label, value, onChange, players, excludeId, includeClub 
 }
 
 const TYPE_BADGE = {
-  TRANSFER: { bg: '#1e3a5f', color: '#60a5fa', label: 'Transfer' },
-  CREDIT:   { bg: '#3b1f5e', color: '#c084fc', label: 'Manual Credit' },
-  PROMOTION:{ bg: '#14532d', color: '#4ade80', label: 'Promotion' },
+  TRANSFER:      { bg: '#1e3a5f', color: '#60a5fa', label: 'Transfer' },
+  CREDIT:        { bg: '#3b1f5e', color: '#c084fc', label: 'Manual Credit' },
+  PROMOTION:     { bg: '#14532d', color: '#4ade80', label: 'Promotion' },
+  WHEEL_EXPENSE: { bg: '#7c2d12', color: '#fb923c', label: 'גלגל (Wheel)' },
 };
 
 export default function Transfers() {
@@ -94,6 +95,11 @@ export default function Transfers() {
   const [promoPlayerId, setPromoPlayerId] = useState('');
   const [promoAmount, setPromoAmount] = useState('');
   const [promoNotes, setPromoNotes] = useState('');
+
+  // Wheel expense form
+  const [wheelPlayerId, setWheelPlayerId] = useState('');
+  const [wheelAmount, setWheelAmount] = useState('');
+  const [wheelNotes, setWheelNotes] = useState('');
 
   // Transfer form
   const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '' });
@@ -156,6 +162,22 @@ export default function Transfers() {
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record promotion' });
+    }
+    setSubmitting(false);
+  };
+
+  // Wheel expense submit
+  const handleWheelSubmit = async (e) => {
+    e.preventDefault();
+    if (!wheelPlayerId || !wheelAmount) return;
+    setSubmitting(true);
+    try {
+      await addWheelExpense(wheelPlayerId, Number(wheelAmount), wheelNotes || null);
+      setMsg({ type: 'success', text: 'Wheel expense recorded' });
+      setWheelPlayerId(''); setWheelAmount(''); setWheelNotes('');
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to record wheel expense' });
     }
     setSubmitting(false);
   };
@@ -239,6 +261,10 @@ export default function Transfers() {
         <button className={`btn ${activeForm === 'transfer' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('transfer')}>
           ↔ Player Transfer
         </button>
+        <button className={`btn ${activeForm === 'wheel' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('wheel')}
+          style={{ background: activeForm === 'wheel' ? '#fb923c' : undefined, color: activeForm === 'wheel' ? '#0f1117' : undefined }}>
+          🎡 גלגל (Wheel)
+        </button>
       </div>
 
       {/* Manual Credit Form */}
@@ -290,6 +316,34 @@ export default function Transfers() {
             </div>
             <button type="submit" className="btn btn-primary" disabled={submitting || !promoPlayerId}>
               {submitting ? 'Recording...' : 'Record Promotion'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Wheel Expense Form */}
+      {activeForm === 'wheel' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#fb923c' }}>
+          <h2 style={{ color: '#fb923c' }}>גלגל — Wheel Expense</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Give chips to a player as a wheel prize. This increases their chip count directly (like manual credit).
+          </p>
+          <form onSubmit={handleWheelSubmit}>
+            <div className="form-row">
+              <PlayerSelect label="Player" value={wheelPlayerId} onChange={setWheelPlayerId} players={players} />
+              <div className="form-group">
+                <label>Amount (chips) *</label>
+                <input type="number" min="0.01" step="0.01" required value={wheelAmount}
+                  onChange={e => setWheelAmount(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={wheelNotes} onChange={e => setWheelNotes(e.target.value)} placeholder="Optional" />
+              </div>
+            </div>
+            <button type="submit" className="btn" style={{ background: '#fb923c', color: '#0f1117' }}
+              disabled={submitting || !wheelPlayerId}>
+              {submitting ? 'Recording...' : '🎡 Record Wheel Expense'}
             </button>
           </form>
         </div>

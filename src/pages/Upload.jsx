@@ -8,6 +8,7 @@ export default function Upload() {
   const [queue, setQueue] = useState([]); // { file, status, msg }
   const [processing, setProcessing] = useState(false);
   const [leftClub, setLeftClub] = useState([]);
+  const [chipWarning, setChipWarning] = useState(null); // { mismatch, expected, actual }
   const fileRef = useRef();
   const navigate = useNavigate();
 
@@ -37,6 +38,13 @@ export default function Upload() {
             ...updated[i], status: 'done',
             msg: `Period: ${res.data.periodStart} → ${res.data.periodEnd} | Rake: ${Math.round(parseFloat(res.data.totalRake))}`
           };
+          if (res.data.chipMismatch != null && Number(res.data.chipMismatch) > 1) {
+            setChipWarning({
+              mismatch: Number(res.data.chipMismatch),
+              expected: Number(res.data.chipMismatchExpected),
+              actual: Number(res.data.chipMismatchActual),
+            });
+          }
           if (res.data.leftClub?.length || res.data.recovered?.length) {
             setLeftClub(prev => {
               // Add new left-club players (deduplicate by clubPlayerId)
@@ -130,6 +138,30 @@ export default function Upload() {
           </div>
         )}
       </div>
+
+      {chipWarning && (
+        <div style={{
+          background: 'rgba(239,68,68,0.10)', border: '1px solid #ef4444',
+          borderRadius: '10px', padding: '1rem 1.25rem', margin: '1rem 0',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <div>
+            <strong style={{ color: '#ef4444' }}>⚠️ אי-התאמה בצ'יפים</strong>
+            <div style={{ color: '#fca5a5', fontSize: '0.875rem', marginTop: '0.3rem' }}>
+              הפרש: <strong>{Math.round(chipWarning.mismatch).toLocaleString()}</strong>
+              &nbsp;|&nbsp; צפוי: {Math.round(chipWarning.expected).toLocaleString()}
+              &nbsp;|&nbsp; בפועל (XLS): {Math.round(chipWarning.actual).toLocaleString()}
+            </div>
+            <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.2rem' }}>
+              הדוח הועלה בהצלחה. הנתונים בפועל. בדוק את עמוד ה-Balance לפרטים.
+            </div>
+          </div>
+          <button onClick={() => setChipWarning(null)}
+            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.2rem' }}>
+            ✕
+          </button>
+        </div>
+      )}
 
       {leftClub.length > 0 && (
         <div className="card" style={{ marginTop: '1rem' }}>
