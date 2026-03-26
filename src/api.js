@@ -43,8 +43,8 @@ export const adminResetPassword = (data) => api.post('/auth/admin/reset-password
 export const changeUserRole = (username, role) => api.post('/auth/admin/change-role', { username, role });
 export const getHandsReport = (params) => api.get('/reports/admin/hands-report', { params });
 export const getFridayRakeReport = () => api.get('/reports/admin/friday-rake');
-export const getChipBalance = () => api.get('/reports/admin/chip-balance');
-export const getPlayerValidation = () => api.get('/reports/admin/player-validation');
+export const getChipBalance = (since) => api.get('/reports/admin/chip-balance', { params: since ? { since } : {} });
+export const getPlayerValidation = (since) => api.get('/reports/admin/player-validation', { params: since ? { since } : {} });
 export const addWheelExpense = (id, amount, notes) => api.post(`/players/${id}/wheel-expense`, { amount, notes });
 export const getIncomeReport = (params) => api.get('/reports/admin/income', { params });
 export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');

@@ -6,14 +6,19 @@ export default function PlayerValidation() {
   const [rows, setRows] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sinceDate, setSinceDate] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    getPlayerValidation()
+  const load = (since) => {
+    setLoading(true);
+    setError('');
+    getPlayerValidation(since || undefined)
       .then(res => setRows(res.data))
       .catch(() => setError('שגיאה בטעינת נתוני ולידציה'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '0';
@@ -31,6 +36,22 @@ export default function PlayerValidation() {
     <div>
       <div className="page-header">
         <h1>Validation — ולידציה לפי שחקן</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <label style={{ color: '#64748b', fontSize: '0.85rem' }}>מאז תאריך:</label>
+          <input
+            type="date"
+            value={sinceDate}
+            onChange={e => setSinceDate(e.target.value)}
+            style={{
+              background: '#1a1d27', border: '1px solid #2d3148', borderRadius: '6px',
+              color: '#e2e8f0', padding: '0.3rem 0.6rem', fontSize: '0.85rem',
+            }}
+          />
+          <button className="btn btn-secondary" style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
+            onClick={() => load(sinceDate)}>
+            עדכן
+          </button>
+        </div>
       </div>
       <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
         השוואה בין מצב הצ'יפים הנוכחי לבין מה שצפוי לפי הפעילות מאז הדוח האחרון.

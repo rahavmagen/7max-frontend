@@ -5,13 +5,21 @@ export default function ChipBalance() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sinceDate, setSinceDate] = useState('');
 
-  useEffect(() => {
-    getChipBalance()
-      .then(res => setData(res.data))
+  const load = (since) => {
+    setLoading(true);
+    setError('');
+    getChipBalance(since || undefined)
+      .then(res => {
+        setData(res.data);
+        if (!since && res.data?.lastReportDate) setSinceDate(res.data.lastReportDate);
+      })
       .catch(() => setError('שגיאה בטעינת Balance'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '0';
@@ -34,11 +42,22 @@ export default function ChipBalance() {
     <div>
       <div className="page-header">
         <h1>Balance — מצב צ'יפים</h1>
-        {data?.lastReportDate && (
-          <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-            נכון לדוח: {fmtDate(data.lastReportDate)}
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <label style={{ color: '#64748b', fontSize: '0.85rem' }}>מאז תאריך:</label>
+          <input
+            type="date"
+            value={sinceDate}
+            onChange={e => setSinceDate(e.target.value)}
+            style={{
+              background: '#1a1d27', border: '1px solid #2d3148', borderRadius: '6px',
+              color: '#e2e8f0', padding: '0.3rem 0.6rem', fontSize: '0.85rem',
+            }}
+          />
+          <button className="btn btn-secondary" style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
+            onClick={() => load(sinceDate)}>
+            עדכן
+          </button>
+        </div>
       </div>
 
       {!data?.lastReportDate && (
