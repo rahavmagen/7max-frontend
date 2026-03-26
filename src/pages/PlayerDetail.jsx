@@ -408,7 +408,13 @@ export default function PlayerDetail() {
                   <td>{t.transactionDate || '—'}</td>
                   <td>
                     <span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : t.type === 'CREDIT' ? 'credit' : t.type === 'REPAYMENT' ? 'repayment' : 'withdrawal'}`}>
-                      {t.type === 'CREDIT' ? 'Payment' : t.type === 'REPAYMENT' ? 'Cashout' : t.type}
+                      {t.sourceRef === 'SCREEN:CREDIT' || t.sourceRef === 'SCREEN:PROMO'
+                        ? (t.type === 'DEPOSIT' ? 'Credit Added' : 'Credit Removed')
+                        : t.type === 'CREDIT' ? 'Send Chips'
+                        : t.type === 'REPAYMENT' ? 'Cashout'
+                        : t.type === 'DEPOSIT' ? 'Deposit'
+                        : t.type === 'WITHDRAWAL' ? 'Withdrawal'
+                        : t.type}
                     </span>
                   </td>
                   <td className={amountClass}>{displayAmount}</td>
