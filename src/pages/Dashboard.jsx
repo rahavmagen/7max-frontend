@@ -24,7 +24,7 @@ export default function Dashboard() {
     return sort.dir === 1 ? ' ↑' : ' ↓';
   };
 
-  const isStale = (p) => (!p.clubPlayerId) && (p.currentChips || 0) > 0;
+  const isStale = (p) => p.chipsStale === true && (!p.clubPlayerId || p.clubPlayerId === '') && (p.currentChips || 0) > 0;
   const isLeftClub = (p) => p.chipsStale === true && p.clubPlayerId;
 
   let filtered = players.filter(p =>
