@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
-import { getChipBalance } from '../api';
+import { getChipBalance, backfillChipsTotal } from '../api';
 
 export default function ChipBalance() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sinceDate, setSinceDate] = useState('');
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState('');
+
+  const runBackfill = () => {
+    setBackfilling(true);
+    setBackfillMsg('');
+    backfillChipsTotal()
+      .then(res => {
+        const { updated, skipped, failed } = res.data;
+        setBackfillMsg(`עודכן: ${updated} | כבר קיים: ${skipped} | נכשל: ${failed}`);
+        load(sinceDate || undefined);
+      })
+      .catch(() => setBackfillMsg('שגיאה בביצוע backfill'))
+      .finally(() => setBackfilling(false));
+  };
 
   const load = (since) => {
     setLoading(true);
@@ -58,6 +73,19 @@ export default function ChipBalance() {
             עדכן
           </button>
         </div>
+      </div>
+
+      {backfillMsg && (
+        <div className="alert alert-success" style={{ marginBottom: '1rem' }}>{backfillMsg}</div>
+      )}
+      <div style={{ marginBottom: '1rem' }}>
+        <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }}
+          onClick={runBackfill} disabled={backfilling}>
+          {backfilling ? 'מעדכן...' : 'Backfill — טען צ\'יפים מכל ה-XLS השמורים'}
+        </button>
+        <span style={{ color: '#64748b', fontSize: '0.78rem', marginRight: '0.75rem' }}>
+          יש להריץ פעם אחת כדי לאפשר ולידציה לפי תאריך היסטורי
+        </span>
       </div>
 
       {!data?.lastReportDate && (
