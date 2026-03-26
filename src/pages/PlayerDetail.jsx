@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer } from '../api';
 import { useAuth } from '../auth/AuthContext';
 
 export default function PlayerDetail() {
@@ -113,6 +113,16 @@ export default function PlayerDetail() {
     }
   };
 
+  const handleDeletePlayer = async () => {
+    if (!window.confirm(`Delete player "${player.username}" and ALL their data (transactions, game results, transfers)? This cannot be undone.`)) return;
+    try {
+      await deletePlayer(id);
+      navigate('/');
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to delete player' });
+    }
+  };
+
   if (loadError) return <div style={{ padding: '2rem', color: '#ef4444' }}>Could not load player data. Please try again.</div>;
   if (!player) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
@@ -179,9 +189,14 @@ export default function PlayerDetail() {
                 🔑 Reset Pass
               </button>
               {auth?.role === 'ADMIN' && (
-                <button className="btn btn-secondary" onClick={() => { setShowRoleForm(!showRoleForm); setNewRole(''); }}>
-                  👑 Change Role
-                </button>
+                <>
+                  <button className="btn btn-secondary" onClick={() => { setShowRoleForm(!showRoleForm); setNewRole(''); }}>
+                    👑 Change Role
+                  </button>
+                  <button className="btn btn-danger" onClick={handleDeletePlayer}>
+                    🗑️ Delete Player
+                  </button>
+                </>
               )}
             </>
           )}
