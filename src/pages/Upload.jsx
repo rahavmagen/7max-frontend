@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { uploadReport, getReports, deleteReport, getStalePlayers } from '../api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Upload() {
   const [dragging, setDragging] = useState(false);
@@ -153,7 +153,8 @@ export default function Upload() {
               &nbsp;|&nbsp; בפועל (XLS): {Math.round(chipWarning.actual).toLocaleString()}
             </div>
             <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: '0.2rem' }}>
-              הדוח הועלה בהצלחה. הנתונים בפועל. בדוק את עמוד ה-Balance לפרטים.
+              הדוח הועלה בהצלחה. הנתונים בפועל.{' '}
+              <Link to="/chip-balance" style={{ color: '#f6c90e', textDecoration: 'underline' }}>בדוק את עמוד ה-Balance לפרטים.</Link>
             </div>
           </div>
           <button onClick={() => setChipWarning(null)}
