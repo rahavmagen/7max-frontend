@@ -41,6 +41,7 @@ export default function Games() {
                 <th>Type</th>
                 <th>Start</th>
                 <th>End</th>
+                <th>Cost</th>
                 <th>Players</th>
                 <th>Entries</th>
                 <th>Re-entries</th>
@@ -66,6 +67,9 @@ export default function Games() {
                   </td>
                   <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{fmtDate(s.startTime)}</td>
                   <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{fmtDate(s.endTime)}</td>
+                  <td style={{ color: '#f59e0b', fontWeight: 600 }}>
+                    {s.entryFee ? `₪${Number(s.entryFee).toLocaleString()}` : '—'}
+                  </td>
                   <td><strong>{s.playerCount}</strong></td>
                   <td>{s.entryCount}</td>
                   <td style={{ color: s.reEntryCount > 0 ? '#f59e0b' : '#64748b' }}>
