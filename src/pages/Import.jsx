@@ -1,12 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { importPlayers, resetAllData } from '../api';
+import { importPlayers } from '../api';
 
 export default function Import() {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [msg, setMsg] = useState(null);
   const fileRef = useRef();
 
@@ -31,19 +30,6 @@ export default function Import() {
       setMsg({ type: 'error', text: 'Import failed: ' + (e.response?.data?.error || e.message) });
     }
     setLoading(false);
-  };
-
-  const handleReset = async () => {
-    if (!confirm('DELETE ALL DATA? This will remove all players, reports, transactions, transfers and expenses. Admin user will be kept. This cannot be undone.')) return;
-    setResetting(true);
-    setMsg(null);
-    try {
-      await resetAllData();
-      setMsg({ type: 'success', text: 'All data cleared. Admin user kept.' });
-    } catch (e) {
-      setMsg({ type: 'error', text: 'Reset failed: ' + (e.response?.data?.error || e.message) });
-    }
-    setResetting(false);
   };
 
   return (
@@ -93,21 +79,6 @@ export default function Import() {
             Go to Dashboard →
           </button>
         )}
-      </div>
-
-      <div className="card" style={{ marginTop: '2rem', borderColor: '#ef4444' }}>
-        <h2 style={{ color: '#ef4444' }}>Danger Zone</h2>
-        <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-          Delete all data and start fresh. Admin user will be kept.
-        </p>
-        <button
-          className="btn"
-          style={{ background: '#ef4444', color: '#fff', border: 'none' }}
-          onClick={handleReset}
-          disabled={resetting}
-        >
-          {resetting ? 'Resetting...' : '🗑 Reset All Data'}
-        </button>
       </div>
 
       <div className="card" style={{ marginTop: '2rem' }}>
