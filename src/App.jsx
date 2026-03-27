@@ -20,9 +20,10 @@ import ChangePassword from './pages/ChangePassword';
 import Lesson from './pages/Lesson';
 import ChipBalance from './pages/ChipBalance';
 import PlayerValidation from './pages/PlayerValidation';
+import AdminExpenses from './pages/AdminExpenses';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation'];
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -50,6 +51,7 @@ function AccountingDropdown() {
           <NavLink to="/admin-reports">Reports</NavLink>
           <NavLink to="/chip-balance">Balance</NavLink>
           <NavLink to="/player-validation">Validation</NavLink>
+          <NavLink to="/admin-expenses">Expenses</NavLink>
         </div>
       )}
     </div>
@@ -147,6 +149,7 @@ function AppRoutes() {
               <Route path="/game-results/:id" element={<GameResults />} />
               <Route path="/chip-balance" element={<ChipBalance />} />
               <Route path="/player-validation" element={<PlayerValidation />} />
+              <Route path="/admin-expenses" element={<AdminExpenses />} />
               <Route path="/lesson" element={<Lesson />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>

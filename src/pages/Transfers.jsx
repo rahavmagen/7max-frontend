@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -110,6 +110,7 @@ const TYPE_BADGE = {
 
 export default function Transfers() {
   const [players, setPlayers] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [pending, setPending] = useState([]);
   const [activeForm, setActiveForm] = useState(null);
@@ -135,6 +136,11 @@ export default function Transfers() {
   const [wheelAmount, setWheelAmount] = useState('');
   const [wheelNotes, setWheelNotes] = useState('');
 
+  // Admin expense form
+  const [expenseUsername, setExpenseUsername] = useState('');
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseNotes, setExpenseNotes] = useState('');
+
   // Transfer form
   const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '' });
 
@@ -142,6 +148,7 @@ export default function Transfers() {
     getPlayers().then(r => setPlayers(r.data));
     getAllPending().then(r => setPending(r.data));
     getBankAccounts().then(r => setBankAccounts(r.data));
+    getAdminUsers().then(r => setAdminUsers(r.data)).catch(() => {});
   };
 
   useEffect(() => { load(); }, []);
@@ -213,6 +220,25 @@ export default function Transfers() {
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record wheel expense' });
+    }
+    setSubmitting(false);
+  };
+
+  // Admin expense submit
+  const handleExpenseSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(expenseAmount);
+    if (!expenseUsername || isNaN(amount) || amount <= 0) {
+      setMsg({ type: 'error', text: 'Select an admin and enter a positive amount' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await createAdminExpense({ adminUsername: expenseUsername, amount, notes: expenseNotes || null });
+      setMsg({ type: 'success', text: 'Expense recorded' });
+      setExpenseUsername(''); setExpenseAmount(''); setExpenseNotes('');
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to record expense' });
     }
     setSubmitting(false);
   };
@@ -310,6 +336,9 @@ export default function Transfers() {
           style={{ background: activeForm === 'wheel' ? '#fb923c' : undefined, color: activeForm === 'wheel' ? '#0f1117' : undefined }}>
           🎡 גלגל (Wheel)
         </button>
+        <button className={`btn ${activeForm === 'expense' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('expense')}>
+          💸 Admin Expense
+        </button>
       </div>
 
       {/* Manual Credit Form */}
@@ -389,6 +418,42 @@ export default function Transfers() {
             <button type="submit" className="btn" style={{ background: '#fb923c', color: '#0f1117' }}
               disabled={submitting || !wheelPlayerId}>
               {submitting ? 'Recording...' : '🎡 Record Wheel Expense'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Admin Expense Form */}
+      {activeForm === 'expense' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#ef4444' }}>
+          <h2 style={{ color: '#ef4444' }}>Admin Expense</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Record an expense for an admin. This will appear in the Admin Expenses page.
+          </p>
+          <form onSubmit={handleExpenseSubmit}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Admin *</label>
+                <select required value={expenseUsername} onChange={e => setExpenseUsername(e.target.value)}>
+                  <option value="">Select admin...</option>
+                  {adminUsers.map(u => (
+                    <option key={u.username} value={u.username}>{u.username}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Amount (₪) *</label>
+                <input type="number" min="0.01" step="0.01" required value={expenseAmount}
+                  onChange={e => setExpenseAmount(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={expenseNotes} onChange={e => setExpenseNotes(e.target.value)} placeholder="Optional" />
+              </div>
+            </div>
+            <button type="submit" className="btn" style={{ background: '#ef4444', color: '#fff', border: 'none' }}
+              disabled={submitting || !expenseUsername}>
+              {submitting ? 'Recording...' : '💸 Record Expense'}
             </button>
           </form>
         </div>

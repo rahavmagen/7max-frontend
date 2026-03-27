@@ -75,6 +75,12 @@ export const getLastNightMtt = (date) => api.get('/transfers/last-night-mtt', { 
 export const getRecentTransactions = (days) => api.get('/transactions/recent', { params: { days } });
 export const updateTransaction = (id, data) => api.put(`/transactions/${id}`, data);
 
+export const getAdminExpenses = () => api.get('/admin-expenses');
+export const getAdminUsers = () => api.get('/admin-expenses/admin-users');
+export const createAdminExpense = (data) => api.post('/admin-expenses', data);
+export const updateAdminExpense = (id, data) => api.put(`/admin-expenses/${id}`, data);
+export const deleteAdminExpense = (id) => api.delete(`/admin-expenses/${id}`);
+
 export const getLessonEvent = () => api.get('/lesson/event');
 export const setLessonEvent = (data) => api.post('/lesson/event', data);
 export const getLessonRegistrations = () => api.get('/lesson/registrations');
