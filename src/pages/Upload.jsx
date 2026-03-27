@@ -10,6 +10,7 @@ export default function Upload() {
   const [processing, setProcessing] = useState(false);
   const [leftClub, setLeftClub] = useState([]);
   const [chipWarning, setChipWarning] = useState(null); // { mismatch, expected, actual }
+  const [wheelWarnings, setWheelWarnings] = useState([]); // unmatched wheel expense rows
   const fileRef = useRef();
   const navigate = useNavigate();
 
@@ -45,6 +46,9 @@ export default function Upload() {
               expected: Number(res.data.chipMismatchExpected),
               actual: Number(res.data.chipMismatchActual),
             });
+          }
+          if (res.data.wheelExpenseWarnings?.length) {
+            setWheelWarnings(prev => [...prev, ...res.data.wheelExpenseWarnings]);
           }
           if (res.data.leftClub?.length || res.data.recovered?.length) {
             setLeftClub(prev => {
@@ -175,6 +179,28 @@ export default function Upload() {
             </div>
           </div>
           <button onClick={() => setChipWarning(null)}
+            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.2rem' }}>
+            ✕
+          </button>
+        </div>
+      )}
+
+      {wheelWarnings.length > 0 && (
+        <div style={{
+          background: 'rgba(251,191,36,0.10)', border: '1px solid #f59e0b',
+          borderRadius: '10px', padding: '1rem 1.25rem', margin: '1rem 0',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        }}>
+          <div>
+            <strong style={{ color: '#f59e0b' }}>⚠️ הוצאות גלגל לא זוהו</strong>
+            <div style={{ color: '#fcd34d', fontSize: '0.875rem', marginTop: '0.3rem' }}>
+              Send Chips שלילי ללא התאמה לטורניר הלילי — נשמר כ-CREDIT:
+            </div>
+            <ul style={{ color: '#fde68a', fontSize: '0.8rem', margin: '0.4rem 0 0 1rem', padding: 0 }}>
+              {wheelWarnings.map((w, i) => <li key={i}>{w}</li>)}
+            </ul>
+          </div>
+          <button onClick={() => setWheelWarnings([])}
             style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '1.2rem' }}>
             ✕
           </button>
