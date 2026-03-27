@@ -124,7 +124,6 @@ export default function Transfers() {
   const [creditPlayerId, setCreditPlayerId] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditNotes, setCreditNotes] = useState('');
-  const [creditUpdateChips, setCreditUpdateChips] = useState('');
 
   // Promotion form
   const [promoPlayerId, setPromoPlayerId] = useState('');
@@ -166,15 +165,11 @@ export default function Transfers() {
       setMsg({ type: 'error', text: 'Select a player and enter a non-zero amount' });
       return;
     }
-    if (creditUpdateChips === '') {
-      setMsg({ type: 'error', text: 'Please select whether chips should be updated' });
-      return;
-    }
     setSubmitting(true);
     try {
-      await updateCredit(creditPlayerId, delta, creditNotes || null, creditUpdateChips === 'yes');
+      await updateCredit(creditPlayerId, delta, creditNotes || null);
       setMsg({ type: 'success', text: 'Credit updated successfully' });
-      setCreditPlayerId(''); setCreditAmount(''); setCreditNotes(''); setCreditUpdateChips('');
+      setCreditPlayerId(''); setCreditAmount(''); setCreditNotes('');
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to update credit' });
@@ -333,20 +328,11 @@ export default function Transfers() {
                   onChange={e => setCreditAmount(e.target.value)} placeholder="e.g. 1000 or -500" />
               </div>
               <div className="form-group">
-                <label>Update Chips? *</label>
-                <select required value={creditUpdateChips} onChange={e => setCreditUpdateChips(e.target.value)}
-                  style={{ background: creditUpdateChips === '' ? '#1e2235' : undefined, color: creditUpdateChips === '' ? '#64748b' : undefined }}>
-                  <option value="" disabled>Select...</option>
-                  <option value="yes">Yes — also add chips to player</option>
-                  <option value="no">No — credit only, chips unchanged</option>
-                </select>
-              </div>
-              <div className="form-group">
                 <label>Notes</label>
                 <input type="text" value={creditNotes} onChange={e => setCreditNotes(e.target.value)} placeholder="Optional" />
               </div>
             </div>
-            <button type="submit" className="btn btn-primary" disabled={submitting || !creditPlayerId || creditUpdateChips === ''}>
+            <button type="submit" className="btn btn-primary" disabled={submitting || !creditPlayerId}>
               {submitting ? 'Saving...' : 'Save Credit'}
             </button>
           </form>
@@ -385,7 +371,7 @@ export default function Transfers() {
         <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#fb923c' }}>
           <h2 style={{ color: '#fb923c' }}>גלגל — Wheel Expense</h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Give chips to a player as a wheel prize. This increases their chip count directly (like manual credit).
+            Record a wheel expense for a player. Chip count is updated only via XLS upload.
           </p>
           <form onSubmit={handleWheelSubmit}>
             <div className="form-row">
