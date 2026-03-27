@@ -144,6 +144,8 @@ export default function AdminExpenses() {
                           <td>
                             {entry.sourceRef === 'XLS' ? (
                               <span style={{ fontSize: '0.75rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>XLS</span>
+                            ) : entry.sourceRef?.startsWith('WHEEL:') || entry.sourceRef === 'SCREEN:WHEEL' ? (
+                              <span style={{ fontSize: '0.75rem', background: '#431407', color: '#fb923c', borderRadius: '4px', padding: '2px 6px' }}>Wheel</span>
                             ) : (
                               <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>Manual</span>
                             )}
