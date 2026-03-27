@@ -142,7 +142,7 @@ export default function AdminExpenses() {
                           <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                           <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                           <td>
-                            {entry.sourceRef === 'XLS' ? (
+                            {(entry.sourceRef === 'XLS' || (entry.sourceRef?.startsWith('XLS:') && entry.sourceRef !== 'XLS:WHEEL')) ? (
                               <span style={{ fontSize: '0.75rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>XLS</span>
                             ) : entry.sourceRef?.startsWith('WHEEL:') || entry.sourceRef === 'SCREEN:WHEEL' || entry.sourceRef === 'XLS:WHEEL' ? (
                               <span style={{ fontSize: '0.75rem', background: '#431407', color: '#fb923c', borderRadius: '4px', padding: '2px 6px' }}>Wheel</span>
