@@ -62,9 +62,9 @@ export default function TotalProfit() {
         <table>
           <tbody>
             <tr>
-              <td style={{ color: '#94a3b8' }}>Bank Deposits</td>
+              <td style={{ color: '#94a3b8' }}>Bank Balance</td>
               <td className="positive"><strong>{fmt(bankDeposits)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>מיקום הכסף B2+I2</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>From XLS P2 + club transfers</td>
             </tr>
             <tr>
               <td style={{ color: '#94a3b8' }}>+ Total Credit Given</td>
