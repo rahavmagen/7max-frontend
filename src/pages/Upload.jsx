@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { uploadReport, getReports, deleteReport, getStalePlayers } from '../api';
+import { uploadReport, uploadExpensesOnly, getReports, deleteReport, getStalePlayers } from '../api';
 import api from '../api';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ export default function Upload() {
   const [leftClub, setLeftClub] = useState([]);
   const [chipWarning, setChipWarning] = useState(null); // { mismatch, expected, actual }
   const [wheelWarnings, setWheelWarnings] = useState([]); // unmatched wheel expense rows
+  const [expensesOnly, setExpensesOnly] = useState(false);
   const fileRef = useRef();
   const navigate = useNavigate();
 
@@ -32,42 +33,47 @@ export default function Upload() {
       updated[i] = { ...updated[i], status: 'uploading' };
       setQueue([...updated]);
       try {
-        const res = await uploadReport(xlsFiles[i]);
+        const res = expensesOnly
+          ? await uploadExpensesOnly(xlsFiles[i])
+          : await uploadReport(xlsFiles[i]);
         if (res.status >= 400) {
           updated[i] = { ...updated[i], status: 'error', msg: res.data?.error || 'Upload failed.' };
         } else {
-          updated[i] = {
-            ...updated[i], status: 'done',
-            msg: `Period: ${res.data.periodStart} → ${res.data.periodEnd} | Rake: ${Math.round(parseFloat(res.data.totalRake))}`
-          };
-          if (res.data.chipMismatch != null && Number(res.data.chipMismatch) > 1) {
-            setChipWarning({
-              mismatch: Number(res.data.chipMismatch),
-              expected: Number(res.data.chipMismatchExpected),
-              actual: Number(res.data.chipMismatchActual),
-            });
-          }
-          if (res.data.wheelExpenseWarnings?.length) {
-            setWheelWarnings(prev => [...prev, ...res.data.wheelExpenseWarnings]);
-          }
-          if (res.data.leftClub?.length || res.data.recovered?.length) {
-            setLeftClub(prev => {
-              // Add new left-club players (deduplicate by clubPlayerId)
-              let next = [...prev];
-              if (res.data.leftClub?.length) {
-                for (const p of res.data.leftClub) {
-                  if (!next.some(x => x.id === p.id)) {
-                    next.push(p);
+          if (expensesOnly) {
+            updated[i] = {
+              ...updated[i], status: 'done',
+              msg: `Expenses imported: ${res.data.imported} new, ${res.data.skipped} already existed`
+            };
+          } else {
+            updated[i] = {
+              ...updated[i], status: 'done',
+              msg: `Period: ${res.data.periodStart} → ${res.data.periodEnd} | Rake: ${Math.round(parseFloat(res.data.totalRake))}`
+            };
+            if (res.data.chipMismatch != null && Number(res.data.chipMismatch) > 1) {
+              setChipWarning({
+                mismatch: Number(res.data.chipMismatch),
+                expected: Number(res.data.chipMismatchExpected),
+                actual: Number(res.data.chipMismatchActual),
+              });
+            }
+            if (res.data.wheelExpenseWarnings?.length) {
+              setWheelWarnings(prev => [...prev, ...res.data.wheelExpenseWarnings]);
+            }
+            if (res.data.leftClub?.length || res.data.recovered?.length) {
+              setLeftClub(prev => {
+                let next = [...prev];
+                if (res.data.leftClub?.length) {
+                  for (const p of res.data.leftClub) {
+                    if (!next.some(x => x.id === p.id)) next.push(p);
                   }
                 }
-              }
-              // Remove recovered players (found again in this balance)
-              if (res.data.recovered?.length) {
-                const recoveredIds = new Set(res.data.recovered.map(r => r.clubPlayerId).filter(Boolean));
-                next = next.filter(x => !x.clubPlayerId || !recoveredIds.has(x.clubPlayerId));
-              }
-              return next;
-            });
+                if (res.data.recovered?.length) {
+                  const recoveredIds = new Set(res.data.recovered.map(r => r.clubPlayerId).filter(Boolean));
+                  next = next.filter(x => !x.clubPlayerId || !recoveredIds.has(x.clubPlayerId));
+                }
+                return next;
+              });
+            }
           }
         }
       } catch (e) {
@@ -123,14 +129,33 @@ export default function Upload() {
         Upload one or multiple ClubGG export files at once. Must include <strong>Club Member Balance</strong> tab.
       </p>
 
+      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={expensesOnly}
+            onChange={e => setExpensesOnly(e.target.checked)}
+            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+          />
+          <span style={{ color: expensesOnly ? '#f59e0b' : '#94a3b8', fontWeight: expensesOnly ? 600 : 400 }}>
+            Expenses Only Mode
+          </span>
+        </label>
+        {expensesOnly && (
+          <span style={{ fontSize: '0.8rem', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '2px 8px' }}>
+            ⚠️ Only updates הוצאות tab — players, games and balances are not affected
+          </span>
+        )}
+      </div>
+
       <div className="card">
         <div
           className={`upload-area ${dragging ? 'drag-over' : ''}`}
+          style={{ cursor: processing ? 'not-allowed' : 'pointer', ...(expensesOnly ? { borderColor: '#f59e0b', borderWidth: '2px' } : {}) }}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
           onClick={() => !processing && fileRef.current.click()}
-          style={{ cursor: processing ? 'not-allowed' : 'pointer' }}
         >
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
           <div style={{ fontSize: '1.1rem', color: '#94a3b8', marginBottom: '0.5rem' }}>
