@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { getGameSessions } from '../api';
+import { getGameSessions, getFridayRakeReport } from '../api';
 import { useNavigate } from 'react-router-dom';
 
 export default function Games() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [shabbatRake, setShabbatRake] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -12,6 +13,10 @@ export default function Games() {
       setSessions(r.data);
       setLoading(false);
     });
+    getFridayRakeReport().then(r => {
+      const total = r.data.reduce((s, row) => s + Number(row.totalRake || 0), 0);
+      setShabbatRake(total);
+    }).catch(() => {});
   }, []);
 
   const fmtDate = (dt) => {
@@ -20,15 +25,6 @@ export default function Games() {
   };
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
-
-  const shabbatSessions = sessions.filter(s => {
-    if (!s.startTime) return false;
-    const dt = new Date(s.startTime);
-    const day = dt.getDay();
-    const hour = dt.getHours();
-    return (day === 5 && hour >= 18) || day === 6;
-  });
-  const shabbatRake = shabbatSessions.reduce((sum, s) => sum + Number(s.rakeTotal || 0), 0);
 
   return (
     <div>
@@ -41,7 +37,7 @@ export default function Games() {
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#1a1d2e', border: '1px solid #3730a3', borderRadius: '10px', padding: '0.6rem 1.2rem', marginBottom: '1.5rem' }}>
           <span style={{ color: '#7a8499', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>ריק שבת</span>
           <strong style={{ color: '#a5b4fc', fontSize: '1.1rem' }}>{shabbatRake.toLocaleString()}</strong>
-          <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({shabbatSessions.length} משחקים)</span>
+          <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Total Shabbat Rake</span>
         </div>
       )}
 
