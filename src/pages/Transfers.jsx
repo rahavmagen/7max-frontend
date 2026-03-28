@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -113,6 +113,7 @@ export default function Transfers() {
   const [adminUsers, setAdminUsers] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [pending, setPending] = useState([]);
+  const [recentCredits, setRecentCredits] = useState([]);
   const [activeForm, setActiveForm] = useState(null);
   const [msg, setMsg] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -149,6 +150,7 @@ export default function Transfers() {
     getAllPending().then(r => setPending(r.data));
     getBankAccounts().then(r => setBankAccounts(r.data));
     getAdminUsers().then(r => setAdminUsers(r.data)).catch(() => {});
+    getRecentTransactions(10).then(r => setRecentCredits(r.data)).catch(() => {});
   };
 
   useEffect(() => { load(); }, []);
@@ -494,6 +496,48 @@ export default function Transfers() {
               {submitting ? 'Recording...' : '+ Record Transfer'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Recent Credit Changes */}
+      {recentCredits.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <h2>Recent Credit Changes <span style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 400 }}>(last 10 days)</span></h2>
+          <div className="table-wrap"><table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Player</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Notes</th>
+                <th>By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentCredits.map(tx => (
+                <tr key={tx.id}>
+                  <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
+                  <td>
+                    <span onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
+                      <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
+                      {tx.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{tx.playerFullName}</span> : null}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ background: tx.type === 'CREDIT' ? '#3b1f5e' : '#1e3a5f', color: tx.type === 'CREDIT' ? '#c084fc' : '#60a5fa', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                      {tx.type === 'CREDIT' ? 'Credit' : 'Deposit'}
+                    </span>
+                  </td>
+                  <td className={tx.amount >= 0 ? 'positive' : 'negative'} style={{ whiteSpace: 'nowrap' }}>
+                    <strong>{fmt(tx.amount)}</strong>
+                  </td>
+                  <td style={{ color: '#64748b' }}>{tx.notes || '—'}</td>
+                  <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{tx.createdByUsername || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
         </div>
       )}
 
