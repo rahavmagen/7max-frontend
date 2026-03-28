@@ -32,6 +32,11 @@ export const uploadReport = (file) => {
   form.append('file', file);
   return api.post("/reports/upload", form, { validateStatus: s => s < 500 });
 };
+export const uploadExpensesOnly = (file) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post('/import/expenses-only', form, { validateStatus: s => s < 500 });
+};
 export const importPlayers = (file, clearExisting) => {
   const form = new FormData();
   form.append('max7', file);
