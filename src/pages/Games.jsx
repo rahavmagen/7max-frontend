@@ -21,12 +21,29 @@ export default function Games() {
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
+  const shabbatSessions = sessions.filter(s => {
+    if (!s.startTime) return false;
+    const dt = new Date(s.startTime);
+    const day = dt.getDay();
+    const hour = dt.getHours();
+    return (day === 5 && hour >= 18) || day === 6;
+  });
+  const shabbatRake = shabbatSessions.reduce((sum, s) => sum + Number(s.rakeTotal || 0), 0);
+
   return (
     <div>
       <h1>Games</h1>
       <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
         All MTT & SNG tournaments. Click a game to see results.
       </p>
+
+      {shabbatRake > 0 && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#1a1d2e', border: '1px solid #3730a3', borderRadius: '10px', padding: '0.6rem 1.2rem', marginBottom: '1.5rem' }}>
+          <span style={{ color: '#7a8499', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>ריק שבת</span>
+          <strong style={{ color: '#a5b4fc', fontSize: '1.1rem' }}>{shabbatRake.toLocaleString()}</strong>
+          <span style={{ color: '#64748b', fontSize: '0.75rem' }}>({shabbatSessions.length} משחקים)</span>
+        </div>
+      )}
 
       {sessions.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>

@@ -173,8 +173,11 @@ export default function PlayerDetail() {
 
   const shabbatRake = results.reduce((s, r) => {
     if (!r.session?.startTime) return s;
-    const day = new Date(r.session.startTime).getDay(); // 6 = Saturday
-    return day === 6 ? s + (r.rakePaid || 0) : s;
+    const dt = new Date(r.session.startTime);
+    const day = dt.getDay();
+    const hour = dt.getHours();
+    const isShabbat = (day === 5 && hour >= 18) || day === 6; // Friday 18:00+ or Saturday
+    return isShabbat ? s + (r.rakePaid || 0) : s;
   }, 0);
 
   return (
@@ -323,7 +326,7 @@ export default function PlayerDetail() {
       )}
 
 
-      <div className="player-balance-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+      <div className="player-balance-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card" style={{ borderTopColor: '#4a5568' }}>
           <h2>Player Info</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -373,13 +376,6 @@ export default function PlayerDetail() {
               <div style={{ fontWeight: 600, color: player.creditTotal > 0 ? '#f59e0b' : '#94a3b8' }}>{fmt(player.creditTotal)}</div>
             </div>
           </div>
-        </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderTopColor: '#6366f1' }}>
-          <div style={{ color: '#7a8499', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1.2px' }}>ריק שבת</div>
-          <div style={{ fontSize: 'clamp(1.4rem, 5vw, 2rem)', fontWeight: 700, color: '#a5b4fc', margin: '0.5rem 0' }}>
-            {fmt(shabbatRake)}
-          </div>
-          <div style={{ color: '#64748b', fontSize: '0.75rem' }}>Total Shabbat Rake</div>
         </div>
       </div>
 
@@ -487,6 +483,9 @@ export default function PlayerDetail() {
                     Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
                   </span>
                 )}
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                  ריק שבת: <strong style={{ color: '#a5b4fc' }}>{fmt(shabbatRake)}</strong>
+                </span>
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                   Current Balance{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}: <strong className={balanceClass(player.balance)}>{fmt(player.balance)}</strong>
                 </span>
