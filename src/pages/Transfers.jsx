@@ -562,7 +562,13 @@ export default function Transfers() {
                           ? <span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{METHOD_LABELS[item.method] || item.method}</span>
                           : <span style={{ color: '#64748b' }}>—</span>}
                       </td>
-                      <td className="positive" style={{ whiteSpace: 'nowrap' }}><strong>{fmt(item.amount)}</strong></td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {item.pendingType === 'XLS_UNMATCHED'
+                          ? item.notes === 'Reduce Chips'
+                            ? <strong className="negative">-{fmt(item.amount)}</strong>
+                            : <strong className="positive">{fmt(item.amount)}</strong>
+                          : <strong className="positive">{fmt(item.amount)}</strong>}
+                      </td>
                       <td style={{ color: '#64748b' }}>{item.notes || '—'}</td>
                       <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{item.createdByUsername || '—'}</td>
                       <td style={{ display: 'flex', gap: '0.4rem' }}>
