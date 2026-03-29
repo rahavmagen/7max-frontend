@@ -106,6 +106,7 @@ const TYPE_BADGE = {
   CREDIT:        { bg: '#3b1f5e', color: '#c084fc', label: 'Manual Credit' },
   PROMOTION:     { bg: '#14532d', color: '#4ade80', label: 'Promotion' },
   WHEEL_EXPENSE: { bg: '#7c2d12', color: '#fb923c', label: 'גלגל (Wheel)' },
+  XLS_UNMATCHED: { bg: '#422006', color: '#fbbf24', label: '⚠ XLS Unmatched' },
 };
 
 export default function Transfers() {
