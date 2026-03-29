@@ -499,50 +499,8 @@ export default function Transfers() {
         </div>
       )}
 
-      {/* Recent Credit Changes */}
-      {recentCredits.length > 0 && (
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <h2>Recent Credit Changes <span style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 400 }}>(last 10 days)</span></h2>
-          <div className="table-wrap"><table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Player</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Notes</th>
-                <th>By</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentCredits.map(tx => (
-                <tr key={tx.id}>
-                  <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
-                  <td>
-                    <span onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
-                      <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
-                      {tx.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{tx.playerFullName}</span> : null}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ background: tx.type === 'CREDIT' ? '#3b1f5e' : '#1e3a5f', color: tx.type === 'CREDIT' ? '#c084fc' : '#60a5fa', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
-                      {tx.type === 'CREDIT' ? 'Credit' : 'Deposit'}
-                    </span>
-                  </td>
-                  <td className={tx.amount >= 0 ? 'positive' : 'negative'} style={{ whiteSpace: 'nowrap' }}>
-                    <strong>{fmt(tx.amount)}</strong>
-                  </td>
-                  <td style={{ color: '#64748b' }}>{tx.notes || '—'}</td>
-                  <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{tx.createdByUsername || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        </div>
-      )}
-
       {/* Unified Pending Section */}
-      <div className="card">
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h2>
           Pending
           {pending.length > 0 && <span style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 400, marginLeft: '0.5rem' }}>({pending.length} unconfirmed)</span>}
@@ -659,6 +617,48 @@ export default function Transfers() {
           </table></div>
         )}
       </div>
+
+      {/* Recent Credit Changes */}
+      {recentCredits.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <h2>Recent Credit Changes <span style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 400 }}>(last 10 days)</span></h2>
+          <div className="table-wrap"><table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Player</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Notes</th>
+                <th>By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentCredits.map(tx => (
+                <tr key={tx.id}>
+                  <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
+                  <td>
+                    <span onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
+                      <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
+                      {tx.playerFullName ? <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.3rem' }}>{tx.playerFullName}</span> : null}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ background: tx.type === 'CREDIT' ? '#3b1f5e' : '#1e3a5f', color: tx.type === 'CREDIT' ? '#c084fc' : '#60a5fa', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                      {tx.type === 'CREDIT' ? 'Credit' : 'Deposit'}
+                    </span>
+                  </td>
+                  <td className={tx.amount >= 0 ? 'positive' : 'negative'} style={{ whiteSpace: 'nowrap' }}>
+                    <strong>{fmt(tx.amount)}</strong>
+                  </td>
+                  <td style={{ color: '#64748b' }}>{tx.notes || '—'}</td>
+                  <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{tx.createdByUsername || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        </div>
+      )}
     </div>
   );
 }
