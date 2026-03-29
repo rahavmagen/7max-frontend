@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { importPlayers, resetAllData } from '../api';
+import { importPlayers, uploadExpensesOnly, resetAllData } from '../api';
 
 export default function Import() {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [expensesOnly, setExpensesOnly] = useState(false);
   const [msg, setMsg] = useState(null);
   const fileRef = useRef();
 
@@ -18,14 +19,26 @@ export default function Import() {
     setLoading(true);
     setMsg(null);
     try {
-      const res = await importPlayers(file, false);
-      if (res.data.error) {
-        setMsg({ type: 'error', text: res.data.error });
+      if (expensesOnly) {
+        const res = await uploadExpensesOnly(file);
+        if (res.data.error) {
+          setMsg({ type: 'error', text: res.data.error });
+        } else {
+          setMsg({
+            type: 'success',
+            text: `Expenses imported: ${res.data.imported} new, ${res.data.skipped} already existed`
+          });
+        }
       } else {
-        setMsg({
-          type: 'success',
-          text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`
-        });
+        const res = await importPlayers(file, false);
+        if (res.data.error) {
+          setMsg({ type: 'error', text: res.data.error });
+        } else {
+          setMsg({
+            type: 'success',
+            text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`
+          });
+        }
       }
     } catch (e) {
       setMsg({ type: 'error', text: 'Import failed: ' + (e.response?.data?.error || e.message) });
@@ -78,14 +91,33 @@ export default function Import() {
         </div>
       </div>
 
+      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+          <input
+            type="checkbox"
+            checked={expensesOnly}
+            onChange={e => setExpensesOnly(e.target.checked)}
+            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+          />
+          <span style={{ color: expensesOnly ? '#f59e0b' : '#94a3b8', fontWeight: expensesOnly ? 600 : 400 }}>
+            Expenses Only Mode
+          </span>
+        </label>
+        {expensesOnly && (
+          <span style={{ fontSize: '0.8rem', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', borderRadius: '6px', padding: '2px 8px' }}>
+            ⚠️ Only updates הוצאות tab — players and credits are not affected
+          </span>
+        )}
+      </div>
+
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <button
           className="btn btn-primary"
-          style={{ fontSize: '1rem', padding: '0.7rem 2rem' }}
+          style={{ fontSize: '1rem', padding: '0.7rem 2rem', ...(expensesOnly ? { background: '#f59e0b', color: '#0f1117', border: 'none' } : {}) }}
           onClick={handleImport}
           disabled={loading || !file}
         >
-          {loading ? 'Importing...' : '⬆ Import Players'}
+          {loading ? 'Importing...' : expensesOnly ? '⬆ Import Expenses Only' : '⬆ Import Players'}
         </button>
 
         {msg?.type === 'success' && (
