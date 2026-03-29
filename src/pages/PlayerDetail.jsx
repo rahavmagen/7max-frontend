@@ -414,10 +414,7 @@ export default function PlayerDetail() {
                 const displayAmount = isOutgoing ? fmt(-t.amount) : fmt(t.amount);
                 return (
                 <tr key={t.id}>
-                  <td>
-                    <div>{t.transactionDate || '—'}</div>
-                    {t.createdAt && <div style={{ color: '#64748b', fontSize: '0.78rem' }}>{t.createdAt.replace('T', ' ').substring(0, 16)}</div>}
-                  </td>
+                  <td>{t.createdAt ? t.createdAt.replace('T', ' ').substring(0, 16) : t.transactionDate || '—'}</td>
                   <td>
                     <span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : t.type === 'CREDIT' ? 'credit' : t.type === 'REPAYMENT' ? 'repayment' : 'withdrawal'}`}>
                       {t.sourceRef === 'SCREEN:CREDIT' || t.sourceRef === 'SCREEN:PROMO'
