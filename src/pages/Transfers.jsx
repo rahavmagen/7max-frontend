@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
@@ -110,6 +111,7 @@ const TYPE_BADGE = {
 };
 
 export default function Transfers() {
+  const { auth } = useAuth();
   const [players, setPlayers] = useState([]);
   const [adminUsers, setAdminUsers] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -139,7 +141,6 @@ export default function Transfers() {
   const [wheelNotes, setWheelNotes] = useState('');
 
   // Admin expense form
-  const [expenseUsername, setExpenseUsername] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseNotes, setExpenseNotes] = useState('');
 
@@ -231,6 +232,7 @@ export default function Transfers() {
   const handleExpenseSubmit = async (e) => {
     e.preventDefault();
     const amount = parseFloat(expenseAmount);
+    const expenseUsername = auth?.username;
     if (!expenseUsername || isNaN(amount) || amount <= 0) {
       setMsg({ type: 'error', text: 'Select an admin and enter a positive amount' });
       return;
@@ -239,7 +241,7 @@ export default function Transfers() {
     try {
       await createAdminExpense({ adminUsername: expenseUsername, amount, notes: expenseNotes || null });
       setMsg({ type: 'success', text: 'Expense recorded' });
-      setExpenseUsername(''); setExpenseAmount(''); setExpenseNotes('');
+      setExpenseAmount(''); setExpenseNotes('');
     } catch {
       setMsg({ type: 'error', text: 'Failed to record expense' });
     }
@@ -436,13 +438,10 @@ export default function Transfers() {
           <form onSubmit={handleExpenseSubmit}>
             <div className="form-row">
               <div className="form-group">
-                <label>Admin *</label>
-                <select required value={expenseUsername} onChange={e => setExpenseUsername(e.target.value)}>
-                  <option value="">Select admin...</option>
-                  {adminUsers.map(u => (
-                    <option key={u.username} value={u.username}>{u.username}</option>
-                  ))}
-                </select>
+                <label>Admin</label>
+                <div style={{ padding: '8px 12px', background: '#1a1d2e', border: '1px solid #2d3148', borderRadius: '6px', color: '#e2e8f0', fontWeight: 600 }}>
+                  {auth?.username}
+                </div>
               </div>
               <div className="form-group">
                 <label>Amount (₪) *</label>
@@ -455,7 +454,7 @@ export default function Transfers() {
               </div>
             </div>
             <button type="submit" className="btn" style={{ background: '#ef4444', color: '#fff', border: 'none' }}
-              disabled={submitting || !expenseUsername}>
+              disabled={submitting}>
               {submitting ? 'Recording...' : '💸 Record Expense'}
             </button>
           </form>
