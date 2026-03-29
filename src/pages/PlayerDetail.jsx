@@ -405,9 +405,9 @@ export default function PlayerDetail() {
             </thead>
             <tbody>
               {transactions.map(t => {
-                const isTransfer = t.sourceRef && (t.sourceRef.startsWith('TRANSFER:') || t.sourceRef.startsWith('SETTLEMENT:'));
+                const isTransfer = t.sourceRef && (t.sourceRef.startsWith('TRANSFER:') || t.sourceRef.startsWith('SETTLEMENT:') || t.sourceRef.startsWith('PAYMENT:'));
                 const isOutgoing = isTransfer && t.notes && /^(Payment to|Transfer to|Settlement payment to)/i.test(t.notes);
-                const isIncoming = isTransfer && t.notes && /^(Cashout from|Transfer from|Settlement received from)/i.test(t.notes);
+                const isIncoming = isTransfer && t.notes && /^(Received from|Cashout from|Transfer from|Settlement received from)/i.test(t.notes);
                 const amountClass = isTransfer
                   ? (isOutgoing ? 'negative' : isIncoming ? 'positive' : (t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative'))
                   : (t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative');

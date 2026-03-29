@@ -121,7 +121,7 @@ export default function BalanceReport() {
             toPlayerId: s.toId,
             amount: s.amount,
             method: defaultMethod,
-            notes: `Settlement: ${s.fromName} → ${s.toName}`,
+            notes: `Payment: ${s.fromName} → ${s.toName}`,
           });
           setRecorded(prev => ({ ...prev, [id]: true }));
           // Refresh player balances
@@ -177,7 +177,7 @@ export default function BalanceReport() {
           </select>
           <button onClick={handleCalculate}
             style={{ background: '#f59e0b', color: '#000', border: 'none', borderRadius: '6px', padding: '7px 18px', fontWeight: 700, cursor: 'pointer' }}>
-            Calculate Settlements
+            Calculate Payments
           </button>
           <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{sorted.length} players</span>
         </div>
@@ -185,7 +185,7 @@ export default function BalanceReport() {
 
       {visibleSettlements.length > 0 && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <h3 style={{ color: '#e2e8f0', marginBottom: '1rem' }}>Settlement Plan</h3>
+          <h3 style={{ color: '#e2e8f0', marginBottom: '1rem' }}>Payment Plan</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             {visibleSettlements.map(s => {
               const status = statuses[s.id] || s.status;
