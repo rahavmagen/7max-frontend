@@ -21,6 +21,7 @@ import Lesson from './pages/Lesson';
 import ChipBalance from './pages/ChipBalance';
 import PlayerValidation from './pages/PlayerValidation';
 import AdminExpenses from './pages/AdminExpenses';
+import BringAFriend from './pages/BringAFriend';
 import './App.css';
 
 const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses'];
@@ -99,6 +100,7 @@ function AppRoutes() {
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/import">Import Players</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
+              <NavLink to="/bring-a-friend">Bring a Friend</NavLink>
               <NavLink to="/transfers">Transfers</NavLink>
               <NavLink to="/balance-report">Balance Report</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
@@ -150,6 +152,7 @@ function AppRoutes() {
               <Route path="/chip-balance" element={<ChipBalance />} />
               <Route path="/player-validation" element={<PlayerValidation />} />
               <Route path="/admin-expenses" element={<AdminExpenses />} />
+              <Route path="/bring-a-friend" element={<BringAFriend />} />
               <Route path="/lesson" element={<Lesson />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>

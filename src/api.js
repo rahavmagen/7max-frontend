@@ -86,6 +86,10 @@ export const createAdminExpense = (data) => api.post('/admin-expenses', data);
 export const updateAdminExpense = (id, data) => api.put(`/admin-expenses/${id}`, data);
 export const deleteAdminExpense = (id) => api.delete(`/admin-expenses/${id}`);
 
+export const createReferral = (data) => api.post('/referrals', data);
+export const getReferrals = () => api.get('/referrals');
+export const deleteReferral = (id) => api.delete(`/referrals/${id}`);
+
 export const getLessonEvent = () => api.get('/lesson/event');
 export const setLessonEvent = (data) => api.post('/lesson/event', data);
 export const getLessonRegistrations = () => api.get('/lesson/registrations');
