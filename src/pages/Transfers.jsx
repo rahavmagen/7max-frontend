@@ -116,6 +116,7 @@ export default function Transfers() {
   const [adminUsers, setAdminUsers] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [pending, setPending] = useState([]);
+  const [pendingSort, setPendingSort] = useState({ col: 'createdAt', dir: 'desc' });
   const [recentCredits, setRecentCredits] = useState([]);
   const [activeForm, setActiveForm] = useState(null);
   const [msg, setMsg] = useState(null);
@@ -511,18 +512,37 @@ export default function Transfers() {
           <div className="table-wrap"><table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Player / From → To</th>
-                <th>Method</th>
-                <th>Amount</th>
-                <th>Notes</th>
-                <th>By</th>
-                <th></th>
+                {[
+                  { key: 'createdAt', label: 'Date' },
+                  { key: 'pendingType', label: 'Type' },
+                  { key: 'playerName', label: 'Player / From → To' },
+                  { key: 'method', label: 'Method' },
+                  { key: 'amount', label: 'Amount' },
+                  { key: null, label: 'Notes' },
+                  { key: 'createdByUsername', label: 'By' },
+                  { key: null, label: '' },
+                ].map(({ key, label }) => (
+                  <th key={label} onClick={key ? () => setPendingSort(s => ({ col: key, dir: s.col === key && s.dir === 'asc' ? 'desc' : 'asc' })) : undefined}
+                    style={key ? { cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' } : undefined}>
+                    {label}
+                    {key && pendingSort.col === key && (
+                      <span style={{ marginLeft: 4, fontSize: '0.75rem' }}>{pendingSort.dir === 'asc' ? '▲' : '▼'}</span>
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {pending.map((item, idx) => {
+              {[...pending].sort((a, b) => {
+                const { col, dir } = pendingSort;
+                let av = a[col], bv = b[col];
+                if (av == null && bv == null) return 0;
+                if (av == null) return 1;
+                if (bv == null) return -1;
+                if (col === 'amount') { av = parseFloat(av); bv = parseFloat(bv); }
+                const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+                return dir === 'asc' ? cmp : -cmp;
+              }).map((item, idx) => {
                 const badge = TYPE_BADGE[item.pendingType] || TYPE_BADGE.CREDIT;
                 const isEditing = editing && editing.id === item.id && editing.pendingType === item.pendingType;
                 return (
