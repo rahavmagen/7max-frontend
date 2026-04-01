@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getGameSessions, getFridayRakeReport } from '../api';
 import { useNavigate } from 'react-router-dom';
 
@@ -6,6 +6,10 @@ export default function Games() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [shabbatRake, setShabbatRake] = useState(0);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [costMin, setCostMin] = useState('');
+  const [costMax, setCostMax] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +22,20 @@ export default function Games() {
       setShabbatRake(total);
     }).catch(() => {});
   }, []);
+
+  const filtered = useMemo(() => {
+    return sessions.filter(s => {
+      const date = s.startTime ? s.startTime.substring(0, 10) : '';
+      const cost = s.entryFee ? Number(s.entryFee) : 0;
+      if (dateFrom && date < dateFrom) return false;
+      if (dateTo && date > dateTo) return false;
+      if (costMin !== '' && cost < Number(costMin)) return false;
+      if (costMax !== '' && cost > Number(costMax)) return false;
+      return true;
+    });
+  }, [sessions, dateFrom, dateTo, costMin, costMax]);
+
+  const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '';
 
   const fmtDate = (dt) => {
     if (!dt) return '—';
@@ -41,6 +59,41 @@ export default function Games() {
         </div>
       )}
 
+      {/* Filters */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date from</label>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date to</label>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cost min (₪)</label>
+          <input type="number" placeholder="0" value={costMin} onChange={e => setCostMin(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cost max (₪)</label>
+          <input type="number" placeholder="∞" value={costMax} onChange={e => setCostMax(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
+        </div>
+        {hasFilter && (
+          <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); }}
+            style={{ background: '#374151', color: '#94a3b8', border: 'none', borderRadius: '6px', padding: '0.35rem 0.8rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+            Clear
+          </button>
+        )}
+        {hasFilter && (
+          <span style={{ color: '#64748b', fontSize: '0.8rem', alignSelf: 'center' }}>
+            {filtered.length} / {sessions.length} games
+          </span>
+        )}
+      </div>
+
       {sessions.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
           No tournament data yet — upload a ClubGG report first.
@@ -61,7 +114,7 @@ export default function Games() {
               </tr>
             </thead>
             <tbody>
-              {sessions.map(s => (
+              {filtered.map(s => (
                 <tr
                   key={s.id}
                   onClick={() => navigate(`/game-results/${s.id}`, { state: { session: s } })}
