@@ -9,6 +9,7 @@ export default function Import() {
   const [resetting, setResetting] = useState(false);
   const [expensesOnly, setExpensesOnly] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [newPlayers, setNewPlayers] = useState(null);
   const fileRef = useRef();
 
   const handleImport = async () => {
@@ -33,13 +34,10 @@ export default function Import() {
         const res = await importPlayers(file, false);
         if (res.data.error) {
           setMsg({ type: 'error', text: res.data.error });
+          setNewPlayers(null);
         } else {
-          const warnings = res.data.duplicateWarnings;
-          setMsg({
-            type: warnings?.length ? 'warning' : 'success',
-            text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}` +
-              (warnings?.length ? `\n\n⚠️ Duplicate warnings:\n${warnings.join('\n')}` : '')
-          });
+          setMsg({ type: 'success', text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}` });
+          setNewPlayers(res.data.newPlayers?.length ? res.data.newPlayers : null);
         }
       }
     } catch (e) {
@@ -73,6 +71,14 @@ export default function Import() {
       </p>
 
       {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
+      {newPlayers && (
+        <div style={{ background: '#1a2035', border: '1px solid #f59e0b', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
+          <strong style={{ color: '#f59e0b' }}>⚠️ {newPlayers.length} new player{newPlayers.length > 1 ? 's' : ''} created — verify these are not duplicates:</strong>
+          <ul style={{ margin: '0.5rem 0 0 1.2rem', color: '#e2e8f0', fontSize: '0.9rem' }}>
+            {newPlayers.map(name => <li key={name}>{name}</li>)}
+          </ul>
+        </div>
+      )}
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h2>max7 Management File (any .xlsx)</h2>
