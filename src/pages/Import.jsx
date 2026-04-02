@@ -34,9 +34,11 @@ export default function Import() {
         if (res.data.error) {
           setMsg({ type: 'error', text: res.data.error });
         } else {
+          const warnings = res.data.duplicateWarnings;
           setMsg({
-            type: 'success',
-            text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}`
+            type: warnings?.length ? 'warning' : 'success',
+            text: `Import complete! Created: ${res.data.created}, Updated: ${res.data.updated}, Total: ${res.data.total}` +
+              (warnings?.length ? `\n\n⚠️ Duplicate warnings:\n${warnings.join('\n')}` : '')
           });
         }
       }
