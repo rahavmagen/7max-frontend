@@ -130,6 +130,7 @@ export default function Transfers() {
   const [creditPlayerId, setCreditPlayerId] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditNotes, setCreditNotes] = useState('');
+  const [noChipChange, setNoChipChange] = useState(false);
 
   // Promotion form
   const [promoPlayerId, setPromoPlayerId] = useState('');
@@ -179,9 +180,9 @@ export default function Transfers() {
     }
     setSubmitting(true);
     try {
-      await updateCredit(creditPlayerId, delta, creditNotes || null);
+      await updateCredit(creditPlayerId, delta, creditNotes || null, noChipChange);
       setMsg({ type: 'success', text: 'Credit updated successfully' });
-      setCreditPlayerId(''); setCreditAmount(''); setCreditNotes('');
+      setCreditPlayerId(''); setCreditAmount(''); setCreditNotes(''); setNoChipChange(false);
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to update credit' });
@@ -366,6 +367,18 @@ export default function Transfers() {
                 <label>Notes</label>
                 <input type="text" value={creditNotes} onChange={e => setCreditNotes(e.target.value)} placeholder="Optional" />
               </div>
+            </div>
+            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="checkbox"
+                id="noChipChange"
+                checked={noChipChange}
+                onChange={e => setNoChipChange(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }}
+              />
+              <label htmlFor="noChipChange" style={{ cursor: 'pointer', color: noChipChange ? '#f59e0b' : '#94a3b8', fontSize: '0.875rem', userSelect: 'none' }}>
+                No chip change (bookkeeping only — will not appear in pending)
+              </label>
             </div>
             <button type="submit" className="btn btn-primary" disabled={submitting || !creditPlayerId}>
               {submitting ? 'Saving...' : 'Save Credit'}
