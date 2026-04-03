@@ -551,11 +551,12 @@ export default function Transfers() {
                 const isEditing = editing && editing.id === item.id && editing.pendingType === item.pendingType;
                 const rawDate = item.transferDate || item.transactionDate || item.createdAt?.substring(0, 10) || null;
                 const fmtDate = rawDate ? rawDate.substring(8, 10) + '-' + rawDate.substring(5, 7) + '-' + rawDate.substring(0, 4) : '—';
+                const fmtTime = item.createdAt && item.createdAt.length > 10 ? item.createdAt.substring(11, 16) : '';
                 return (
                   <>
                     <tr key={`${item.pendingType}-${item.id}`}>
                       <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                        {fmtDate}
+                        {fmtDate}{fmtTime && <span style={{ color: '#475569', marginLeft: '0.3rem' }}>{fmtTime}</span>}
                       </td>
                       <td>
                         <span style={{ background: badge.bg, color: badge.color, padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
