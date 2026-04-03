@@ -535,7 +535,11 @@ export default function Transfers() {
             <tbody>
               {[...pending].sort((a, b) => {
                 const { col, dir } = pendingSort;
-                let av = a[col], bv = b[col];
+                const getVal = (item) => {
+                  if (col === 'createdAt') return item.transferDate || item.transactionDate || item.createdAt || '';
+                  return item[col];
+                };
+                let av = getVal(a), bv = getVal(b);
                 if (av == null && bv == null) return 0;
                 if (av == null) return 1;
                 if (bv == null) return -1;
@@ -545,11 +549,13 @@ export default function Transfers() {
               }).map((item, idx) => {
                 const badge = TYPE_BADGE[item.pendingType] || TYPE_BADGE.CREDIT;
                 const isEditing = editing && editing.id === item.id && editing.pendingType === item.pendingType;
+                const rawDate = item.transferDate || item.transactionDate || item.createdAt?.substring(0, 10) || null;
+                const fmtDate = rawDate ? rawDate.substring(8, 10) + '-' + rawDate.substring(5, 7) + '-' + rawDate.substring(0, 4) : '—';
                 return (
                   <>
                     <tr key={`${item.pendingType}-${item.id}`}>
                       <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                        {item.transferDate || item.transactionDate || item.createdAt?.substring(0, 10) || '—'}
+                        {fmtDate}
                       </td>
                       <td>
                         <span style={{ background: badge.bg, color: badge.color, padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
@@ -662,7 +668,9 @@ export default function Transfers() {
             <tbody>
               {recentCredits.map(tx => (
                 <tr key={tx.id}>
-                  <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
+                  <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                    {tx.transactionDate ? tx.transactionDate.substring(8,10) + '-' + tx.transactionDate.substring(5,7) + '-' + tx.transactionDate.substring(0,4) : '—'}
+                  </td>
                   <td>
                     <span onClick={() => navigate(`/player/${tx.playerId}`)} style={{ cursor: 'pointer' }}>
                       <strong style={{ color: '#6366f1' }}>{tx.playerUsername}</strong>
