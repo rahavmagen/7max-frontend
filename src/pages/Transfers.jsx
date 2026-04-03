@@ -589,11 +589,13 @@ export default function Transfers() {
                           : <span style={{ color: '#64748b' }}>—</span>}
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {item.pendingType === 'XLS_UNMATCHED'
-                          ? item.notes === 'Reduce Chips'
+                        {(() => {
+                          const isDebit = item.transactionType === 'REPAYMENT' || item.transactionType === 'WHEEL_EXPENSE'
+                            || (item.pendingType === 'XLS_UNMATCHED' && item.notes === 'Reduce Chips');
+                          return isDebit
                             ? <strong className="negative">-{fmt(item.amount)}</strong>
-                            : <strong className="positive">{fmt(item.amount)}</strong>
-                          : <strong className="positive">{fmt(item.amount)}</strong>}
+                            : <strong className="positive">{fmt(item.amount)}</strong>;
+                        })()}
                       </td>
                       <td style={{ color: '#64748b' }}>{item.notes || '—'}</td>
                       <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{item.createdByUsername || '—'}</td>
