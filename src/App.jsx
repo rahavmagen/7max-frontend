@@ -22,6 +22,7 @@ import ChipBalance from './pages/ChipBalance';
 import PlayerValidation from './pages/PlayerValidation';
 import AdminExpenses from './pages/AdminExpenses';
 import BringAFriend from './pages/BringAFriend';
+import Wheel from './pages/Wheel';
 import './App.css';
 
 const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses'];
@@ -106,6 +107,7 @@ function AppRoutes() {
               <NavLink to="/total-profit">Total Profit</NavLink>
               <AccountingDropdown />
               <NavLink to="/lesson">אימון קאש</NavLink>
+              <NavLink to="/wheel">🎡 Wheel</NavLink>
             </>
           )}
           {isPlayer && (
@@ -154,6 +156,7 @@ function AppRoutes() {
               <Route path="/admin-expenses" element={<AdminExpenses />} />
               <Route path="/bring-a-friend" element={<BringAFriend />} />
               <Route path="/lesson" element={<Lesson />} />
+              <Route path="/wheel" element={<Wheel />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}
