@@ -60,7 +60,7 @@ export const getBalanceSheet = (from, to) => {
   const params = {};
   if (from) params.from = from;
   if (to) params.to = to;
-  return api.get('/balance-sheet', { params });
+  return api.get('/reports/balance-sheet', { params });
 };
 export const resetAllData = () => api.post('/import/wipe');
 export const getGameSessions = () => api.get('/reports/sessions');
