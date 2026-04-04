@@ -4,28 +4,55 @@ import { createWorker } from 'tesseract.js';
 import { useAuth } from '../auth/AuthContext';
 
 /* ─── Parse raw OCR text from a ClubGG player list screenshot ─── */
-function parseOcrNames(text) {
-  const UI = /^(rank|players?|bounty|chips?|tables?|information|blinds?|prize|satellites?|register|host\s*option|early|bird|mtt|7max|max7|players\s+tables)/i;
-  const seen = new Set();
+function parseOcrNames(text, debug = false) {
+  const UI = /^(rank|players?|bounty|chips?|tables?|information|blinds?|prize|satellites?|register|host\s*option|early|bird|mtt|7max|max7|players\s+tables|total\s+players?)/i;
+  // Maps lowercase → original for case-insensitive dedup
+  const seen = new Map();
+  const log = debug ? (...a) => console.log(...a) : () => {};
 
-  for (let line of text.split('\n')) {
-    line = line.trim();
+  for (let raw of text.split('\n')) {
+    let line = raw.trim();
     if (!line) continue;
-    // Remove leading rank dash/number: "- " or "1 "
-    line = line.replace(/^[-—\s]*\d*\s*[-—\s]+/, '').trim();
+
+    // PRIMARY: ClubGG format "- PlayerName - 28,750(287.5 BB)"
+    // The leading dash/rank is OPTIONAL — OCR may omit it.
+    // Requires: name followed by " - digits(BB)" to confirm it's a player row.
+    const primary = line.match(/^(?:[-—\s]*\d*\s*[-—.]\s*)?(.+?)\s*[-—]\s*[\d,]+(?:\.\d+)?\s*(?:\(.*?BB.*?\))?\s*$/i);
+    if (primary) {
+      const name = primary[1].trim();
+      if (
+        name.length >= 2 && name.length <= 35 &&
+        !UI.test(name) &&
+        !/[\u0590-\u05FF]/.test(name) &&
+        !/^[\d,\.\s\-]+$/.test(name)  // not a pure number/dash line
+      ) {
+        const key = name.toLowerCase();
+        if (!seen.has(key)) { seen.set(key, name); log('[PRIMARY]', name); }
+        else log('[DUP primary]', name);
+      } else {
+        log('[PRIMARY skip]', name, '← failed name validation');
+      }
+      continue; // primary matched the row format — don't fall through
+    }
+
+    // FALLBACK: lines without chip count (OCR split columns, name only)
+    line = line.replace(/^[-—\s]*\d+\s*[-—.]\s*/, '').trim();
     if (!line) continue;
-    if (UI.test(line)) continue;
-    // Skip chip-count suffixes like "28,750(287.5 BB)" — remove them
-    line = line.replace(/\s*[-—]\s*[\d,]+(\.\d+)?\s*(\(.*?\))?$/, '').trim();
-    line = line.replace(/\s+[\d,]+(\.\d+)?\s*\(.*?\)$/, '').trim();
-    // Skip pure numbers, chip counts, Hebrew
-    if (/^\d[\d,\.]*$/.test(line)) continue;
-    if (/[\d,]+\s*BB/i.test(line)) continue;
-    if (/[\u0590-\u05FF]/.test(line)) continue;
-    if (line.length < 2 || line.length > 35) continue;
-    seen.add(line);
+    if (UI.test(line)) { log('[SKIP ui]', line); continue; }
+    if (/[\d,]+\s*BB/i.test(line)) { log('[SKIP BB]', line); continue; }
+    if (/[\u0590-\u05FF]/.test(line)) { log('[SKIP hebrew]', line); continue; }
+    if (/^[\d,\.\s]+$/.test(line)) { log('[SKIP digits]', line); continue; }
+    // Note: intentionally NOT filtering \d{3,} here — names like ramik300, lp1976 are valid
+    // Chip counts in fallback context are already blocked by the comma rule below
+    if (/,/.test(line)) { log('[SKIP comma]', line); continue; }
+    if (line.length < 2 || line.length > 35) { log('[SKIP len]', line); continue; }
+
+    const key = line.toLowerCase();
+    if (!seen.has(key)) { seen.set(key, line); log('[FALLBACK]', line); }
+    else log('[DUP fallback]', line);
   }
-  return [...seen];
+  log('[TOTAL]', seen.size, [...seen.values()]);
+  return [...seen.values()];
 }
 
 /* ─── colours cycling through segments ─── */
@@ -95,6 +122,9 @@ export default function Wheel() {
   const [step, setStep]             = useState('upload'); // upload | review | spin
   const [allPlayers, setAllPlayers] = useState([]);
   const [selected, setSelected]     = useState(new Set());
+  const [editingName, setEditingName] = useState(null);   // name being edited
+  const [editValue, setEditValue]   = useState('');
+  const [addingName, setAddingName] = useState('');       // new name input
   const [wheelPlayers, setWheelPlayers] = useState([]);
   const [winner, setWinner]         = useState(null);
   const [showWinner, setShowWinner] = useState(false);
@@ -108,11 +138,14 @@ export default function Wheel() {
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrImages, setOcrImages]   = useState([]); // preview URLs
 
-  const canvasRef  = useRef(null);
-  const rotRef     = useRef(0);
-  const animRef    = useRef(null);
-  const audioRef   = useRef(null);
-  const logoRef    = useRef(null);
+  const canvasRef    = useRef(null);
+  const rotRef       = useRef(0);
+  const animRef      = useRef(null);
+  const audioRef     = useRef(null);
+  const logoRef      = useRef(null);
+  const recorderRef  = useRef(null);
+  const chunksRef    = useRef([]);
+  const [videoUrl, setVideoUrl] = useState(null);
 
   const SIZE = 480, CX = 240, CY = 240, R = 218;
 
@@ -252,7 +285,25 @@ export default function Wheel() {
   /* ─── spin ─── */
   const spin = useCallback(() => {
     if (spinning || wheelPlayers.length < 2) return;
-    setSpinning(true); setShowWinner(false); setWinner(null);
+    setSpinning(true); setShowWinner(false); setWinner(null); setVideoUrl(null);
+
+    // Start video recording
+    try {
+      if (canvasRef.current && window.MediaRecorder) {
+        const stream = canvasRef.current.captureStream(30);
+        const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
+        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+        chunksRef.current = [];
+        recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+        recorder.onstop = () => {
+          const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+          setVideoUrl(URL.createObjectURL(blob));
+        };
+        recorder.start();
+        recorderRef.current = recorder;
+      }
+    } catch(_) {}
+
     const N   = wheelPlayers.length;
     const SEG = (2*Math.PI)/N;
     const startRot  = rotRef.current;
@@ -276,7 +327,13 @@ export default function Wheel() {
         const w = getWinner();
         setWinner(w);
         setHistory(h => [{ name:w, time: new Date().toLocaleTimeString('he-IL') }, ...h.slice(0,9)]);
-        setShowWinner(true);
+        // Stop recording before showing winner (small delay so last frame is captured)
+        setTimeout(() => {
+          if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+            recorderRef.current.stop();
+          }
+          setShowWinner(true);
+        }, 400);
         playWin();
       }
     };
@@ -310,7 +367,8 @@ export default function Wheel() {
           });
           const { data: { text } } = await worker.recognize(images[i]);
           await worker.terminate();
-          parseOcrNames(text).forEach(n => allNames.add(n));
+          console.log(`[OCR raw image ${i+1}]:\n`, text);
+          parseOcrNames(text, true).forEach(n => allNames.add(n));
         }
         const names = [...allNames];
         if (!names.length) { setParseError('Could not read player names from image. Try the manual entry option.'); setOcrLoading(false); return; }
@@ -355,6 +413,7 @@ export default function Wheel() {
     setWheelPlayers([]); setWinner(null); setShowWinner(false);
     setHistory([]); setManualText(''); setParseError('');
     setOcrImages([]); setOcrLoading(false); setOcrProgress(0);
+    setVideoUrl(null);
   };
 
   /* ─── shared styles ─── */
@@ -459,6 +518,26 @@ export default function Wheel() {
     </div>
   );
 
+  /* ─── review helpers ─── */
+  const commitEdit = (oldName) => {
+    const v = editValue.trim();
+    if (!v || v === oldName) { setEditingName(null); return; }
+    setAllPlayers(p => p.map(n => n === oldName ? v : n));
+    setSelected(p => { const s = new Set(p); if (s.has(oldName)) { s.delete(oldName); s.add(v); } return s; });
+    setEditingName(null);
+  };
+  const deleteName = (name) => {
+    setAllPlayers(p => p.filter(n => n !== name));
+    setSelected(p => { const s = new Set(p); s.delete(name); return s; });
+  };
+  const addName = () => {
+    const v = addingName.trim();
+    if (!v || allPlayers.includes(v)) { setAddingName(''); return; }
+    setAllPlayers(p => [...p, v]);
+    setSelected(p => new Set([...p, v]));
+    setAddingName('');
+  };
+
   /* Step: review */
   if (step === 'review') return (
     <div style={{ maxWidth:'640px', margin:'0 auto', padding:'2rem 1rem' }}>
@@ -466,7 +545,7 @@ export default function Wheel() {
         Review Players
       </h1>
       <p style={{ color:'#64748b', fontSize:'0.85rem', marginBottom:'1.5rem' }}>
-        {allPlayers.length} players found — uncheck anyone to exclude them
+        {allPlayers.length} players found — uncheck to exclude, ✏️ to rename, 🗑 to delete
       </p>
 
       <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem' }}>
@@ -478,19 +557,61 @@ export default function Wheel() {
       </div>
 
       <div style={{ ...card, maxHeight:'420px', overflowY:'auto', marginBottom:'1rem' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px' }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
           {allPlayers.map(name => (
-            <label key={name} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'6px 8px',
-                                       borderRadius:'4px', cursor:'pointer',
-                                       background: selected.has(name)?'rgba(255,215,0,0.05)':'transparent',
-                                       border:'1px solid', borderColor: selected.has(name)?'rgba(255,215,0,0.2)':'transparent' }}>
+            <div key={name} style={{
+              display:'flex', alignItems:'center', gap:'8px', padding:'5px 8px',
+              borderRadius:'4px',
+              background: selected.has(name)?'rgba(255,215,0,0.05)':'transparent',
+              border:'1px solid', borderColor: selected.has(name)?'rgba(255,215,0,0.2)':'transparent',
+            }}>
               <input type="checkbox" checked={selected.has(name)}
                 onChange={()=>{ setSelected(p=>{const n=new Set(p); n.has(name)?n.delete(name):n.add(name); return n; }); }}
-                style={{ accentColor:gold }} />
-              <span style={{ color: selected.has(name)?'#e2e8f0':'#64748b', fontSize:'0.9rem' }}>{name}</span>
-            </label>
+                style={{ accentColor:gold, flexShrink:0 }} />
+
+              {editingName === name ? (
+                <>
+                  <input
+                    autoFocus
+                    value={editValue}
+                    onChange={e=>setEditValue(e.target.value)}
+                    onKeyDown={e=>{ if(e.key==='Enter') commitEdit(name); if(e.key==='Escape') setEditingName(null); }}
+                    style={{ flex:1, background:'#0f1117', border:'1px solid '+gold, borderRadius:'4px',
+                             color:'#e2e8f0', padding:'2px 6px', fontSize:'0.9rem' }}
+                  />
+                  <button onClick={()=>commitEdit(name)} style={{ background:gold, color:'#1a0900', border:'none',
+                    borderRadius:'3px', padding:'2px 8px', cursor:'pointer', fontSize:'0.8rem', fontWeight:700 }}>✓</button>
+                  <button onClick={()=>setEditingName(null)} style={{ background:'#2d3148', color:'#94a3b8', border:'none',
+                    borderRadius:'3px', padding:'2px 8px', cursor:'pointer', fontSize:'0.8rem' }}>✗</button>
+                </>
+              ) : (
+                <>
+                  <span style={{ flex:1, color: selected.has(name)?'#e2e8f0':'#64748b', fontSize:'0.9rem' }}>{name}</span>
+                  <button onClick={()=>{ setEditingName(name); setEditValue(name); }} title="Rename"
+                    style={{ background:'none', border:'none', color:'#64748b', cursor:'pointer', fontSize:'0.9rem', padding:'0 2px' }}>✏️</button>
+                  <button onClick={()=>deleteName(name)} title="Delete"
+                    style={{ background:'none', border:'none', color:'#64748b', cursor:'pointer', fontSize:'0.9rem', padding:'0 2px' }}>🗑</button>
+                </>
+              )}
+            </div>
           ))}
         </div>
+      </div>
+
+      {/* Add new name */}
+      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem' }}>
+        <input
+          value={addingName}
+          onChange={e=>setAddingName(e.target.value)}
+          onKeyDown={e=>{ if(e.key==='Enter') addName(); }}
+          placeholder="Add a missing name…"
+          style={{ flex:1, background:'#0f1117', border:'1px solid #2d3148', borderRadius:'4px',
+                   color:'#e2e8f0', padding:'7px 10px', fontSize:'0.9rem' }}
+        />
+        <button onClick={addName} disabled={!addingName.trim()}
+          style={{...btn(!!addingName.trim()), padding:'7px 16px', fontSize:'0.85rem', opacity: addingName.trim()?1:0.4}}>
+          + Add
+        </button>
       </div>
 
       {parseError && <div style={{ color:'#ef4444', marginBottom:'0.75rem', fontSize:'0.85rem' }}>{parseError}</div>}
@@ -633,6 +754,21 @@ export default function Wheel() {
                 </svg>
                 Share on WhatsApp
               </button>
+              {videoUrl && (
+                <a href={videoUrl} download={`wheel-${winner}.webm`} style={{
+                  background:'linear-gradient(180deg,#3a6fd8 0%,#1e40af 100%)', color:'#fff',
+                  padding:'11px 28px', borderRadius:'4px', cursor:'pointer',
+                  fontWeight:700, fontSize:'0.95rem', display:'flex', alignItems:'center', gap:'8px',
+                  textDecoration:'none',
+                }}>
+                  ⬇ Save Video (.webm)
+                </a>
+              )}
+              {!videoUrl && (
+                <div style={{ color:'#475569', fontSize:'0.8rem', alignSelf:'center', fontStyle:'italic' }}>
+                  Preparing video…
+                </div>
+              )}
               <button onClick={()=>{setShowWinner(false);}} style={{...btn(false), padding:'11px 20px'}}>
                 Close
               </button>
