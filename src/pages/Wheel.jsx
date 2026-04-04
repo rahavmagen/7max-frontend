@@ -6,50 +6,60 @@ import { useAuth } from '../auth/AuthContext';
 /* ─── Parse raw OCR text from a ClubGG player list screenshot ─── */
 function parseOcrNames(text, debug = false) {
   const UI = /^(rank|players?|bounty|chips?|tables?|information|blinds?|prize|satellites?|register|host\s*option|early|bird|mtt|7max|max7|players\s+tables|total\s+players?)/i;
-  // Maps lowercase → original for case-insensitive dedup
   const seen = new Map();
   const log = debug ? (...a) => console.log(...a) : () => {};
+
+  const isValidName = (s) =>
+    s.length >= 2 && s.length <= 35 &&
+    !UI.test(s) &&
+    !/[\u0590-\u05FF]/.test(s) &&
+    !/^[\d,\.\s\-]+$/.test(s);
+
+  const addName = (name, tag) => {
+    const key = name.toLowerCase();
+    if (!seen.has(key)) { seen.set(key, name); log('[' + tag + ']', name); }
+    else log('[DUP ' + tag + ']', name);
+  };
 
   for (let raw of text.split('\n')) {
     let line = raw.trim();
     if (!line) continue;
 
-    // PRIMARY: ClubGG format "- PlayerName - 28,750(287.5 BB)"
-    // The leading dash/rank is OPTIONAL — OCR may omit it.
-    // Requires: name followed by " - digits(BB)" to confirm it's a player row.
+    // PRIMARY: "- PlayerName - 28,750(287.5 BB)" or "PlayerName - 28,750(287.5 BB)"
+    // Bounty dash is PRESENT between name and chip count
     const primary = line.match(/^(?:[-—\s]*\d*\s*[-—.]\s*)?(.+?)\s*[-—]\s*[\d,]+(?:\.\d+)?\s*(?:\(.*?BB.*?\))?\s*$/i);
     if (primary) {
       const name = primary[1].trim();
-      if (
-        name.length >= 2 && name.length <= 35 &&
-        !UI.test(name) &&
-        !/[\u0590-\u05FF]/.test(name) &&
-        !/^[\d,\.\s\-]+$/.test(name)  // not a pure number/dash line
-      ) {
-        const key = name.toLowerCase();
-        if (!seen.has(key)) { seen.set(key, name); log('[PRIMARY]', name); }
-        else log('[DUP primary]', name);
-      } else {
-        log('[PRIMARY skip]', name, '← failed name validation');
-      }
-      continue; // primary matched the row format — don't fall through
+      if (isValidName(name)) addName(name, 'P');
+      else log('[P-skip]', name);
+      continue;
     }
 
-    // FALLBACK: lines without chip count (OCR split columns, name only)
-    line = line.replace(/^[-—\s]*\d+\s*[-—.]\s*/, '').trim();
-    if (!line) continue;
-    if (UI.test(line)) { log('[SKIP ui]', line); continue; }
-    if (/[\d,]+\s*BB/i.test(line)) { log('[SKIP BB]', line); continue; }
-    if (/[\u0590-\u05FF]/.test(line)) { log('[SKIP hebrew]', line); continue; }
-    if (/^[\d,\.\s]+$/.test(line)) { log('[SKIP digits]', line); continue; }
-    // Note: intentionally NOT filtering \d{3,} here — names like ramik300, lp1976 are valid
-    // Chip counts in fallback context are already blocked by the comma rule below
-    if (/,/.test(line)) { log('[SKIP comma]', line); continue; }
-    if (line.length < 2 || line.length > 35) { log('[SKIP len]', line); continue; }
+    // SECONDARY: "PlayerName 28,750(287.5 BB)" or "- PlayerName 28,750(287.5 BB)"
+    // Bounty column dash MISSING — OCR didn't read it; chip count identified by N,NNN pattern
+    const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}/);
+    if (secondary) {
+      let name = secondary[1].trim();
+      name = name.replace(/^[-—\s]*\d*\s*[-—.]\s*/, '').trim(); // strip rank prefix
+      name = name.replace(/\s*[-—]\s*$/, '').trim();             // strip trailing bounty dash
+      if (isValidName(name)) addName(name, 'S');
+      else log('[S-skip]', secondary[1]);
+      continue;
+    }
 
-    const key = line.toLowerCase();
-    if (!seen.has(key)) { seen.set(key, line); log('[FALLBACK]', line); }
-    else log('[DUP fallback]', line);
+    // FALLBACK: plain name-only line (OCR split the chip count to a separate line)
+    line = line.replace(/^[-—\s]*\d+\s*[-—.]\s*/, '').trim(); // strip rank number prefix
+    line = line.replace(/^[-—\s]+/, '').trim();                // strip leading dashes
+    line = line.replace(/\s*[-—\s]+$/, '').trim();             // strip trailing dashes
+    if (!line) continue;
+    if (UI.test(line)) { log('[F-ui]', line); continue; }
+    if (/[\d,]+\s*BB/i.test(line)) { log('[F-BB]', line); continue; }
+    if (/[\u0590-\u05FF]/.test(line)) { log('[F-heb]', line); continue; }
+    if (/^[\d,\.\s]+$/.test(line)) { log('[F-num]', line); continue; }
+    if (/,/.test(line)) { log('[F-comma]', line); continue; }
+    if (line.length < 2 || line.length > 35) { log('[F-len]', line); continue; }
+
+    addName(line, 'F');
   }
   log('[TOTAL]', seen.size, [...seen.values()]);
   return [...seen.values()];
@@ -137,6 +147,8 @@ export default function Wheel() {
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrImages, setOcrImages]   = useState([]); // preview URLs
+  const [ocrRawText, setOcrRawText] = useState(''); // for debug
+  const [showOcrDebug, setShowOcrDebug] = useState(false);
 
   const canvasRef    = useRef(null);
   const rotRef       = useRef(0);
@@ -368,6 +380,7 @@ export default function Wheel() {
           const { data: { text } } = await worker.recognize(images[i]);
           await worker.terminate();
           console.log(`[OCR raw image ${i+1}]:\n`, text);
+          setOcrRawText(prev => prev + `\n\n--- IMAGE ${i+1} ---\n` + text);
           parseOcrNames(text, true).forEach(n => allNames.add(n));
         }
         const names = [...allNames];
@@ -413,6 +426,7 @@ export default function Wheel() {
     setWheelPlayers([]); setWinner(null); setShowWinner(false);
     setHistory([]); setManualText(''); setParseError('');
     setOcrImages([]); setOcrLoading(false); setOcrProgress(0);
+    setOcrRawText(''); setShowOcrDebug(false);
     setVideoUrl(null);
   };
 
@@ -597,6 +611,24 @@ export default function Wheel() {
           ))}
         </div>
       </div>
+
+      {/* Raw OCR debug */}
+      {ocrRawText && (
+        <div style={{ marginBottom:'1rem' }}>
+          <button onClick={()=>setShowOcrDebug(v=>!v)}
+            style={{ background:'none', border:'none', color:'#475569', cursor:'pointer',
+                     fontSize:'0.78rem', textDecoration:'underline' }}>
+            {showOcrDebug ? '▲ Hide raw OCR text' : '▼ Show raw OCR text (debug)'}
+          </button>
+          {showOcrDebug && (
+            <pre style={{ background:'#0a0c14', border:'1px solid #1e2235', borderRadius:'4px',
+                          color:'#64748b', fontSize:'0.7rem', padding:'10px', maxHeight:'200px',
+                          overflowY:'auto', whiteSpace:'pre-wrap', marginTop:'0.5rem' }}>
+              {ocrRawText}
+            </pre>
+          )}
+        </div>
+      )}
 
       {/* Add new name */}
       <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem' }}>
