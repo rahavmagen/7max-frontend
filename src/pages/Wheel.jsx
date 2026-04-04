@@ -37,12 +37,14 @@ function parseOcrNames(text, debug = false) {
 
     // SECONDARY: "PlayerName 28,750(287.5 BB)" or "- PlayerName 28,750(287.5 BB)"
     // Bounty column dash MISSING — OCR didn't read it; chip count identified by N,NNN pattern
-    const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}/);
+    // IMPORTANT: chip count must be at END of line ($) to avoid matching mid-line chip fragments
+    const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}(?:\.\d+)?(?:\s*\([\d.]+ BB\))?\s*$/i);
     if (secondary) {
       let name = secondary[1].trim();
       name = name.replace(/^[-—\s]*\d*\s*[-—.]\s*/, '').trim(); // strip rank prefix
       name = name.replace(/\s*[-—]\s*$/, '').trim();             // strip trailing bounty dash
-      if (isValidName(name)) addName(name, 'S');
+      // Extra guard: valid names don't contain commas (comma = leftover chip count garbage)
+      if (isValidName(name) && !name.includes(',')) addName(name, 'S');
       else log('[S-skip]', secondary[1]);
       continue;
     }
