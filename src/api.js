@@ -56,6 +56,12 @@ export const addWheelExpense = (id, amount, notes) => api.post(`/players/${id}/w
 export const getIncomeReport = (params) => api.get('/reports/admin/income', { params });
 export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');
 export const getProfitSummary = () => api.get('/import/profit-summary');
+export const getBalanceSheet = (from, to) => {
+  const params = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+  return api.get('/balance-sheet', { params });
+};
 export const resetAllData = () => api.post('/import/wipe');
 export const getGameSessions = () => api.get('/reports/sessions');
 export const getSessionResults = (id) => api.get(`/reports/sessions/${id}/results`);
