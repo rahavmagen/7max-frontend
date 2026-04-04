@@ -84,6 +84,7 @@ export const confirmTransaction = (id) => api.post(`/transactions/${id}/confirm`
 export const updateTransfer = (id, data) => api.put(`/transfers/${id}`, data);
 export const getLastNightMtt = (date) => api.get('/transfers/last-night-mtt', { params: { date } });
 export const getRecentTransactions = (days) => api.get('/transactions/recent', { params: { days } });
+export const getTransactionRange = (from, to) => api.get('/transactions/range', { params: { from, to } });
 export const updateTransaction = (id, data) => api.put(`/transactions/${id}`, data);
 
 export const getAdminExpenses = () => api.get('/admin-expenses');
