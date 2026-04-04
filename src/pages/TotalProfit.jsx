@@ -10,7 +10,7 @@ export default function TotalProfit() {
   const [from, setFrom] = useState(firstOfMonth);
   const [to, setTo] = useState(today);
   const [loading, setLoading] = useState(true);
-  const [periodLoading, setPeriodLoading] = useState(false);
+  const [periodLoading, setPeriodLoading] = useState(true);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -114,43 +114,45 @@ export default function TotalProfit() {
           {periodLoading && <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Loading...</span>}
         </div>
 
-        {period && (
+        {periodLoading ? (
+          <div style={{ color: '#64748b', padding: '1rem 0' }}>Loading...</div>
+        ) : (
           <table style={{ width: '100%' }}>
             <tbody>
               <tr>
                 <td style={{ color: '#94a3b8' }}>Deposits in period</td>
-                <td className="positive"><strong>{fmt(period.deposits)}</strong></td>
-                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Bank deposits {period.from} → {period.to}</td>
+                <td className="positive"><strong>{fmt(period?.deposits)}</strong></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Bank deposits {from} → {to}</td>
               </tr>
               <tr>
                 <td style={{ color: '#94a3b8' }}>+ Net credit change</td>
-                <td className={cls(period.netCreditChange)}>
-                  <strong>{Number(period.netCreditChange) >= 0 ? fmt(period.netCreditChange) : `(${fmt(Math.abs(Number(period.netCreditChange)))})`}</strong>
+                <td className={cls(period?.netCreditChange)}>
+                  <strong>{Number(period?.netCreditChange) >= 0 ? fmt(period?.netCreditChange) : `(${fmt(Math.abs(Number(period?.netCreditChange)))})`}</strong>
                 </td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Credits given minus repaid</td>
               </tr>
               <tr>
                 <td style={{ color: '#94a3b8' }}>− Chip change</td>
-                <td className={Number(period.chipDelta) > 0 ? 'negative' : 'positive'}>
-                  <strong>{Number(period.chipDelta) >= 0 ? `(${fmt(period.chipDelta)})` : fmt(Math.abs(Number(period.chipDelta)))}</strong>
+                <td className={Number(period?.chipDelta) > 0 ? 'negative' : 'positive'}>
+                  <strong>{Number(period?.chipDelta) >= 0 ? `(${fmt(period?.chipDelta)})` : fmt(Math.abs(Number(period?.chipDelta)))}</strong>
                 </td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                  {period.chipsStartDate || '—'} → {period.chipsEndDate || '—'}
+                  {period?.chipsStartDate || '—'} → {period?.chipsEndDate || '—'}
                 </td>
               </tr>
               <tr style={{ borderTop: '2px solid #334155' }}>
                 <td><strong style={{ color: '#e2e8f0' }}>= Period Rake</strong></td>
-                <td><strong className={cls(period.periodRake)} style={{ fontSize: '1.1rem' }}>{fmt(period.periodRake)}</strong></td>
+                <td><strong className={cls(period?.periodRake)} style={{ fontSize: '1.1rem' }}>{fmt(period?.periodRake)}</strong></td>
                 <td></td>
               </tr>
               <tr>
                 <td style={{ color: '#94a3b8', paddingTop: '1rem' }}>− Expenses in period</td>
-                <td className="negative" style={{ paddingTop: '1rem' }}><strong>({fmt(period.expenses)})</strong></td>
+                <td className="negative" style={{ paddingTop: '1rem' }}><strong>({fmt(period?.expenses)})</strong></td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>Admin + wheel expenses</td>
               </tr>
               <tr style={{ borderTop: '1px solid #334155' }}>
                 <td><strong style={{ color: '#e2e8f0' }}>= Net Profit</strong></td>
-                <td><strong className={cls(period.netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(period.netProfit)}</strong></td>
+                <td><strong className={cls(period?.netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(period?.netProfit)}</strong></td>
                 <td></td>
               </tr>
             </tbody>
