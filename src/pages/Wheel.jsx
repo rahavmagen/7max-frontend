@@ -1,6 +1,32 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
+import { createWorker } from 'tesseract.js';
 import { useAuth } from '../auth/AuthContext';
+
+/* ─── Parse raw OCR text from a ClubGG player list screenshot ─── */
+function parseOcrNames(text) {
+  const UI = /^(rank|players?|bounty|chips?|tables?|information|blinds?|prize|satellites?|register|host\s*option|early|bird|mtt|7max|max7|players\s+tables)/i;
+  const seen = new Set();
+
+  for (let line of text.split('\n')) {
+    line = line.trim();
+    if (!line) continue;
+    // Remove leading rank dash/number: "- " or "1 "
+    line = line.replace(/^[-—\s]*\d*\s*[-—\s]+/, '').trim();
+    if (!line) continue;
+    if (UI.test(line)) continue;
+    // Skip chip-count suffixes like "28,750(287.5 BB)" — remove them
+    line = line.replace(/\s*[-—]\s*[\d,]+(\.\d+)?\s*(\(.*?\))?$/, '').trim();
+    line = line.replace(/\s+[\d,]+(\.\d+)?\s*\(.*?\)$/, '').trim();
+    // Skip pure numbers, chip counts, Hebrew
+    if (/^\d[\d,\.]*$/.test(line)) continue;
+    if (/[\d,]+\s*BB/i.test(line)) continue;
+    if (/[\u0590-\u05FF]/.test(line)) continue;
+    if (line.length < 2 || line.length > 35) continue;
+    seen.add(line);
+  }
+  return [...seen];
+}
 
 /* ─── colours cycling through segments ─── */
 const SEG_COLORS = [
@@ -78,6 +104,9 @@ export default function Wheel() {
   const [parseError, setParseError] = useState('');
   const [manualText, setManualText] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrImages, setOcrImages]   = useState([]); // preview URLs
 
   const canvasRef  = useRef(null);
   const rotRef     = useRef(0);
@@ -255,14 +284,52 @@ export default function Wheel() {
   }, [spinning, wheelPlayers, draw, getWinner, playTick, playWin]);
 
   /* ─── file / manual handlers ─── */
-  const handleFile = async (file) => {
+  const isImage = (file) => /^image\//i.test(file.type) || /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name);
+
+  const handleFiles = async (files) => {
+    const fileArr = Array.from(files);
     setParseError('');
-    try {
-      const names = await parseFile(file);
-      if (!names.length) { setParseError('No player names found. Try a CSV with one name per line.'); return; }
-      setAllPlayers(names); setSelected(new Set(names)); setStep('review');
-    } catch(e) { setParseError('Failed to parse: ' + e.message); }
+
+    // Separate images from data files
+    const images = fileArr.filter(isImage);
+    const dataFiles = fileArr.filter(f => !isImage(f));
+
+    if (images.length > 0) {
+      // OCR path
+      setOcrLoading(true);
+      setOcrProgress(0);
+      setOcrImages(images.map(f => URL.createObjectURL(f)));
+      try {
+        const allNames = new Set();
+        for (let i = 0; i < images.length; i++) {
+          const worker = await createWorker('eng', 1, {
+            logger: m => {
+              if (m.status === 'recognizing text')
+                setOcrProgress(Math.round(((i + m.progress) / images.length) * 100));
+            },
+          });
+          const { data: { text } } = await worker.recognize(images[i]);
+          await worker.terminate();
+          parseOcrNames(text).forEach(n => allNames.add(n));
+        }
+        const names = [...allNames];
+        if (!names.length) { setParseError('Could not read player names from image. Try the manual entry option.'); setOcrLoading(false); return; }
+        setAllPlayers(names); setSelected(new Set(names));
+        setOcrLoading(false); setStep('review');
+      } catch(e) { setParseError('OCR failed: ' + e.message); setOcrLoading(false); }
+      return;
+    }
+
+    if (dataFiles.length > 0) {
+      try {
+        const names = await parseFile(dataFiles[0]);
+        if (!names.length) { setParseError('No player names found. Try a CSV with one name per line.'); return; }
+        setAllPlayers(names); setSelected(new Set(names)); setStep('review');
+      } catch(e) { setParseError('Failed to parse: ' + e.message); }
+    }
   };
+
+  const handleFile = (file) => handleFiles([file]);
 
   const handleManual = () => {
     const names = [...new Set(manualText.split(/[\n,]+/).map(s=>s.trim()).filter(s=>s.length>1))];
@@ -287,6 +354,7 @@ export default function Wheel() {
     setStep('upload'); setAllPlayers([]); setSelected(new Set());
     setWheelPlayers([]); setWinner(null); setShowWinner(false);
     setHistory([]); setManualText(''); setParseError('');
+    setOcrImages([]); setOcrLoading(false); setOcrProgress(0);
   };
 
   /* ─── shared styles ─── */
@@ -305,35 +373,64 @@ export default function Wheel() {
 
   /* Step: upload */
   if (step === 'upload') return (
-    <div style={{ maxWidth:'560px', margin:'0 auto', padding:'2rem 1rem' }}>
+    <div style={{ maxWidth:'580px', margin:'0 auto', padding:'2rem 1rem' }}>
       <h1 style={{ fontFamily:'Cinzel Decorative, serif', color:gold, fontSize:'1.6rem', marginBottom:'0.3rem',
                    filter:'drop-shadow(0 0 12px rgba(255,215,0,0.3))' }}>
         🎡 Wheel of Fortune
       </h1>
-      <p style={{ color:'#64748b', fontSize:'0.85rem', marginBottom:'1.5rem' }}>Admin only — upload a player list then spin</p>
+      <p style={{ color:'#64748b', fontSize:'0.85rem', marginBottom:'1.5rem' }}>Admin only — upload a screenshot or player list then spin</p>
+
+      {/* OCR loading overlay */}
+      {ocrLoading && (
+        <div style={{ ...card, textAlign:'center', marginBottom:'1rem' }}>
+          <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>🔍</div>
+          <div style={{ color:gold, fontWeight:600, marginBottom:'0.75rem' }}>Reading player names from image…</div>
+          <div style={{ background:'#0f1117', borderRadius:'4px', overflow:'hidden', height:'8px' }}>
+            <div style={{ background:`linear-gradient(90deg,${gold},${goldDark})`, height:'100%',
+                          width:`${ocrProgress}%`, transition:'width 0.3s' }} />
+          </div>
+          <div style={{ color:'#64748b', fontSize:'0.8rem', marginTop:'0.5rem' }}>{ocrProgress}%</div>
+          {ocrImages.length > 0 && (
+            <div style={{ display:'flex', gap:'8px', justifyContent:'center', marginTop:'0.75rem', flexWrap:'wrap' }}>
+              {ocrImages.map((src,i) => (
+                <img key={i} src={src} style={{ height:'80px', borderRadius:'4px', border:`1px solid #2d3148` }} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Drag & drop zone */}
-      <div
-        onDragOver={e=>{e.preventDefault();setDragOver(true)}}
-        onDragLeave={()=>setDragOver(false)}
-        onDrop={e=>{e.preventDefault();setDragOver(false);const f=e.dataTransfer.files[0];if(f)handleFile(f);}}
-        onClick={()=>document.getElementById('wFileInput').click()}
-        style={{
-          border:`2px dashed ${dragOver?gold:'#2d3148'}`,
-          borderRadius:'8px', padding:'3rem 2rem',
-          textAlign:'center', cursor:'pointer',
-          background: dragOver?'rgba(255,215,0,0.05)':'#0f1117',
-          transition:'all 0.2s',
-        }}
-      >
-        <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>📂</div>
-        <div style={{ color:dragOver?gold:'#94a3b8', fontWeight:600, marginBottom:'0.4rem' }}>
-          Drop file here or click to browse
+      {!ocrLoading && (
+        <div
+          onDragOver={e=>{e.preventDefault();setDragOver(true)}}
+          onDragLeave={()=>setDragOver(false)}
+          onDrop={e=>{e.preventDefault();setDragOver(false);if(e.dataTransfer.files.length)handleFiles(e.dataTransfer.files);}}
+          onClick={()=>document.getElementById('wFileInput').click()}
+          style={{
+            border:`2px dashed ${dragOver?gold:'#2d3148'}`,
+            borderRadius:'8px', padding:'3rem 2rem',
+            textAlign:'center', cursor:'pointer',
+            background: dragOver?'rgba(255,215,0,0.05)':'#0f1117',
+            transition:'all 0.2s',
+          }}
+        >
+          <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>📸</div>
+          <div style={{ color:dragOver?gold:'#e2e8f0', fontWeight:600, marginBottom:'0.5rem' }}>
+            Drop screenshot(s) here or click to browse
+          </div>
+          <div style={{ color:'#64748b', fontSize:'0.8rem', marginBottom:'0.4rem' }}>
+            📷 WhatsApp screenshots (JPG/PNG) — names read automatically via OCR
+          </div>
+          <div style={{ color:'#475569', fontSize:'0.75rem' }}>
+            Also accepts .xlsx, .xls, .csv, .txt — select multiple images for multi-page lists
+          </div>
+          <input id="wFileInput" type="file" multiple
+            accept=".xlsx,.xls,.csv,.txt,.jpg,.jpeg,.png,.webp,.bmp"
+            style={{display:'none'}}
+            onChange={e=>{if(e.target.files.length)handleFiles(e.target.files);}} />
         </div>
-        <div style={{ color:'#475569', fontSize:'0.8rem' }}>Supports .xlsx, .xls, .csv, .txt</div>
-        <input id="wFileInput" type="file" accept=".xlsx,.xls,.csv,.txt" style={{display:'none'}}
-          onChange={e=>{if(e.target.files[0])handleFile(e.target.files[0]);}} />
-      </div>
+      )}
 
       {/* Manual input toggle */}
       <div style={{ marginTop:'1rem', textAlign:'center' }}>
