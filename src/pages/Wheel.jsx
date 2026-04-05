@@ -10,7 +10,7 @@ function parseOcrNames(text, debug = false) {
   const log = debug ? (...a) => console.log(...a) : () => {};
 
   const isValidName = (s) =>
-    s.length >= 2 && s.length <= 35 &&
+    s.length >= 3 && s.length <= 35 &&
     !UI.test(s) &&
     !/[\u0590-\u05FF]/.test(s) &&          // Hebrew
     !/[©®™°§¶†‡•…]/.test(s) &&            // OCR symbol artifacts
@@ -46,9 +46,9 @@ function parseOcrNames(text, debug = false) {
     // PRIMARY: "- PlayerName - 28,750(287.5 BB)" or "PlayerName - 28,750(287.5 BB)"
     const primary = line.match(/^(?:[-—\s]*\d*\s*[-—.]\s*)?(.+?)\s*[-—]\s*[\d,]+(?:\.\d+)?\s*(?:\(.*?BB.*?\))?\s*$/i);
     if (primary) {
-      const name = primary[1].trim();
+      const name = cleanOcrName(primary[1].trim());
       if (isValidName(name)) addName(name, 'P');
-      else log('[P-skip]', name);
+      else log('[P-skip]', primary[1]);
       continue;
     }
 
@@ -75,6 +75,7 @@ function parseOcrNames(text, debug = false) {
     let name = secondary[1].trim();
     name = name.replace(/^[-—\s]*\d*\s*[-—.]\s*/, '').trim();
     name = name.replace(/\s*[-—]\s*$/, '').trim();
+    name = cleanOcrName(name);
     if (!isValidName(name) || name.includes(',')) { log('[S-skip]', secondary[1]); continue; }
     if (isMergedName(name)) { log('[S-merged]', name); continue; }
     addName(name, 'S');
@@ -85,6 +86,15 @@ function parseOcrNames(text, debug = false) {
 }
 
 /* ─── colours cycling through segments ─── */
+/* ─── Strip OCR artifacts from extracted name before validation ─── */
+function cleanOcrName(s) {
+  s = s.replace(/^[^a-zA-Z0-9]+/, '').trim();                          // strip leading non-alphanumeric (= : | etc.)
+  s = s.replace(/\s*[-—=]\s*$/, '').trim();                            // strip trailing - = —
+  s = s.replace(/\s+[©®™£€¥¢=&@#$~|^*<>+%]+\d*\s*$/, '').trim();     // strip trailing OCR symbol [+ digits] (£5, ® etc.)
+  s = s.replace(/\s+[A-Z]\s*$/, '').trim();                            // strip trailing isolated uppercase letter (e.g. "Einpoker E")
+  return s;
+}
+
 /* ─── Fuzzy-snap OCR names to canonical player usernames ─── */
 function levenshtein(a, b) {
   const m = a.length, n = b.length;
