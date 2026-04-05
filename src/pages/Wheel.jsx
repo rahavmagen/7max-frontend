@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
+import { Muxer, ArrayBufferTarget } from 'mp4-muxer';
 import { createWorker } from 'tesseract.js';
 import { useAuth } from '../auth/AuthContext';
 import { getActivePlayers } from '../api';
@@ -224,8 +225,7 @@ export default function Wheel() {
   const animRef      = useRef(null);
   const audioRef     = useRef(null);
   const logoRef      = useRef(null);
-  const recorderRef  = useRef(null);
-  const chunksRef    = useRef([]);
+  const encoderRef   = useRef(null); // { encoder, muxer, startTime }
   const [videoUrl, setVideoUrl] = useState(null);
 
   const SIZE = 480, CX = 240, CY = 240, R = 218;
@@ -372,20 +372,25 @@ export default function Wheel() {
     if (spinning || wheelPlayers.length < 2) return;
     setSpinning(true); setShowWinner(false); setWinner(null); setVideoUrl(null);
 
-    // Start video recording
+    // Start MP4 recording via VideoEncoder + mp4-muxer
     try {
-      if (canvasRef.current && window.MediaRecorder) {
-        const stream = canvasRef.current.captureStream(30);
-        const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
-        const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-        chunksRef.current = [];
-        recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-        recorder.onstop = () => {
-          const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-          setVideoUrl(URL.createObjectURL(blob));
-        };
-        recorder.start();
-        recorderRef.current = recorder;
+      if (canvasRef.current && typeof VideoEncoder !== 'undefined') {
+        const muxer = new Muxer({
+          target: new ArrayBufferTarget(),
+          video: { codec: 'avc', width: SIZE, height: SIZE },
+          fastStart: 'in-memory',
+        });
+        const encoder = new VideoEncoder({
+          output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+          error: () => {},
+        });
+        encoder.configure({
+          codec: 'avc1.42001f',
+          width: SIZE, height: SIZE,
+          bitrate: 2_500_000,
+          framerate: 30,
+        });
+        encoderRef.current = { encoder, muxer, startTime: null };
       }
     } catch(_) {}
 
@@ -402,6 +407,16 @@ export default function Wheel() {
       const prev = rotRef.current;
       rotRef.current = startRot + (targetRot-startRot)*easeOut(t);
       draw();
+      // Capture frame for MP4
+      if (encoderRef.current && encoderRef.current.encoder.state === 'configured' && encoderRef.current.encoder.encodeQueueSize < 15) {
+        try {
+          if (!encoderRef.current.startTime) encoderRef.current.startTime = now;
+          const ts = Math.round((now - encoderRef.current.startTime) * 1000);
+          const vf = new VideoFrame(canvasRef.current, { timestamp: ts });
+          encoderRef.current.encoder.encode(vf);
+          vf.close();
+        } catch(_) {}
+      }
       const curr = Math.floor(rotRef.current/SEG);
       if (curr !== lastCross) { playTick(rotRef.current-prev); lastCross=curr; }
       if (t < 1) {
@@ -412,10 +427,16 @@ export default function Wheel() {
         const w = getWinner();
         setWinner(w);
         setHistory(h => [{ name:w, time: new Date().toLocaleTimeString('he-IL') }, ...h.slice(0,9)]);
-        // Stop recording before showing winner (small delay so last frame is captured)
-        setTimeout(() => {
-          if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-            recorderRef.current.stop();
+        // Finalize MP4 and show winner
+        setTimeout(async () => {
+          if (encoderRef.current) {
+            try {
+              await encoderRef.current.encoder.flush();
+              encoderRef.current.muxer.finalize();
+              const { buffer } = encoderRef.current.muxer.target;
+              setVideoUrl(URL.createObjectURL(new Blob([buffer], { type: 'video/mp4' })));
+            } catch(_) {}
+            encoderRef.current = null;
           }
           setShowWinner(true);
         }, 400);
@@ -861,13 +882,13 @@ export default function Wheel() {
                 Share on WhatsApp
               </button>
               {videoUrl && (
-                <a href={videoUrl} download={`wheel-${winner}.webm`} style={{
+                <a href={videoUrl} download={`wheel-${winner}.mp4`} style={{
                   background:'linear-gradient(180deg,#3a6fd8 0%,#1e40af 100%)', color:'#fff',
                   padding:'11px 28px', borderRadius:'4px', cursor:'pointer',
                   fontWeight:700, fontSize:'0.95rem', display:'flex', alignItems:'center', gap:'8px',
                   textDecoration:'none',
                 }}>
-                  ⬇ Save Video (.webm)
+                  ⬇ Save Video (.mp4)
                 </a>
               )}
               {!videoUrl && (
