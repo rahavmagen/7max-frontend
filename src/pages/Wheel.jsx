@@ -61,12 +61,10 @@ function parseOcrNames(text, debug = false) {
     line = line.replace(/^[-—\s]+/, '').trim();
     line = line.replace(/\s*[-—\s]+$/, '').trim();
     if (!line) continue;
-    if (UI.test(line)) { log('[F-ui]', line); continue; }
     if (/[\d,]+\s*BB/i.test(line)) { log('[F-BB]', line); continue; }
-    if (/[\u0590-\u05FF]/.test(line)) { log('[F-heb]', line); continue; }
     if (/^[\d,\.\s]+$/.test(line)) { log('[F-num]', line); continue; }
     if (/,/.test(line)) { log('[F-comma]', line); continue; }
-    if (line.length < 2 || line.length > 35) { log('[F-len]', line); continue; }
+    if (!isValidName(line)) { log('[F-skip]', line); continue; }
     addName(line, 'F');
   }
 
@@ -87,6 +85,44 @@ function parseOcrNames(text, debug = false) {
 }
 
 /* ─── colours cycling through segments ─── */
+/* ─── Fuzzy-snap OCR names to canonical player usernames ─── */
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: m+1}, (_,i) => [i]);
+  for (let j = 1; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+// Corrects OCR name to canonical DB username when a close match exists.
+// If no match found, returns the original (player may be unregistered).
+function snapToPlayer(ocrName, knownPlayers) {
+  const needle = ocrName.toLowerCase().replace(/\s+/g,' ').trim();
+  let best = null, bestDist = Infinity;
+  for (const p of knownPlayers) {
+    const hay = p.toLowerCase().replace(/\s+/g,' ').trim();
+    if (hay === needle) return p; // exact match
+    const dist = levenshtein(needle, hay);
+    const ratio = dist / Math.max(needle.length, hay.length);
+    if (ratio < 0.35 && dist < bestDist) { bestDist = dist; best = p; }
+  }
+  return best ?? ocrName; // fallback: keep original
+}
+
+function snapAllToPlayers(ocrNames, knownPlayers) {
+  const result = [], usedKeys = new Set();
+  for (const raw of ocrNames) {
+    const canonical = snapToPlayer(raw, knownPlayers);
+    const key = canonical.toLowerCase();
+    if (usedKeys.has(key)) continue;
+    usedKeys.add(key);
+    result.push(canonical);
+  }
+  return result;
+}
+
 const SEG_COLORS = [
   '#6a0000','#0d3a1a','#0d1040','#3a2200','#2a0a30',
   '#003a3a','#1a3a00','#3a0020','#1a1a00','#00183a',
@@ -170,6 +206,7 @@ export default function Wheel() {
   const [ocrImages, setOcrImages]   = useState([]); // preview URLs
   const [ocrRawText, setOcrRawText] = useState(''); // for debug
   const [showOcrDebug, setShowOcrDebug] = useState(false);
+  const [knownPlayers, setKnownPlayers] = useState([]);
 
   const canvasRef    = useRef(null);
   const rotRef       = useRef(0);
@@ -182,11 +219,16 @@ export default function Wheel() {
 
   const SIZE = 480, CX = 240, CY = 240, R = 218;
 
-  /* ─── preload logo ─── */
+  /* ─── preload logo + fetch player list for fuzzy snap ─── */
   useEffect(() => {
     const img = new Image();
     img.src = '/7maxlogo.png';
     img.onload = () => { logoRef.current = img; };
+
+    fetch('/api/players/active', { headers: { Authorization: `Bearer ${auth?.token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setKnownPlayers((data || []).map(p => p.username).filter(Boolean)))
+      .catch(() => {});
   }, []);
 
   /* ─── canvas draw ─── */
@@ -404,8 +446,9 @@ export default function Wheel() {
           setOcrRawText(prev => prev + `\n\n--- IMAGE ${i+1} ---\n` + text);
           parseOcrNames(text, true).forEach(n => allNames.add(n));
         }
-        const names = [...allNames];
+        let names = [...allNames];
         if (!names.length) { setParseError('Could not read player names from image. Try the manual entry option.'); setOcrLoading(false); return; }
+        if (knownPlayers.length > 0) names = snapAllToPlayers(names, knownPlayers);
         setAllPlayers(names); setSelected(new Set(names));
         setOcrLoading(false); setStep('review');
       } catch(e) { setParseError('OCR failed: ' + e.message); setOcrLoading(false); }
