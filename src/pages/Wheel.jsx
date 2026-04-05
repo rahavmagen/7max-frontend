@@ -322,6 +322,18 @@ export default function Wheel() {
     const pg = ctx.createRadialGradient(CX-1,CY-1,0,CX,CY,4);
     pg.addColorStop(0,'#fff'); pg.addColorStop(1,'#8B6014');
     ctx.fillStyle=pg; ctx.fill();
+
+    // Pointer drawn on canvas (appears in video recording)
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=8;
+    ctx.beginPath();
+    ctx.moveTo(CX-11,2); ctx.lineTo(CX+11,2); ctx.lineTo(CX,38);
+    ctx.closePath(); ctx.fillStyle='#FFD700'; ctx.fill();
+    ctx.beginPath(); ctx.arc(CX,7,7,0,2*Math.PI);
+    const pGrad=ctx.createRadialGradient(CX-2,5,0,CX,7,7);
+    pGrad.addColorStop(0,'#FFF8C0'); pGrad.addColorStop(1,'#FFD700');
+    ctx.fillStyle=pGrad; ctx.shadowColor='rgba(255,215,0,0.6)'; ctx.shadowBlur=12; ctx.fill();
+    ctx.restore();
   }, [wheelPlayers]);
 
   useEffect(() => {
@@ -414,6 +426,7 @@ export default function Wheel() {
           const ts = Math.round((now - encoderRef.current.startTime) * 1000);
           const vf = new VideoFrame(canvasRef.current, { timestamp: ts });
           encoderRef.current.encoder.encode(vf);
+          encoderRef.current.lastTs = ts;
           vf.close();
         } catch(_) {}
       }
@@ -427,8 +440,10 @@ export default function Wheel() {
         const w = getWinner();
         setWinner(w);
         setHistory(h => [{ name:w, time: new Date().toLocaleTimeString('he-IL') }, ...h.slice(0,9)]);
-        // Finalize MP4 and show winner
-        setTimeout(async () => {
+        // Capture 2s of winner overlay on canvas, then finalize MP4
+        const baseTs = encoderRef.current?.lastTs ?? 0;
+        let wf = 0;
+        const finalizeAndShow = async () => {
           if (encoderRef.current) {
             try {
               await encoderRef.current.encoder.flush();
@@ -439,7 +454,39 @@ export default function Wheel() {
             encoderRef.current = null;
           }
           setShowWinner(true);
-        }, 400);
+        };
+        const captureWinner = () => {
+          if (wf >= 60 || !encoderRef.current) { finalizeAndShow(); return; }
+          draw();
+          const ctx2 = canvasRef.current?.getContext('2d');
+          if (ctx2) {
+            ctx2.save();
+            ctx2.fillStyle = 'rgba(0,0,0,0.72)';
+            ctx2.beginPath(); ctx2.arc(CX,CY,R-2,0,2*Math.PI); ctx2.fill();
+            ctx2.textAlign='center'; ctx2.textBaseline='middle';
+            ctx2.shadowColor='rgba(255,215,0,0.5)'; ctx2.shadowBlur=16;
+            ctx2.font='bold 16px Cinzel,serif'; ctx2.fillStyle='#FFD700';
+            ctx2.fillText('🏆  WINNER  🏆', CX, CY-28);
+            const dn = w.length>20 ? w.substring(0,20)+'…' : w;
+            ctx2.font=`bold ${dn.length>14?15:19}px "Cinzel Decorative",serif`;
+            ctx2.fillStyle='#fff'; ctx2.shadowBlur=8;
+            ctx2.fillText(dn, CX, CY+10);
+            ctx2.font='13px sans-serif'; ctx2.fillStyle='rgba(255,215,0,0.6)'; ctx2.shadowBlur=0;
+            ctx2.fillText('CONGRATULATIONS', CX, CY+38);
+            ctx2.restore();
+          }
+          try {
+            if (encoderRef.current.encoder.state==='configured' && encoderRef.current.encoder.encodeQueueSize<15) {
+              const ts = baseTs + (wf+1)*33333;
+              const vf2 = new VideoFrame(canvasRef.current, { timestamp: ts });
+              encoderRef.current.encoder.encode(vf2);
+              vf2.close();
+            }
+          } catch(_) {}
+          wf++;
+          requestAnimationFrame(captureWinner);
+        };
+        captureWinner();
         playWin();
       }
     };
@@ -513,7 +560,7 @@ export default function Wheel() {
   const shareWhatsApp = () => {
     if (!winner) return;
     const msg = `🎡 *7MAX Wheel of Fortune*\n━━━━━━━━━━━━━━\n🏆 *${winner}* wins!\n━━━━━━━━━━━━━━\n♠ ♥ ♦ ♣  Congratulations! 🎉`;
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    window.location.href = 'whatsapp://send?text=' + encodeURIComponent(msg);
   };
 
   const resetToUpload = () => {
@@ -765,18 +812,7 @@ export default function Wheel() {
 
         {/* Wheel canvas */}
         <div style={{ position:'relative' }}>
-          {/* Pointer */}
-          <div style={{ position:'absolute', top:'-4px', left:'50%', transform:'translateX(-50%)', zIndex:10,
-                        display:'flex', flexDirection:'column', alignItems:'center' }}>
-            <div style={{ width:'12px', height:'12px', borderRadius:'50%',
-                          background:'radial-gradient(circle at 35% 35%,#FFF8C0,#FFD700 50%,#8B6914)',
-                          boxShadow:'0 0 10px rgba(255,215,0,0.7)' }} />
-            <div style={{ width:0, height:0,
-                          borderLeft:'10px solid transparent', borderRight:'10px solid transparent',
-                          borderTop:`32px solid ${gold}`,
-                          filter:'drop-shadow(0 3px 6px rgba(0,0,0,0.9))', marginTop:'-2px' }} />
-          </div>
-
+  
           <canvas ref={canvasRef} width={SIZE} height={SIZE}
             style={{ borderRadius:'50%',
                      boxShadow:`0 0 0 6px #7a5800,0 0 0 10px #3a2800,0 0 0 13px #8B6914,0 0 40px rgba(0,0,0,0.9),${spinning?'0 0 60px rgba(255,215,0,0.15)':''}`,
