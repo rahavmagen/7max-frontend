@@ -21,12 +21,27 @@ function parseOcrNames(text, debug = false) {
     else log('[DUP ' + tag + ']', name);
   };
 
-  for (let raw of text.split('\n')) {
+  // Returns true if "name" appears to be two already-known names merged together
+  const isMergedName = (name) => {
+    const words = name.split(/\s+/);
+    if (words.length < 2) return false;
+    for (let i = 1; i < words.length; i++) {
+      const part1 = words.slice(0, i).join(' ').toLowerCase();
+      const part2 = words.slice(i).join(' ').toLowerCase();
+      if (seen.has(part1) && seen.has(part2)) return true;
+    }
+    return false;
+  };
+
+  const lines = text.split('\n');
+  const secondaryQueue = []; // deferred to pass 2
+
+  // PASS 1: primary + fallback — builds the high-confidence name set
+  for (let raw of lines) {
     let line = raw.trim();
     if (!line) continue;
 
     // PRIMARY: "- PlayerName - 28,750(287.5 BB)" or "PlayerName - 28,750(287.5 BB)"
-    // Bounty dash is PRESENT between name and chip count
     const primary = line.match(/^(?:[-—\s]*\d*\s*[-—.]\s*)?(.+?)\s*[-—]\s*[\d,]+(?:\.\d+)?\s*(?:\(.*?BB.*?\))?\s*$/i);
     if (primary) {
       const name = primary[1].trim();
@@ -35,24 +50,14 @@ function parseOcrNames(text, debug = false) {
       continue;
     }
 
-    // SECONDARY: "PlayerName 28,750(287.5 BB)" or "- PlayerName 28,750(287.5 BB)"
-    // Bounty column dash MISSING — OCR didn't read it; chip count identified by N,NNN pattern
-    // IMPORTANT: chip count must be at END of line ($) to avoid matching mid-line chip fragments
+    // SECONDARY: defer to pass 2 (needs known names for merge detection)
     const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}(?:\.\d+)?(?:\s*\([\d.]+ BB\))?\s*$/i);
-    if (secondary) {
-      let name = secondary[1].trim();
-      name = name.replace(/^[-—\s]*\d*\s*[-—.]\s*/, '').trim(); // strip rank prefix
-      name = name.replace(/\s*[-—]\s*$/, '').trim();             // strip trailing bounty dash
-      // Extra guard: valid names don't contain commas (comma = leftover chip count garbage)
-      if (isValidName(name) && !name.includes(',')) addName(name, 'S');
-      else log('[S-skip]', secondary[1]);
-      continue;
-    }
+    if (secondary) { secondaryQueue.push(line); continue; }
 
-    // FALLBACK: plain name-only line (OCR split the chip count to a separate line)
-    line = line.replace(/^[-—\s]*\d+\s*[-—.]\s*/, '').trim(); // strip rank number prefix
-    line = line.replace(/^[-—\s]+/, '').trim();                // strip leading dashes
-    line = line.replace(/\s*[-—\s]+$/, '').trim();             // strip trailing dashes
+    // FALLBACK: plain name-only line
+    line = line.replace(/^[-—\s]*\d+\s*[-—.]\s*/, '').trim();
+    line = line.replace(/^[-—\s]+/, '').trim();
+    line = line.replace(/\s*[-—\s]+$/, '').trim();
     if (!line) continue;
     if (UI.test(line)) { log('[F-ui]', line); continue; }
     if (/[\d,]+\s*BB/i.test(line)) { log('[F-BB]', line); continue; }
@@ -60,9 +65,21 @@ function parseOcrNames(text, debug = false) {
     if (/^[\d,\.\s]+$/.test(line)) { log('[F-num]', line); continue; }
     if (/,/.test(line)) { log('[F-comma]', line); continue; }
     if (line.length < 2 || line.length > 35) { log('[F-len]', line); continue; }
-
     addName(line, 'F');
   }
+
+  // PASS 2: secondary matches — validate against known names to block merged rows
+  for (const line of secondaryQueue) {
+    const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}(?:\.\d+)?(?:\s*\([\d.]+ BB\))?\s*$/i);
+    if (!secondary) continue;
+    let name = secondary[1].trim();
+    name = name.replace(/^[-—\s]*\d*\s*[-—.]\s*/, '').trim();
+    name = name.replace(/\s*[-—]\s*$/, '').trim();
+    if (!isValidName(name) || name.includes(',')) { log('[S-skip]', secondary[1]); continue; }
+    if (isMergedName(name)) { log('[S-merged]', name); continue; }
+    addName(name, 'S');
+  }
+
   log('[TOTAL]', seen.size, [...seen.values()]);
   return [...seen.values()];
 }
