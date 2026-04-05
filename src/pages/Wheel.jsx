@@ -12,7 +12,9 @@ function parseOcrNames(text, debug = false) {
   const isValidName = (s) =>
     s.length >= 2 && s.length <= 35 &&
     !UI.test(s) &&
-    !/[\u0590-\u05FF]/.test(s) &&
+    !/[\u0590-\u05FF]/.test(s) &&          // Hebrew
+    !/[©®™°§¶†‡•…]/.test(s) &&            // OCR symbol artifacts
+    !/[()[\]{}]/.test(s) &&                // brackets (appear in chip counts, not names)
     !/^[\d,\.\s\-]+$/.test(s);
 
   const addName = (name, tag) => {
