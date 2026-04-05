@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { createWorker } from 'tesseract.js';
 import { useAuth } from '../auth/AuthContext';
+import { getActivePlayers } from '../api';
 
 /* ─── Parse raw OCR text from a ClubGG player list screenshot ─── */
 function parseOcrNames(text, debug = false) {
@@ -235,9 +236,8 @@ export default function Wheel() {
     img.src = '/7maxlogo.png';
     img.onload = () => { logoRef.current = img; };
 
-    fetch('/api/players/active', { headers: { Authorization: `Bearer ${auth?.token}` } })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setKnownPlayers((data || []).map(p => p.username).filter(Boolean)))
+    getActivePlayers()
+      .then(r => setKnownPlayers((r.data || []).map(p => p.username).filter(Boolean)))
       .catch(() => {});
   }, []);
 
