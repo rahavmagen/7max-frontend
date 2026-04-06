@@ -178,6 +178,19 @@ export default function Transfers() {
       setMsg({ type: 'error', text: 'Select a player and enter a non-zero amount' });
       return;
     }
+    const selectedPlayer = players.find(p => String(p.id) === String(creditPlayerId));
+    const currentCredit = Number(selectedPlayer?.creditTotal || 0);
+    const newCredit = currentCredit + delta;
+    if (newCredit < 0) {
+      alert(
+        `Cannot apply this credit change.\n\n` +
+        `Current credit: ₪${currentCredit.toLocaleString()}\n` +
+        `Change: ₪${delta.toLocaleString()}\n` +
+        `Result would be: ₪${newCredit.toLocaleString()}\n\n` +
+        `A player's credit cannot go negative. The activity was not saved.`
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       await updateCredit(creditPlayerId, delta, creditNotes || null, noChipChange);
