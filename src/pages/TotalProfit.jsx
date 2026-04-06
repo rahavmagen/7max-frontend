@@ -73,8 +73,8 @@ export default function TotalProfit() {
   // Group transactions by player for summary
   const txByPlayer = {};
   txRows.forEach(tx => {
-    const key = tx.playerUsername;
-    if (!txByPlayer[key]) txByPlayer[key] = { name: tx.playerFullName || tx.playerUsername, credits: 0, payments: 0, deposits: 0, wheel: 0, other: 0 };
+    const key = tx.playerId;
+    if (!txByPlayer[key]) txByPlayer[key] = { name: tx.playerFullName || tx.playerUsername, username: tx.playerUsername, credits: 0, payments: 0, deposits: 0, wheel: 0, other: 0 };
     const amt = Number(tx.amount);
     if (tx.sourceRef === 'SCREEN:CREDIT') {
       if (tx.type === 'DEPOSIT') txByPlayer[key].credits += amt;
@@ -88,7 +88,7 @@ export default function TotalProfit() {
     }
   });
   const playerSummaries = Object.entries(txByPlayer)
-    .map(([username, d]) => ({ username, ...d, net: d.credits - d.payments + d.deposits - d.wheel }))
+    .map(([playerId, d]) => ({ playerId, ...d, net: d.credits - d.payments + d.deposits - d.wheel }))
     .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
 
   return (
@@ -204,7 +204,7 @@ export default function TotalProfit() {
                 </thead>
                 <tbody>
                   {playerSummaries.map(p => (
-                    <tr key={p.username}>
+                    <tr key={p.playerId}>
                       <td style={{ color: '#e2e8f0' }}>{p.name || p.username}</td>
                       <td style={{ textAlign: 'right' }} className={p.credits ? 'positive' : ''}>{p.credits ? fmt(p.credits) : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={p.payments ? 'negative' : ''}>{p.payments ? `(${fmt(p.payments)})` : '—'}</td>
