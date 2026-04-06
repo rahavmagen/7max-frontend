@@ -3,22 +3,22 @@ import { getTransactionLabel } from './transactionLabel';
 
 describe('getTransactionLabel', () => {
   // Transfer scenarios
-  it('REPAYMENT from TRANSFER: → Transfer (payer side)', () => {
-    expect(getTransactionLabel('REPAYMENT', 'TRANSFER:42')).toBe('Transfer');
+  it('PAYMENT from TRANSFER: → Transfer (payer side)', () => {
+    expect(getTransactionLabel('PAYMENT', 'TRANSFER:42')).toBe('Transfer');
   });
   it('CREDIT from TRANSFER: → Transfer (receiver side)', () => {
     expect(getTransactionLabel('CREDIT', 'TRANSFER:42')).toBe('Transfer');
   });
-  it('REPAYMENT from PAYMENT: → Transfer', () => {
-    expect(getTransactionLabel('REPAYMENT', 'PAYMENT:7')).toBe('Transfer');
+  it('PAYMENT from PAYMENT: → Transfer', () => {
+    expect(getTransactionLabel('PAYMENT', 'PAYMENT:7')).toBe('Transfer');
   });
 
-  // Non-transfer REPAYMENT (plain cashout)
-  it('REPAYMENT with null sourceRef → Cashout', () => {
-    expect(getTransactionLabel('REPAYMENT', null)).toBe('Cashout');
+  // Non-transfer PAYMENT (plain cashout)
+  it('PAYMENT with null sourceRef → Cashout', () => {
+    expect(getTransactionLabel('PAYMENT', null)).toBe('Cashout');
   });
-  it('REPAYMENT with unrelated sourceRef → Cashout', () => {
-    expect(getTransactionLabel('REPAYMENT', 'TRADE:2026-01-01:1234-5678')).toBe('Cashout');
+  it('PAYMENT with unrelated sourceRef → Cashout', () => {
+    expect(getTransactionLabel('PAYMENT', 'TRADE:2026-01-01:1234-5678')).toBe('Cashout');
   });
 
   // Screen credits

@@ -410,14 +410,14 @@ export default function PlayerDetail() {
                 const isOutgoing = isTransfer && t.notes && /^(Payment to|Transfer to|Settlement payment to)/i.test(t.notes);
                 const isIncoming = isTransfer && t.notes && /^(Received from|Cashout from|Transfer from|Settlement received from)/i.test(t.notes);
                 const amountClass = isTransfer
-                  ? (isOutgoing ? 'negative' : isIncoming ? 'positive' : (t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative'))
-                  : (t.type === 'DEPOSIT' || t.type === 'REPAYMENT' ? 'positive' : 'negative');
+                  ? (isOutgoing ? 'negative' : isIncoming ? 'positive' : (t.type === 'DEPOSIT' || t.type === 'PAYMENT' ? 'positive' : 'negative'))
+                  : (t.type === 'DEPOSIT' || t.type === 'PAYMENT' ? 'positive' : 'negative');
                 const displayAmount = isOutgoing ? fmt(-t.amount) : fmt(t.amount);
                 return (
                 <tr key={t.id}>
                   <td>{t.createdAt ? t.createdAt.replace('T', ' ').substring(0, 16) : t.transactionDate || '—'}</td>
                   <td>
-                    <span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : t.type === 'CREDIT' ? 'credit' : t.type === 'REPAYMENT' ? 'repayment' : 'withdrawal'}`}>
+                    <span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : t.type === 'CREDIT' ? 'credit' : t.type === 'PAYMENT' ? 'payment' : 'withdrawal'}`}>
                       {getTransactionLabel(t.type, t.sourceRef)}
                     </span>
                   </td>

@@ -616,7 +616,7 @@ export default function Transfers() {
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
                         {(() => {
-                          const isDebit = item.transactionType === 'REPAYMENT' || item.transactionType === 'WHEEL_EXPENSE' || item.transactionType === 'WITHDRAWAL'
+                          const isDebit = item.transactionType === 'PAYMENT' || item.transactionType === 'WHEEL_EXPENSE' || item.transactionType === 'WITHDRAWAL'
                             || (item.pendingType === 'XLS_UNMATCHED' && item.notes === 'Reduce Chips');
                           return isDebit
                             ? <strong className="negative">-{fmt(item.amount)}</strong>

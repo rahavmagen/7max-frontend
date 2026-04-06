@@ -74,11 +74,11 @@ export default function TotalProfit() {
   const txByPlayer = {};
   txRows.forEach(tx => {
     const key = tx.playerUsername;
-    if (!txByPlayer[key]) txByPlayer[key] = { name: tx.playerFullName || tx.playerUsername, credits: 0, repayments: 0, deposits: 0, wheel: 0, other: 0 };
+    if (!txByPlayer[key]) txByPlayer[key] = { name: tx.playerFullName || tx.playerUsername, credits: 0, payments: 0, deposits: 0, wheel: 0, other: 0 };
     const amt = Number(tx.amount);
     if (tx.sourceRef === 'SCREEN:CREDIT') {
       if (tx.type === 'DEPOSIT') txByPlayer[key].credits += amt;
-      else txByPlayer[key].repayments += amt;
+      else txByPlayer[key].payments += amt;
     } else if (tx.type === 'WHEEL_EXPENSE') {
       txByPlayer[key].wheel += amt;
     } else if (tx.type === 'DEPOSIT') {
@@ -88,7 +88,7 @@ export default function TotalProfit() {
     }
   });
   const playerSummaries = Object.entries(txByPlayer)
-    .map(([username, d]) => ({ username, ...d, net: d.credits - d.repayments + d.deposits - d.wheel }))
+    .map(([username, d]) => ({ username, ...d, net: d.credits - d.payments + d.deposits - d.wheel }))
     .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
 
   return (
@@ -207,7 +207,7 @@ export default function TotalProfit() {
                     <tr key={p.username}>
                       <td style={{ color: '#e2e8f0' }}>{p.name || p.username}</td>
                       <td style={{ textAlign: 'right' }} className={p.credits ? 'positive' : ''}>{p.credits ? fmt(p.credits) : '—'}</td>
-                      <td style={{ textAlign: 'right' }} className={p.repayments ? 'negative' : ''}>{p.repayments ? `(${fmt(p.repayments)})` : '—'}</td>
+                      <td style={{ textAlign: 'right' }} className={p.payments ? 'negative' : ''}>{p.payments ? `(${fmt(p.payments)})` : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={p.deposits ? 'positive' : ''}>{p.deposits ? fmt(p.deposits) : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={p.wheel ? 'negative' : ''}>{p.wheel ? `(${fmt(p.wheel)})` : '—'}</td>
                       <td style={{ textAlign: 'right' }}><strong className={cls(p.net)}>{fmt(p.net)}</strong></td>
@@ -216,7 +216,7 @@ export default function TotalProfit() {
                   <tr style={{ borderTop: '1px solid #334155', fontWeight: 'bold' }}>
                     <td style={{ color: '#e2e8f0' }}>TOTAL</td>
                     <td style={{ textAlign: 'right' }} className="positive">{fmt(playerSummaries.reduce((s, p) => s + p.credits, 0))}</td>
-                    <td style={{ textAlign: 'right' }} className="negative">({fmt(playerSummaries.reduce((s, p) => s + p.repayments, 0))})</td>
+                    <td style={{ textAlign: 'right' }} className="negative">({fmt(playerSummaries.reduce((s, p) => s + p.payments, 0))})</td>
                     <td style={{ textAlign: 'right' }} className="positive">{fmt(playerSummaries.reduce((s, p) => s + p.deposits, 0))}</td>
                     <td style={{ textAlign: 'right' }} className="negative">({fmt(playerSummaries.reduce((s, p) => s + p.wheel, 0))})</td>
                     <td style={{ textAlign: 'right' }}><strong className={cls(playerSummaries.reduce((s, p) => s + p.net, 0))}>{fmt(playerSummaries.reduce((s, p) => s + p.net, 0))}</strong></td>
