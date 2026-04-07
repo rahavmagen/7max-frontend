@@ -142,6 +142,16 @@ export default function Transfers() {
   const [wheelAmount, setWheelAmount] = useState('');
   const [wheelNotes, setWheelNotes] = useState('');
 
+  // Chip Promo form
+  const [chipPromoPlayerId, setChipPromoPlayerId] = useState('');
+  const [chipPromoAmount, setChipPromoAmount] = useState('');
+  const [chipPromoNotes, setChipPromoNotes] = useState('');
+
+  // Write Off form
+  const [writeOffPlayerId, setWriteOffPlayerId] = useState('');
+  const [writeOffAmount, setWriteOffAmount] = useState('');
+  const [writeOffNotes, setWriteOffNotes] = useState('');
+
   // Admin expense form
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseNotes, setExpenseNotes] = useState('');
@@ -239,6 +249,54 @@ export default function Transfers() {
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record wheel expense' });
+    }
+    setSubmitting(false);
+  };
+
+  // Chip Promo submit — documentation only, CHIP_PROMO type, no XLS matching
+  const handleChipPromoSubmit = async (e) => {
+    e.preventDefault();
+    if (!chipPromoPlayerId || !chipPromoAmount) return;
+    setSubmitting(true);
+    try {
+      await addTransaction({
+        playerId: chipPromoPlayerId,
+        type: 'CHIP_PROMO',
+        amount: Number(chipPromoAmount),
+        method: 'OTHER',
+        notes: chipPromoNotes || null,
+        pendingConfirmation: false,
+        sourceRef: 'SCREEN:CHIP_PROMO',
+      });
+      setMsg({ type: 'success', text: 'Chip promo recorded' });
+      setChipPromoPlayerId(''); setChipPromoAmount(''); setChipPromoNotes('');
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to record chip promo' });
+    }
+    setSubmitting(false);
+  };
+
+  // Write Off submit — closes negative balance, PROMOTION type, deducted from profit
+  const handleWriteOffSubmit = async (e) => {
+    e.preventDefault();
+    if (!writeOffPlayerId || !writeOffAmount) return;
+    setSubmitting(true);
+    try {
+      await addTransaction({
+        playerId: writeOffPlayerId,
+        type: 'PROMOTION',
+        amount: Number(writeOffAmount),
+        method: 'OTHER',
+        notes: writeOffNotes || null,
+        pendingConfirmation: false,
+        sourceRef: 'SCREEN:WRITEOFF',
+      });
+      setMsg({ type: 'success', text: 'Balance write-off recorded' });
+      setWriteOffPlayerId(''); setWriteOffAmount(''); setWriteOffNotes('');
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to record write-off' });
     }
     setSubmitting(false);
   };
@@ -349,6 +407,16 @@ export default function Transfers() {
         <button className={`btn ${activeForm === 'promotion' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('promotion')}>
           🏆 Promotion (MTT)
         </button>
+        <button className={`btn ${activeForm === 'chipPromo' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => toggleForm('chipPromo')}
+          style={{ background: activeForm === 'chipPromo' ? '#7c3aed' : undefined, color: activeForm === 'chipPromo' ? '#fff' : undefined }}>
+          🎁 Chip Promo
+        </button>
+        <button className={`btn ${activeForm === 'writeOff' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => toggleForm('writeOff')}
+          style={{ background: activeForm === 'writeOff' ? '#0e7490' : undefined, color: activeForm === 'writeOff' ? '#fff' : undefined }}>
+          ✏️ Write Off
+        </button>
         <button className={`btn ${activeForm === 'transfer' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('transfer')}>
           ↔ Player Transfer
         </button>
@@ -450,6 +518,68 @@ export default function Transfers() {
             <button type="submit" className="btn" style={{ background: '#fb923c', color: '#0f1117' }}
               disabled={submitting || !wheelPlayerId}>
               {submitting ? 'Recording...' : '🎡 Record Wheel Expense'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Chip Promo Form */}
+      {activeForm === 'chipPromo' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#7c3aed' }}>
+          <h2 style={{ color: '#a78bfa' }}>Chip Promo — Documentation</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Record chips given to a player (rakeback, bonus, etc.). Profit auto-adjusts via chip count — this is documentation only.
+          </p>
+          <form onSubmit={handleChipPromoSubmit}>
+            <div className="form-row">
+              <PlayerSelect label="Player" value={chipPromoPlayerId} onChange={setChipPromoPlayerId} players={players} />
+              <div className="form-group">
+                <label>Amount (chips) *</label>
+                <input type="number" min="0.01" step="0.01" required value={chipPromoAmount}
+                  onChange={e => setChipPromoAmount(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={chipPromoNotes} onChange={e => setChipPromoNotes(e.target.value)}
+                  placeholder="e.g. Rakeback April" />
+              </div>
+            </div>
+            <button type="submit" className="btn" style={{ background: '#7c3aed', color: '#fff' }}
+              disabled={submitting || !chipPromoPlayerId}>
+              {submitting ? 'Recording...' : '🎁 Record Chip Promo'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Write Off Form */}
+      {activeForm === 'writeOff' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#0e7490' }}>
+          <h2 style={{ color: '#22d3ee' }}>Write Off — Balance Forgiveness</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Forgive a player's negative balance. Adds to their balance and is deducted from club profit as a promotion expense.
+          </p>
+          <form onSubmit={handleWriteOffSubmit}>
+            <div className="form-row">
+              <PlayerSelect label="Player" value={writeOffPlayerId} onChange={(v) => {
+                setWriteOffPlayerId(v);
+                const p = players.find(pl => String(pl.id) === String(v));
+                if (p && Number(p.balance) < 0) setWriteOffAmount(String(Math.abs(Number(p.balance))));
+              }} players={players} />
+              <div className="form-group">
+                <label>Amount (₪) *</label>
+                <input type="number" min="0.01" step="0.01" required value={writeOffAmount}
+                  onChange={e => setWriteOffAmount(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={writeOffNotes} onChange={e => setWriteOffNotes(e.target.value)}
+                  placeholder="e.g. Played on club cost Apr 5" />
+              </div>
+            </div>
+            <button type="submit" className="btn" style={{ background: '#0e7490', color: '#fff' }}
+              disabled={submitting || !writeOffPlayerId}>
+              {submitting ? 'Recording...' : '✏️ Record Write-off'}
             </button>
           </form>
         </div>
