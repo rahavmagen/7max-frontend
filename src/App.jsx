@@ -23,9 +23,10 @@ import PlayerValidation from './pages/PlayerValidation';
 import AdminExpenses from './pages/AdminExpenses';
 import BringAFriend from './pages/BringAFriend';
 import Wheel from './pages/Wheel';
+import CreditCompare from './pages/CreditCompare';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses'];
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/credit-compare'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -54,6 +55,7 @@ function AccountingDropdown() {
           <NavLink to="/chip-balance">Balance</NavLink>
           <NavLink to="/player-validation">Validation</NavLink>
           <NavLink to="/admin-expenses">Expenses</NavLink>
+          <NavLink to="/credit-compare">Credit Compare</NavLink>
         </div>
       )}
     </div>
@@ -154,6 +156,7 @@ function AppRoutes() {
               <Route path="/chip-balance" element={<ChipBalance />} />
               <Route path="/player-validation" element={<PlayerValidation />} />
               <Route path="/admin-expenses" element={<AdminExpenses />} />
+              <Route path="/credit-compare" element={<CreditCompare />} />
               <Route path="/bring-a-friend" element={<BringAFriend />} />
               <Route path="/lesson" element={<Lesson />} />
               <Route path="/wheel" element={<Wheel />} />
