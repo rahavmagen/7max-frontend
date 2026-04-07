@@ -262,7 +262,7 @@ export default function Transfers() {
     try {
       await addTransaction({
         playerId: chipPromoPlayerId,
-        type: 'DEPOSIT',
+        type: 'CHIP_PROMO',
         amount: Number(chipPromoAmount),
         method: 'OTHER',
         notes: chipPromoNotes || null,
