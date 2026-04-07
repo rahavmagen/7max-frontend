@@ -106,6 +106,7 @@ const TYPE_BADGE = {
   TRANSFER:      { bg: '#1e3a5f', color: '#60a5fa', label: 'Transfer' },
   CREDIT:        { bg: '#3b1f5e', color: '#c084fc', label: 'Manual Credit' },
   PROMOTION:     { bg: '#14532d', color: '#4ade80', label: 'Promotion' },
+  CHIP_PROMO:    { bg: '#3b2a00', color: '#fbbf24', label: '🎁 Chip Promo' },
   WHEEL_EXPENSE: { bg: '#7c2d12', color: '#fb923c', label: 'גלגל (Wheel)' },
   XLS_UNMATCHED: { bg: '#422006', color: '#fbbf24', label: '⚠ XLS Unmatched' },
 };
@@ -253,7 +254,7 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
-  // Chip Promo submit — documentation only, CHIP_PROMO type, no XLS matching
+  // Chip Promo submit — goes through pending/XLS matching like MTT Promotion
   const handleChipPromoSubmit = async (e) => {
     e.preventDefault();
     if (!chipPromoPlayerId || !chipPromoAmount) return;
@@ -261,11 +262,11 @@ export default function Transfers() {
     try {
       await addTransaction({
         playerId: chipPromoPlayerId,
-        type: 'CHIP_PROMO',
+        type: 'DEPOSIT',
         amount: Number(chipPromoAmount),
         method: 'OTHER',
         notes: chipPromoNotes || null,
-        pendingConfirmation: false,
+        pendingConfirmation: true,
         sourceRef: 'SCREEN:CHIP_PROMO',
       });
       setMsg({ type: 'success', text: 'Chip promo recorded' });
@@ -526,9 +527,9 @@ export default function Transfers() {
       {/* Chip Promo Form */}
       {activeForm === 'chipPromo' && (
         <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#7c3aed' }}>
-          <h2 style={{ color: '#a78bfa' }}>Chip Promo — Documentation</h2>
+          <h2 style={{ color: '#a78bfa' }}>🎁 Chip Promo</h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Record chips given to a player (rakeback, bonus, etc.). Profit auto-adjusts via chip count — this is documentation only.
+            Record chips given to a player (rakeback, bonus, etc.). Goes to pending for XLS matching.
           </p>
           <form onSubmit={handleChipPromoSubmit}>
             <div className="form-row">
