@@ -65,10 +65,11 @@ export default function TotalProfit() {
   const totalChips = players.filter(p => !p.chipsStale).reduce((s, p) => s + Number(p.currentChips || 0), 0);
   const willExpense = Number(summary?.willExpense || 0);
   const generalExpenses = Number(summary?.generalExpenses || 0);
+  const promotionsTotal = Number(summary?.promotionsTotal || 0);
   const bankDeposits = Number(summary?.bankDeposits || 0);
   const chipsPlayersPaidFor = totalChips - willExpense;
   const clubEarning = bankDeposits + totalCredit - chipsPlayersPaidFor;
-  const netProfit = clubEarning - willExpense - generalExpenses;
+  const netProfit = clubEarning - willExpense - generalExpenses - promotionsTotal;
 
   // Group transactions by player for summary
   const txByPlayer = {};
@@ -301,6 +302,13 @@ export default function TotalProfit() {
               <td className="negative"><strong>({fmt(generalExpenses)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>הוצאות col C</td>
             </tr>
+            {promotionsTotal > 0 && (
+              <tr>
+                <td style={{ color: '#94a3b8' }}>− Promotions Write-offs</td>
+                <td className="negative"><strong>({fmt(promotionsTotal)})</strong></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Balance forgiveness (plays on club cost)</td>
+              </tr>
+            )}
             <tr style={{ borderTop: '1px solid #334155' }}>
               <td><strong style={{ color: '#e2e8f0' }}>= Net Profit</strong></td>
               <td><strong className={cls(netProfit)} style={{ fontSize: '1.1rem' }}>{fmt(netProfit)}</strong></td>
