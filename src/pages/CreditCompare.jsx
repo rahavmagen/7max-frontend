@@ -66,24 +66,28 @@ export default function CreditCompare() {
         dbTotal += ct;
       }
 
-      // Compare
-      const diffs = [];
-      const allNames = new Set([
-        ...Object.keys(xls).filter(k => !k.startsWith('__unnamed')),
-        ...Object.keys(db).filter(k => db[k] !== 0),
-      ]);
+      // Normalize both maps to lowercase keys for matching
+      const xlsLower = {};
+      for (const [k, v] of Object.entries(xls)) {
+        if (!k.startsWith('__unnamed')) xlsLower[k.toLowerCase()] = { key: k, val: v };
+      }
+      const dbLower = {};
+      for (const [k, v] of Object.entries(db)) {
+        if (v !== 0) dbLower[k.toLowerCase()] = { key: k, val: v };
+      }
 
-      for (const username of allNames) {
-        const xlsVal = xls[username] || 0;
-        // case-insensitive fallback
-        let dbVal = db[username];
-        if (dbVal === undefined) {
-          const match = Object.keys(db).find(k => k.toLowerCase() === username.toLowerCase());
-          dbVal = match ? db[match] : 0;
-        }
+      const allKeys = new Set([...Object.keys(xlsLower), ...Object.keys(dbLower)]);
+      const diffs = [];
+
+      for (const key of allKeys) {
+        const xlsEntry = xlsLower[key];
+        const dbEntry = dbLower[key];
+        const xlsVal = xlsEntry ? xlsEntry.val : 0;
+        const dbVal = dbEntry ? dbEntry.val : 0;
+        const displayName = (dbEntry || xlsEntry).key;
         const diff = xlsVal - dbVal;
         if (Math.abs(diff) > 0.01) {
-          diffs.push({ username, xlsVal, dbVal, diff });
+          diffs.push({ username: displayName, xlsVal, dbVal, diff });
         }
       }
 
