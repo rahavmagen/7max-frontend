@@ -346,6 +346,14 @@ export default function Wheel() {
 
   useEffect(() => () => { if (animRef.current) cancelAnimationFrame(animRef.current); }, []);
 
+  // Close player picker on outside click
+  useEffect(() => {
+    if (!showPlayerPicker) return;
+    const handler = (e) => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowPlayerPicker(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showPlayerPicker]);
+
   /* ─── audio helpers ─── */
   const getAC = () => {
     if (!audioRef.current) audioRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -445,7 +453,9 @@ export default function Wheel() {
         setWinner(w);
         setHistory(h => [{ name:w, time: new Date().toLocaleTimeString('he-IL') }, ...h.slice(0,9)]);
         // Capture 2s of winner overlay on canvas, then finalize MP4
-        const baseTs = encoderRef.current?.lastTs ?? 0;
+        const baseTs = encoderRef.current?.startTime != null
+          ? Math.round((performance.now() - encoderRef.current.startTime) * 1000)
+          : (encoderRef.current?.lastTs ?? 0);
         let wf = 0;
         const finalizeAndShow = async () => {
           if (encoderRef.current) {
@@ -721,14 +731,6 @@ export default function Wheel() {
     setShowPlayerPicker(false);
     setPickerSearch('');
   };
-
-  // close picker on outside click
-  useEffect(() => {
-    if (!showPlayerPicker) return;
-    const handler = (e) => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowPlayerPicker(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showPlayerPicker]);
 
   /* Step: review */
   if (step === 'review') return (
