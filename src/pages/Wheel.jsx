@@ -136,8 +136,8 @@ function snapAllToPlayers(ocrNames, knownPlayers) {
 }
 
 const SEG_COLORS = [
-  '#6a0000','#0d3a1a','#0d1040','#3a2200','#2a0a30',
-  '#003a3a','#1a3a00','#3a0020','#1a1a00','#00183a',
+  '#ff9090','#5ecfa8','#7aadee','#ffb84d','#b87de8',
+  '#3dd4d4','#8fd460','#f07ab8','#e0c840','#5ab8e8',
 ];
 
 function lighten(hex, amt) {
