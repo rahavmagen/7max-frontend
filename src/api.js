@@ -92,6 +92,7 @@ export const getAdminUsers = () => api.get('/admin-expenses/admin-users');
 export const createAdminExpense = (data) => api.post('/admin-expenses', data);
 export const updateAdminExpense = (id, data) => api.put(`/admin-expenses/${id}`, data);
 export const deleteAdminExpense = (id) => api.delete(`/admin-expenses/${id}`);
+export const getPromotions = () => api.get('/transactions/promotions');
 
 export const createReferral = (data) => api.post('/referrals', data);
 export const getReferrals = () => api.get('/referrals');
