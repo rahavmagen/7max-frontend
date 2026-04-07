@@ -218,7 +218,11 @@ export default function Wheel() {
   const [ocrImages, setOcrImages]   = useState([]); // preview URLs
   const [ocrRawText, setOcrRawText] = useState(''); // for debug
   const [showOcrDebug, setShowOcrDebug] = useState(false);
-  const [knownPlayers, setKnownPlayers] = useState([]);
+  const [knownPlayers, setKnownPlayers] = useState([]); // full player objects {id, username, fullName}
+  const [unmatchedOcr, setUnmatchedOcr] = useState(new Set()); // OCR names not found in known players
+  const [showPlayerPicker, setShowPlayerPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const pickerRef = useRef(null);
 
   const canvasRef    = useRef(null);
   const rotRef       = useRef(0);
@@ -237,7 +241,7 @@ export default function Wheel() {
     img.onload = () => { logoRef.current = img; };
 
     getActivePlayers()
-      .then(r => setKnownPlayers((r.data || []).map(p => p.username).filter(Boolean)))
+      .then(r => setKnownPlayers((r.data || []).filter(p => p.username)))
       .catch(() => {});
   }, []);
 
@@ -526,7 +530,12 @@ export default function Wheel() {
         }
         let names = [...allNames];
         if (!names.length) { setParseError('Could not read player names from image. Try the manual entry option.'); setOcrLoading(false); return; }
-        if (knownPlayers.length > 0) names = snapAllToPlayers(names, knownPlayers);
+        if (knownPlayers.length > 0) {
+          const playerUsernames = knownPlayers.map(p => p.username);
+          names = snapAllToPlayers(names, playerUsernames);
+          const knownSet = new Set(playerUsernames.map(u => u.toLowerCase()));
+          setUnmatchedOcr(new Set(names.filter(n => !knownSet.has(n.toLowerCase()))));
+        }
         setAllPlayers(names); setSelected(new Set(names));
         setOcrLoading(false); setStep('review');
       } catch(e) { setParseError('OCR failed: ' + e.message); setOcrLoading(false); }
@@ -578,7 +587,8 @@ export default function Wheel() {
     setHistory([]); setManualText(''); setParseError('');
     setOcrImages([]); setOcrLoading(false); setOcrProgress(0);
     setOcrRawText(''); setShowOcrDebug(false);
-    setVideoUrl(null);
+    setVideoUrl(null); setUnmatchedOcr(new Set());
+    setShowPlayerPicker(false); setPickerSearch('');
   };
 
   /* ─── shared styles ─── */
@@ -703,6 +713,23 @@ export default function Wheel() {
     setAddingName('');
   };
 
+  const addFromPicker = (username) => {
+    if (!allPlayers.includes(username)) {
+      setAllPlayers(p => [...p, username]);
+      setSelected(p => new Set([...p, username]));
+    }
+    setShowPlayerPicker(false);
+    setPickerSearch('');
+  };
+
+  // close picker on outside click
+  useEffect(() => {
+    if (!showPlayerPicker) return;
+    const handler = (e) => { if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowPlayerPicker(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showPlayerPicker]);
+
   /* Step: review */
   if (step === 'review') return (
     <div style={{ maxWidth:'640px', margin:'0 auto', padding:'2rem 1rem' }}>
@@ -752,6 +779,11 @@ export default function Wheel() {
               ) : (
                 <>
                   <span style={{ flex:1, color: selected.has(name)?'#e2e8f0':'#64748b', fontSize:'0.9rem' }}>{name}</span>
+                  {unmatchedOcr.size > 0 && (
+                    unmatchedOcr.has(name)
+                      ? <span title="Not found in player list — verify this name" style={{ color:'#f59e0b', fontSize:'0.8rem', fontWeight:700 }}>⚠</span>
+                      : <span title="Matched to known player" style={{ color:'#22c55e', fontSize:'0.8rem' }}>✓</span>
+                  )}
                   <button onClick={()=>{ setEditingName(name); setEditValue(name); }} title="Rename"
                     style={{ background:'none', border:'none', color:'#64748b', cursor:'pointer', fontSize:'0.9rem', padding:'0 2px' }}>✏️</button>
                   <button onClick={()=>deleteName(name)} title="Delete"
@@ -781,20 +813,44 @@ export default function Wheel() {
         </div>
       )}
 
-      {/* Add new name */}
-      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'1rem' }}>
-        <input
-          value={addingName}
-          onChange={e=>setAddingName(e.target.value)}
-          onKeyDown={e=>{ if(e.key==='Enter') addName(); }}
-          placeholder="Add a missing name…"
-          style={{ flex:1, background:'#0f1117', border:'1px solid #2d3148', borderRadius:'4px',
-                   color:'#e2e8f0', padding:'7px 10px', fontSize:'0.9rem' }}
-        />
-        <button onClick={addName} disabled={!addingName.trim()}
-          style={{...btn(!!addingName.trim()), padding:'7px 16px', fontSize:'0.85rem', opacity: addingName.trim()?1:0.4}}>
-          + Add
+      {/* Add player from list */}
+      <div ref={pickerRef} style={{ position:'relative', marginBottom:'1rem' }}>
+        <button
+          onClick={() => { setShowPlayerPicker(v => !v); setPickerSearch(''); }}
+          style={{...btn(false), width:'100%', justifyContent:'flex-start', padding:'7px 12px', fontSize:'0.85rem', color:'#94a3b8' }}
+        >
+          + Add a player from the list…
         </button>
+        {showPlayerPicker && (
+          <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#1a1d2e',
+                        border:'1px solid #2d3148', borderRadius:'6px', zIndex:100,
+                        maxHeight:'240px', overflowY:'auto', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+            <input
+              autoFocus
+              value={pickerSearch}
+              onChange={e => setPickerSearch(e.target.value)}
+              placeholder="Search player…"
+              style={{ width:'100%', background:'#0f1117', border:'none', borderBottom:'1px solid #2d3148',
+                       color:'#e2e8f0', padding:'8px 12px', boxSizing:'border-box', fontSize:'0.9rem' }}
+            />
+            {knownPlayers
+              .filter(p => !allPlayers.includes(p.username) &&
+                (pickerSearch === '' ||
+                  p.username.toLowerCase().includes(pickerSearch.toLowerCase()) ||
+                  (p.fullName && p.fullName.toLowerCase().includes(pickerSearch.toLowerCase()))))
+              .map(p => (
+                <div key={p.id} onClick={() => addFromPicker(p.username)}
+                  style={{ padding:'8px 12px', cursor:'pointer', color:'#e2e8f0', borderBottom:'1px solid #12151f' }}
+                  onMouseEnter={e => e.currentTarget.style.background='#2d3148'}
+                  onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                >
+                  <strong>{p.username}</strong>
+                  {p.fullName && <span style={{ color:'#64748b', marginLeft:'0.5rem', fontSize:'0.8rem' }}>{p.fullName}</span>}
+                </div>
+              ))
+            }
+          </div>
+        )}
       </div>
 
       {parseError && <div style={{ color:'#ef4444', marginBottom:'0.75rem', fontSize:'0.85rem' }}>{parseError}</div>}
