@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAdminExpenses, deleteAdminExpense, updateAdminExpense } from '../api';
+import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions } from '../api';
 
 export default function AdminExpenses() {
   const [data, setData] = useState(null);
@@ -7,10 +7,18 @@ export default function AdminExpenses() {
   const [editing, setEditing] = useState(null); // { id, adminUsername, amount, notes }
   const [msg, setMsg] = useState(null);
   const [expandedAdmins, setExpandedAdmins] = useState({});
+  const [promotions, setPromotions] = useState(null);
 
   const load = () => {
     setLoading(true);
-    getAdminExpenses().then(r => { setData(r.data); setLoading(false); });
+    Promise.all([
+      getAdminExpenses(),
+      getPromotions(),
+    ]).then(([expRes, promoRes]) => {
+      setData(expRes.data);
+      setPromotions(promoRes.data);
+      setLoading(false);
+    });
   };
 
   useEffect(() => { load(); }, []);
@@ -172,6 +180,69 @@ export default function AdminExpenses() {
           )}
         </div>
       ))}
+
+      {/* Promotions group */}
+      {promotions && (promotions.entries?.length > 0) && (
+        <div className="card" style={{ marginBottom: '1rem', borderColor: '#7c3aed' }}>
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => setExpandedAdmins(prev => ({ ...prev, '__promotions': !prev['__promotions'] }))}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <strong style={{ color: '#a78bfa', fontSize: '1.05rem' }}>Promotions</strong>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                {promotions.entries.length} {promotions.entries.length === 1 ? 'entry' : 'entries'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                Chip promos: <span style={{ color: '#a78bfa' }}>{fmt(promotions.chipPromoTotal)}</span>
+                {' · '}
+                Write-offs: <span style={{ color: '#ef4444' }}>{fmt(promotions.writeOffTotal)}</span>
+              </span>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                {expandedAdmins['__promotions'] ? '▲' : '▼'}
+              </span>
+            </div>
+          </div>
+
+          {expandedAdmins['__promotions'] && (
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Type</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {promotions.entries.map(entry => (
+                    <tr key={entry.id}>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>
+                        {entry.transactionDate || '—'}
+                      </td>
+                      <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
+                      <td>
+                        {entry.type === 'CHIP_PROMO'
+                          ? <span style={{ fontSize: '0.75rem', background: '#3b1d6b', color: '#a78bfa', borderRadius: '4px', padding: '2px 6px' }}>Chip Promo</span>
+                          : <span style={{ fontSize: '0.75rem', background: '#164e63', color: '#22d3ee', borderRadius: '4px', padding: '2px 6px' }}>Write-off</span>
+                        }
+                      </td>
+                      <td style={{ color: entry.type === 'PROMOTION' ? '#ef4444' : '#a78bfa', fontWeight: 600 }}>
+                        {fmt(entry.amount)}
+                      </td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {admins.length > 0 && (
         <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
