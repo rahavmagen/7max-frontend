@@ -118,7 +118,7 @@ export default function AdminExpenses() {
           </div>
 
           {expandedAdmins['__wheelpromo'] && (
-            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
               <table style={{ width: '100%' }}>
                 <thead>
                   <tr>
@@ -179,7 +179,7 @@ export default function AdminExpenses() {
           </div>
 
           {expandedAdmins['__writeoffs'] && (
-            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
               <table style={{ width: '100%' }}>
                 <thead>
                   <tr>
@@ -233,7 +233,7 @@ export default function AdminExpenses() {
           </div>
 
           {expandedAdmins[admin.adminUsername] && (
-            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
               <table style={{ width: '100%' }}>
                 <thead>
                   <tr>

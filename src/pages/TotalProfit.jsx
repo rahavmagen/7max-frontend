@@ -138,7 +138,7 @@ export default function TotalProfit() {
       {period && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ marginBottom: '1rem' }}>Period P&L: {period.from} → {period.to}</h2>
-          <table>
+          <div className="table-wrap"><table>
             <tbody>
               <tr>
                 <td style={{ color: '#94a3b8' }}>Bank Deposits</td>
@@ -174,7 +174,7 @@ export default function TotalProfit() {
                 <td></td>
               </tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
@@ -193,7 +193,7 @@ export default function TotalProfit() {
             <>
               {/* Per-player summary */}
               <h3 style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'normal' }}>BY PLAYER</h3>
-              <table style={{ marginBottom: '1.5rem' }}>
+              <div className="table-wrap"><table style={{ marginBottom: '1.5rem' }}>
                 <thead>
                   <tr style={{ color: '#64748b', fontSize: '0.8rem' }}>
                     <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Player</th>
@@ -224,11 +224,11 @@ export default function TotalProfit() {
                     <td style={{ textAlign: 'right' }}><strong className={cls(playerSummaries.reduce((s, p) => s + p.net, 0))}>{fmt(playerSummaries.reduce((s, p) => s + p.net, 0))}</strong></td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
 
               {/* Raw transaction list */}
               <h3 style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'normal' }}>ALL TRANSACTIONS</h3>
-              <table>
+              <div className="table-wrap"><table>
                 <thead>
                   <tr style={{ color: '#64748b', fontSize: '0.8rem' }}>
                     <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Date</th>
@@ -260,7 +260,7 @@ export default function TotalProfit() {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             </>
           )}
         </div>
@@ -269,7 +269,7 @@ export default function TotalProfit() {
       {/* All-time Calculation */}
       <div className="card">
         <h2>All-Time P&L</h2>
-        <table>
+        <div className="table-wrap"><table>
           <tbody>
             <tr>
               <td style={{ color: '#94a3b8' }}>Bank Balance</td>
@@ -316,7 +316,7 @@ export default function TotalProfit() {
               <td></td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );
