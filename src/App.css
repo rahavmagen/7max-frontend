@@ -139,8 +139,8 @@ tr:last-child td { border-bottom: none; }
 
   /* Tables: horizontal scroll on small screens */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; display: block; width: 100%; }
-  .table-wrap table { min-width: 600px; white-space: nowrap; }
-  th, td { padding: 0.5rem 0.6rem; font-size: 0.78rem; }
+  th, td { padding: 0.3rem 0.4rem; font-size: 0.7rem; }
+  th { white-space: nowrap; }
 
   .form-row { grid-template-columns: 1fr; }
 
