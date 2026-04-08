@@ -478,9 +478,11 @@ export default function PlayerDetail() {
                     Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
                   </span>
                 )}
-                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                  ריק שבת: <strong style={{ color: '#a5b4fc' }}>{fmt(shabbatRake)}</strong>
-                </span>
+                {isAdmin && (
+                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                    ריק שבת: <strong style={{ color: '#a5b4fc' }}>{fmt(shabbatRake)}</strong>
+                  </span>
+                )}
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                   Current Balance{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}: <strong className={balanceClass(player.balance)}>{fmt(player.balance)}</strong>
                 </span>
