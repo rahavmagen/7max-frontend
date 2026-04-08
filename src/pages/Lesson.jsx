@@ -408,7 +408,7 @@ export default function Lesson() {
               {registrations.length === 0 ? (
                 <div style={{ color: '#475569', fontSize: '0.9rem' }}>אין רשומים עדיין</div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                <div className="table-wrap"><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                   <thead>
                     <tr style={{ color: '#475569', borderBottom: '1px solid rgba(99,102,241,0.15)' }}>
                       {['יוזר', 'שם מלא', 'טלפון', 'תאריך הרשמה'].map(h => (
@@ -428,7 +428,7 @@ export default function Lesson() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               )}
             </div>
           </>

@@ -138,7 +138,7 @@ tr:last-child td { border-bottom: none; }
   .card { padding: 1rem; margin-bottom: 1rem; }
 
   /* Tables: horizontal scroll on small screens */
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; display: block; }
   table { min-width: 480px; }
   th, td { padding: 0.6rem 0.7rem; font-size: 0.8rem; }
 

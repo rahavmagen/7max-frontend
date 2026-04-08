@@ -135,7 +135,7 @@ export default function CreditCompare() {
           {/* Totals */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <h2 style={{ marginBottom: '1rem' }}>Summary</h2>
-            <table>
+            <div className="table-wrap"><table>
               <tbody>
                 <tr>
                   <td style={{ color: '#94a3b8' }}>XLS Total (cols C–F)</td>
@@ -154,7 +154,7 @@ export default function CreditCompare() {
                   </td>
                 </tr>
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {/* Diffs */}
@@ -165,7 +165,7 @@ export default function CreditCompare() {
           ) : (
             <div className="card" style={{ marginBottom: '1.5rem' }}>
               <h2 style={{ marginBottom: '1rem' }}>Mismatches ({results.diffs.length})</h2>
-              <table>
+              <div className="table-wrap"><table>
                 <thead>
                   <tr style={{ color: '#64748b', fontSize: '0.85rem' }}>
                     <th style={{ textAlign: 'left', paddingBottom: '0.5rem' }}>Username</th>
@@ -193,7 +193,7 @@ export default function CreditCompare() {
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
 
@@ -204,7 +204,7 @@ export default function CreditCompare() {
               <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
                 These rows have credit values but no username — cannot be matched to DB.
               </p>
-              <table>
+              <div className="table-wrap"><table>
                 <thead>
                   <tr style={{ color: '#64748b', fontSize: '0.85rem' }}>
                     <th style={{ textAlign: 'left', paddingBottom: '0.5rem' }}>XLS Row</th>
@@ -227,7 +227,7 @@ export default function CreditCompare() {
                     </td>
                   </tr>
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
         </>
