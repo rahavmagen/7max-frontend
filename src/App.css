@@ -138,8 +138,8 @@ tr:last-child td { border-bottom: none; }
   .card { padding: 1rem; margin-bottom: 1rem; }
 
   /* Tables: horizontal scroll on small screens */
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; display: block; width: 100%; }
-  .table-wrap table { min-width: 600px; width: max-content; white-space: nowrap; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; display: block; max-width: calc(100vw - 4rem); }
+  .table-wrap table { min-width: 600px; white-space: nowrap; }
   th, td { padding: 0.5rem 0.6rem; font-size: 0.78rem; }
 
   .form-row { grid-template-columns: 1fr; }
