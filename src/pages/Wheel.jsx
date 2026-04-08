@@ -213,6 +213,8 @@ export default function Wheel() {
   const [parseError, setParseError] = useState('');
   const [manualText, setManualText] = useState('');
   const [showManual, setShowManual] = useState(false);
+  const [pickerSelected, setPickerSelected] = useState(new Set());
+  const [uploadSearch, setUploadSearch] = useState('');
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrImages, setOcrImages]   = useState([]); // preview URLs
@@ -676,29 +678,67 @@ export default function Wheel() {
         </div>
       )}
 
-      {/* Manual input toggle */}
-      <div style={{ marginTop:'1rem', textAlign:'center' }}>
-        <button onClick={()=>setShowManual(v=>!v)}
-          style={{ background:'none', border:'none', color:goldDark, cursor:'pointer',
-                   fontSize:'0.85rem', textDecoration:'underline' }}>
-          {showManual ? '▲ Hide' : '✏️ Enter names manually'}
-        </button>
-      </div>
-      {showManual && (
-        <div style={{ marginTop:'0.75rem' }}>
-          <textarea
-            value={manualText}
-            onChange={e=>setManualText(e.target.value)}
-            placeholder="One name per line, or comma-separated&#10;e.g.&#10;piu piu 7&#10;kashmish&#10;Einpoker"
-            style={{ width:'100%', height:'140px', background:'#0f1117', border:'1px solid #2d3148',
-                     borderRadius:'6px', color:'#e2e8f0', padding:'10px', fontSize:'0.9rem',
-                     resize:'vertical', fontFamily:'monospace' }}
-          />
-          <button onClick={handleManual} style={{...btn(true), marginTop:'0.5rem'}}>
+      {/* Player picker from DB */}
+      <div style={{ marginTop:'1rem' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' }}>
+          <span style={{ color:goldDark, fontSize:'0.85rem', fontWeight:600 }}>👥 Select from player list</span>
+          <div style={{ display:'flex', gap:'0.5rem' }}>
+            <button onClick={()=>setPickerSelected(new Set(knownPlayers.map(p=>p.username)))}
+              style={{ background:'none', border:'none', color:'#64748b', cursor:'pointer', fontSize:'0.75rem', textDecoration:'underline' }}
+              onMouseEnter={e=>e.currentTarget.style.color='#e2e8f0'} onMouseLeave={e=>e.currentTarget.style.color='#64748b'}>
+              All
+            </button>
+            <button onClick={()=>setPickerSelected(new Set())}
+              style={{ background:'none', border:'none', color:'#64748b', cursor:'pointer', fontSize:'0.75rem', textDecoration:'underline' }}
+              onMouseEnter={e=>e.currentTarget.style.color='#e2e8f0'} onMouseLeave={e=>e.currentTarget.style.color='#64748b'}>
+              None
+            </button>
+          </div>
+        </div>
+        <input
+          value={uploadSearch}
+          onChange={e=>setUploadSearch(e.target.value)}
+          placeholder="Search players…"
+          style={{ width:'100%', background:'#0f1117', border:'1px solid #2d3148', borderRadius:'6px 6px 0 0',
+                   color:'#e2e8f0', padding:'8px 12px', fontSize:'0.9rem', boxSizing:'border-box' }}
+        />
+        <div style={{ border:'1px solid #2d3148', borderTop:'none', borderRadius:'0 0 6px 6px',
+                      maxHeight:'200px', overflowY:'auto', background:'#0f1117' }}>
+          {knownPlayers
+            .filter(p => !uploadSearch ||
+              p.username.toLowerCase().includes(uploadSearch.toLowerCase()) ||
+              (p.fullName && p.fullName.toLowerCase().includes(uploadSearch.toLowerCase())))
+            .map(p => {
+              const checked = pickerSelected.has(p.username);
+              return (
+                <div key={p.id}
+                  onClick={() => setPickerSelected(s => { const n=new Set(s); checked?n.delete(p.username):n.add(p.username); return n; })}
+                  style={{ display:'flex', alignItems:'center', gap:'0.6rem', padding:'7px 12px',
+                           cursor:'pointer', borderBottom:'1px solid #12151f',
+                           background: checked ? 'rgba(255,215,0,0.06)' : 'transparent' }}
+                  onMouseEnter={e=>e.currentTarget.style.background=checked?'rgba(255,215,0,0.1)':'#1a1d2e'}
+                  onMouseLeave={e=>e.currentTarget.style.background=checked?'rgba(255,215,0,0.06)':'transparent'}
+                >
+                  <span style={{ fontSize:'1rem' }}>{checked ? '☑' : '☐'}</span>
+                  <span style={{ color:'#e2e8f0', fontWeight: checked?600:400 }}>{p.username}</span>
+                  {p.fullName && <span style={{ color:'#64748b', fontSize:'0.8rem' }}>{p.fullName}</span>}
+                </div>
+              );
+            })}
+        </div>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.5rem' }}>
+          <span style={{ color:'#64748b', fontSize:'0.8rem' }}>{pickerSelected.size} selected</span>
+          <button
+            onClick={() => {
+              if (!pickerSelected.size) { setParseError('Select at least one player.'); return; }
+              const names = [...pickerSelected];
+              setAllPlayers(names); setSelected(new Set(names)); setStep('review');
+            }}
+            style={{...btn(true)}}>
             Load Names
           </button>
         </div>
-      )}
+      </div>
       {parseError && <div style={{ color:'#ef4444', marginTop:'0.75rem', fontSize:'0.85rem' }}>{parseError}</div>}
     </div>
   );
