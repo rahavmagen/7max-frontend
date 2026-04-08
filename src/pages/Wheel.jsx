@@ -701,10 +701,10 @@ export default function Wheel() {
           onChange={e=>setUploadSearch(e.target.value)}
           placeholder="Search players…"
           style={{ width:'100%', background:'#0f1117', border:'1px solid #2d3148', borderRadius:'6px 6px 0 0',
-                   color:'#e2e8f0', padding:'8px 12px', fontSize:'0.9rem', boxSizing:'border-box' }}
+                   color:'#e2e8f0', padding:'10px 14px', fontSize:'1rem', boxSizing:'border-box' }}
         />
         <div style={{ border:'1px solid #2d3148', borderTop:'none', borderRadius:'0 0 6px 6px',
-                      maxHeight:'200px', overflowY:'auto', background:'#0f1117' }}>
+                      maxHeight:'360px', overflowY:'auto', background:'#0f1117' }}>
           {knownPlayers
             .filter(p => !uploadSearch ||
               p.username.toLowerCase().includes(uploadSearch.toLowerCase()) ||
@@ -713,18 +713,18 @@ export default function Wheel() {
               const checked = pickerSelected.has(p.username);
               return (
                 <div key={p.id}
-                  onClick={() => setPickerSelected(s => { const n=new Set(s); checked?n.delete(p.username):n.add(p.username); return n; })}
+                  onClick={() => { setPickerSelected(s => { const n=new Set(s); checked?n.delete(p.username):n.add(p.username); return n; }); if (!checked) setUploadSearch(''); }}
                   onMouseEnter={() => setUploadHovered(p.id)}
                   onMouseLeave={() => setUploadHovered(null)}
-                  style={{ display:'flex', alignItems:'center', gap:'0.6rem', padding:'7px 12px',
+                  style={{ display:'flex', alignItems:'center', gap:'0.7rem', padding:'10px 14px',
                            cursor:'pointer', borderBottom:'1px solid #12151f',
                            background: uploadHovered === p.id
                              ? (checked ? 'rgba(255,215,0,0.1)' : '#1a1d2e')
                              : (checked ? 'rgba(255,215,0,0.06)' : 'transparent') }}
                 >
-                  <span style={{ fontSize:'1rem' }}>{checked ? '☑' : '☐'}</span>
-                  <span style={{ color:'#e2e8f0', fontWeight: checked?600:400 }}>{p.username}</span>
-                  {p.fullName && <span style={{ color:'#64748b', fontSize:'0.8rem' }}>{p.fullName}</span>}
+                  <span style={{ fontSize:'1.1rem' }}>{checked ? '☑' : '☐'}</span>
+                  <span style={{ color:'#e2e8f0', fontWeight: checked?600:400, fontSize:'1rem' }}>{p.username}</span>
+                  {p.fullName && <span style={{ color:'#64748b', fontSize:'0.9rem' }}>{p.fullName}</span>}
                 </div>
               );
             })}
