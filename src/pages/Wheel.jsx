@@ -215,6 +215,7 @@ export default function Wheel() {
   const [showManual, setShowManual] = useState(false);
   const [pickerSelected, setPickerSelected] = useState(new Set());
   const [uploadSearch, setUploadSearch] = useState('');
+  const [uploadHovered, setUploadHovered] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrImages, setOcrImages]   = useState([]); // preview URLs
@@ -713,11 +714,13 @@ export default function Wheel() {
               return (
                 <div key={p.id}
                   onClick={() => setPickerSelected(s => { const n=new Set(s); checked?n.delete(p.username):n.add(p.username); return n; })}
+                  onMouseEnter={() => setUploadHovered(p.id)}
+                  onMouseLeave={() => setUploadHovered(null)}
                   style={{ display:'flex', alignItems:'center', gap:'0.6rem', padding:'7px 12px',
                            cursor:'pointer', borderBottom:'1px solid #12151f',
-                           background: checked ? 'rgba(255,215,0,0.06)' : 'transparent' }}
-                  onMouseEnter={e=>e.currentTarget.style.background=checked?'rgba(255,215,0,0.1)':'#1a1d2e'}
-                  onMouseLeave={e=>e.currentTarget.style.background=checked?'rgba(255,215,0,0.06)':'transparent'}
+                           background: uploadHovered === p.id
+                             ? (checked ? 'rgba(255,215,0,0.1)' : '#1a1d2e')
+                             : (checked ? 'rgba(255,215,0,0.06)' : 'transparent') }}
                 >
                   <span style={{ fontSize:'1rem' }}>{checked ? '☑' : '☐'}</span>
                   <span style={{ color:'#e2e8f0', fontWeight: checked?600:400 }}>{p.username}</span>
