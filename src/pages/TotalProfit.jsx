@@ -64,12 +64,13 @@ export default function TotalProfit() {
   const totalCredit = Number(summary?.snapshotCreditTotal || 0);
   const totalChips = players.filter(p => !p.chipsStale).reduce((s, p) => s + Number(p.currentChips || 0), 0);
   const willExpense = Number(summary?.willExpense || 0);
+  const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
   const generalExpenses = Number(summary?.generalExpenses || 0);
   const promotionsTotal = Number(summary?.promotionsTotal || 0);
   const bankDeposits = Number(summary?.bankDeposits || 0);
-  const chipsPlayersPaidFor = totalChips - willExpense;
+  const chipsPlayersPaidFor = totalChips - willExpense - chipPromoTotal;
   const clubEarning = bankDeposits + totalCredit - chipsPlayersPaidFor;
-  const netProfit = clubEarning - willExpense - generalExpenses - promotionsTotal;
+  const netProfit = clubEarning - willExpense - chipPromoTotal - generalExpenses - promotionsTotal;
 
   // Group transactions by player for summary
   const txByPlayer = {};
@@ -284,7 +285,7 @@ export default function TotalProfit() {
               <td style={{ color: '#94a3b8' }}>− Chips Players Paid For</td>
               <td className="negative"><strong>({fmt(chipsPlayersPaidFor)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                Chips ({fmt(totalChips)}) − גלגל / Wheel ({fmt(willExpense)})
+                Chips ({fmt(totalChips)}) − Wheel ({fmt(willExpense)}) − Chip Promo ({fmt(chipPromoTotal)})
               </td>
             </tr>
             <tr style={{ borderTop: '2px solid #334155' }}>
@@ -293,9 +294,9 @@ export default function TotalProfit() {
               <td></td>
             </tr>
             <tr>
-              <td style={{ color: '#94a3b8', paddingTop: '1rem' }}>− גלגל / Wheel Expenses</td>
-              <td className="negative" style={{ paddingTop: '1rem' }}><strong>({fmt(willExpense)})</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>הוצאות col H</td>
+              <td style={{ color: '#94a3b8', paddingTop: '1rem' }}>− Wheel & Chip Promo</td>
+              <td className="negative" style={{ paddingTop: '1rem' }}><strong>({fmt(willExpense + chipPromoTotal)})</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>Wheel ({fmt(willExpense)}) + Chip Promo ({fmt(chipPromoTotal)})</td>
             </tr>
             <tr>
               <td style={{ color: '#94a3b8' }}>− General Expenses</td>
