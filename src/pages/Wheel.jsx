@@ -726,6 +726,23 @@ export default function Wheel() {
               );
             })}
         </div>
+        {/* Selected players tags — click to uncheck */}
+        {pickerSelected.size > 0 && (
+          <div style={{ marginTop:'0.6rem', display:'flex', flexWrap:'wrap', gap:'0.4rem' }}>
+            {[...pickerSelected].map(name => (
+              <span key={name}
+                onClick={() => setPickerSelected(s => { const n=new Set(s); n.delete(name); return n; })}
+                style={{ display:'inline-flex', alignItems:'center', gap:'0.3rem',
+                         background:'rgba(255,215,0,0.12)', border:`1px solid ${goldDark}`,
+                         borderRadius:'20px', padding:'3px 10px', fontSize:'0.8rem',
+                         color:gold, cursor:'pointer' }}
+                title="Click to remove"
+              >
+                {name} <span style={{ opacity:0.7, fontSize:'0.75rem' }}>✕</span>
+              </span>
+            ))}
+          </div>
+        )}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.5rem' }}>
           <span style={{ color:'#64748b', fontSize:'0.8rem' }}>{pickerSelected.size} selected</span>
           <button
