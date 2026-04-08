@@ -133,25 +133,11 @@ export default function Transfers() {
   const [creditNotes, setCreditNotes] = useState('');
   const [noChipChange, setNoChipChange] = useState(false);
 
-  // Promotion form
+  // Unified Promotion form
+  const [promoSubType, setPromoSubType] = useState('chipPromo');
   const [promoPlayerId, setPromoPlayerId] = useState('');
   const [promoAmount, setPromoAmount] = useState('');
   const [promoNotes, setPromoNotes] = useState('');
-
-  // Wheel expense form
-  const [wheelPlayerId, setWheelPlayerId] = useState('');
-  const [wheelAmount, setWheelAmount] = useState('');
-  const [wheelNotes, setWheelNotes] = useState('');
-
-  // Chip Promo form
-  const [chipPromoPlayerId, setChipPromoPlayerId] = useState('');
-  const [chipPromoAmount, setChipPromoAmount] = useState('');
-  const [chipPromoNotes, setChipPromoNotes] = useState('');
-
-  // Write Off form
-  const [writeOffPlayerId, setWriteOffPlayerId] = useState('');
-  const [writeOffAmount, setWriteOffAmount] = useState('');
-  const [writeOffNotes, setWriteOffNotes] = useState('');
 
   // Admin expense form
   const [expenseAmount, setExpenseAmount] = useState('');
@@ -214,90 +200,42 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
-  // Promotion submit
+  // Unified Promotion submit
   const handlePromoSubmit = async (e) => {
     e.preventDefault();
     if (!promoPlayerId || !promoAmount) return;
     setSubmitting(true);
     try {
-      await addTransaction({
-        playerId: promoPlayerId,
-        type: 'DEPOSIT',
-        amount: Number(promoAmount),
-        method: 'OTHER',
-        notes: 'Promotion' + (promoNotes ? ' - ' + promoNotes : ''),
-        pendingConfirmation: true,
-        sourceRef: 'SCREEN:PROMO',
-      });
-      setMsg({ type: 'success', text: 'Promotion recorded' });
+      if (promoSubType === 'wheel') {
+        await addWheelExpense(promoPlayerId, Number(promoAmount), promoNotes || null);
+        setMsg({ type: 'success', text: 'Wheel expense recorded' });
+      } else if (promoSubType === 'writeOff') {
+        await addTransaction({
+          playerId: promoPlayerId,
+          type: 'PROMOTION',
+          amount: Number(promoAmount),
+          method: 'OTHER',
+          notes: promoNotes || null,
+          pendingConfirmation: false,
+          sourceRef: 'SCREEN:WRITEOFF',
+        });
+        setMsg({ type: 'success', text: 'Write-off recorded' });
+      } else {
+        await addTransaction({
+          playerId: promoPlayerId,
+          type: 'CHIP_PROMO',
+          amount: Number(promoAmount),
+          method: 'OTHER',
+          notes: promoNotes || null,
+          pendingConfirmation: true,
+          sourceRef: 'SCREEN:CHIP_PROMO',
+        });
+        setMsg({ type: 'success', text: 'Chip promo recorded' });
+      }
       setPromoPlayerId(''); setPromoAmount(''); setPromoNotes('');
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record promotion' });
-    }
-    setSubmitting(false);
-  };
-
-  // Wheel expense submit
-  const handleWheelSubmit = async (e) => {
-    e.preventDefault();
-    if (!wheelPlayerId || !wheelAmount) return;
-    setSubmitting(true);
-    try {
-      await addWheelExpense(wheelPlayerId, Number(wheelAmount), wheelNotes || null);
-      setMsg({ type: 'success', text: 'Wheel expense recorded' });
-      setWheelPlayerId(''); setWheelAmount(''); setWheelNotes('');
-      load();
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to record wheel expense' });
-    }
-    setSubmitting(false);
-  };
-
-  // Chip Promo submit — goes through pending/XLS matching like MTT Promotion
-  const handleChipPromoSubmit = async (e) => {
-    e.preventDefault();
-    if (!chipPromoPlayerId || !chipPromoAmount) return;
-    setSubmitting(true);
-    try {
-      await addTransaction({
-        playerId: chipPromoPlayerId,
-        type: 'CHIP_PROMO',
-        amount: Number(chipPromoAmount),
-        method: 'OTHER',
-        notes: chipPromoNotes || null,
-        pendingConfirmation: true,
-        sourceRef: 'SCREEN:CHIP_PROMO',
-      });
-      setMsg({ type: 'success', text: 'Chip promo recorded' });
-      setChipPromoPlayerId(''); setChipPromoAmount(''); setChipPromoNotes('');
-      load();
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to record chip promo' });
-    }
-    setSubmitting(false);
-  };
-
-  // Write Off submit — closes negative balance, PROMOTION type, deducted from profit
-  const handleWriteOffSubmit = async (e) => {
-    e.preventDefault();
-    if (!writeOffPlayerId || !writeOffAmount) return;
-    setSubmitting(true);
-    try {
-      await addTransaction({
-        playerId: writeOffPlayerId,
-        type: 'PROMOTION',
-        amount: Number(writeOffAmount),
-        method: 'OTHER',
-        notes: writeOffNotes || null,
-        pendingConfirmation: false,
-        sourceRef: 'SCREEN:WRITEOFF',
-      });
-      setMsg({ type: 'success', text: 'Balance write-off recorded' });
-      setWriteOffPlayerId(''); setWriteOffAmount(''); setWriteOffNotes('');
-      load();
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to record write-off' });
     }
     setSubmitting(false);
   };
@@ -402,28 +340,14 @@ export default function Transfers() {
 
       {/* Form selector */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button className={`btn ${activeForm === 'transfer' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('transfer')}>
+          ↔ Player Transfer
+        </button>
         <button className={`btn ${activeForm === 'credit' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('credit')}>
           ✏ Manual Credit
         </button>
         <button className={`btn ${activeForm === 'promotion' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('promotion')}>
-          🏆 Promotion (MTT)
-        </button>
-        <button className={`btn ${activeForm === 'chipPromo' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => toggleForm('chipPromo')}
-          style={{ background: activeForm === 'chipPromo' ? '#7c3aed' : undefined, color: activeForm === 'chipPromo' ? '#fff' : undefined }}>
-          🎁 Chip Promo
-        </button>
-        <button className={`btn ${activeForm === 'writeOff' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => toggleForm('writeOff')}
-          style={{ background: activeForm === 'writeOff' ? '#0e7490' : undefined, color: activeForm === 'writeOff' ? '#fff' : undefined }}>
-          ✏️ Write Off
-        </button>
-        <button className={`btn ${activeForm === 'transfer' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('transfer')}>
-          ↔ Player Transfer
-        </button>
-        <button className={`btn ${activeForm === 'wheel' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('wheel')}
-          style={{ background: activeForm === 'wheel' ? '#fb923c' : undefined, color: activeForm === 'wheel' ? '#0f1117' : undefined }}>
-          🎡 גלגל (Wheel)
+          🎁 Promotion
         </button>
         <button className={`btn ${activeForm === 'expense' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('expense')}>
           💸 Admin Expense
@@ -469,18 +393,54 @@ export default function Transfers() {
         </div>
       )}
 
-      {/* Promotion Form */}
+      {/* Unified Promotion Form */}
       {activeForm === 'promotion' && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <h2>Promotion — MTT Cost</h2>
+          <h2>🎁 Promotion</h2>
+          {/* Sub-type selector */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+            {[
+              { key: 'chipPromo', label: '🎁 Chip Promo' },
+              { key: 'writeOff',  label: '✏️ Write Off' },
+              { key: 'wheel',     label: '🎡 Wheel' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { setPromoSubType(key); setPromoPlayerId(''); setPromoAmount(''); setPromoNotes(''); }}
+                style={{
+                  padding: '5px 14px', borderRadius: '6px', border: '1px solid',
+                  cursor: 'pointer', fontSize: '0.85rem', fontWeight: promoSubType === key ? 600 : 400,
+                  background: promoSubType === key ? '#2d3148' : 'transparent',
+                  borderColor: promoSubType === key ? '#6366f1' : '#2d3148',
+                  color: promoSubType === key ? '#e2e8f0' : '#64748b',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Record a promotion for a player (e.g. MTT buy-in refund). The XLS upload will automatically match this against the tournament.
+            {promoSubType === 'chipPromo' && 'Record chips given to a player (rakeback, bonus, etc.). Goes to pending for XLS matching.'}
+            {promoSubType === 'writeOff'  && "Forgive a player's negative balance. Deducted from club profit as a promotion expense."}
+            {promoSubType === 'wheel'     && 'Record a wheel expense for a player. Chip count is updated only via XLS upload.'}
           </p>
           <form onSubmit={handlePromoSubmit}>
             <div className="form-row">
-              <PlayerSelect label="Player" value={promoPlayerId} onChange={setPromoPlayerId} players={players} />
+              <PlayerSelect
+                label="Player"
+                value={promoPlayerId}
+                onChange={(v) => {
+                  setPromoPlayerId(v);
+                  if (promoSubType === 'writeOff') {
+                    const p = players.find(pl => String(pl.id) === String(v));
+                    if (p && Number(p.balance) < 0) setPromoAmount(String(Math.abs(Number(p.balance))));
+                  }
+                }}
+                players={players}
+              />
               <div className="form-group">
-                <label>Amount (₪) *</label>
+                <label>Amount {promoSubType === 'writeOff' ? '(₪)' : '(chips)'} *</label>
                 <input type="number" min="0.01" step="0.01" required value={promoAmount}
                   onChange={e => setPromoAmount(e.target.value)} placeholder="0.00" />
               </div>
@@ -490,97 +450,7 @@ export default function Transfers() {
               </div>
             </div>
             <button type="submit" className="btn btn-primary" disabled={submitting || !promoPlayerId}>
-              {submitting ? 'Recording...' : 'Record Promotion'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Wheel Expense Form */}
-      {activeForm === 'wheel' && (
-        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#fb923c' }}>
-          <h2 style={{ color: '#fb923c' }}>גלגל — Wheel Expense</h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Record a wheel expense for a player. Chip count is updated only via XLS upload.
-          </p>
-          <form onSubmit={handleWheelSubmit}>
-            <div className="form-row">
-              <PlayerSelect label="Player" value={wheelPlayerId} onChange={setWheelPlayerId} players={players} />
-              <div className="form-group">
-                <label>Amount (chips) *</label>
-                <input type="number" min="0.01" step="0.01" required value={wheelAmount}
-                  onChange={e => setWheelAmount(e.target.value)} placeholder="0.00" />
-              </div>
-              <div className="form-group">
-                <label>Notes</label>
-                <input type="text" value={wheelNotes} onChange={e => setWheelNotes(e.target.value)} placeholder="Optional" />
-              </div>
-            </div>
-            <button type="submit" className="btn" style={{ background: '#fb923c', color: '#0f1117' }}
-              disabled={submitting || !wheelPlayerId}>
-              {submitting ? 'Recording...' : '🎡 Record Wheel Expense'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Chip Promo Form */}
-      {activeForm === 'chipPromo' && (
-        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#7c3aed' }}>
-          <h2 style={{ color: '#a78bfa' }}>🎁 Chip Promo</h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Record chips given to a player (rakeback, bonus, etc.). Goes to pending for XLS matching.
-          </p>
-          <form onSubmit={handleChipPromoSubmit}>
-            <div className="form-row">
-              <PlayerSelect label="Player" value={chipPromoPlayerId} onChange={setChipPromoPlayerId} players={players} />
-              <div className="form-group">
-                <label>Amount (chips) *</label>
-                <input type="number" min="0.01" step="0.01" required value={chipPromoAmount}
-                  onChange={e => setChipPromoAmount(e.target.value)} placeholder="0.00" />
-              </div>
-              <div className="form-group">
-                <label>Notes</label>
-                <input type="text" value={chipPromoNotes} onChange={e => setChipPromoNotes(e.target.value)}
-                  placeholder="e.g. Rakeback April" />
-              </div>
-            </div>
-            <button type="submit" className="btn" style={{ background: '#7c3aed', color: '#fff' }}
-              disabled={submitting || !chipPromoPlayerId}>
-              {submitting ? 'Recording...' : '🎁 Record Chip Promo'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Write Off Form */}
-      {activeForm === 'writeOff' && (
-        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#0e7490' }}>
-          <h2 style={{ color: '#22d3ee' }}>Write Off — Balance Forgiveness</h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Forgive a player's negative balance. Adds to their balance and is deducted from club profit as a promotion expense.
-          </p>
-          <form onSubmit={handleWriteOffSubmit}>
-            <div className="form-row">
-              <PlayerSelect label="Player" value={writeOffPlayerId} onChange={(v) => {
-                setWriteOffPlayerId(v);
-                const p = players.find(pl => String(pl.id) === String(v));
-                if (p && Number(p.balance) < 0) setWriteOffAmount(String(Math.abs(Number(p.balance))));
-              }} players={players} />
-              <div className="form-group">
-                <label>Amount (₪) *</label>
-                <input type="number" min="0.01" step="0.01" required value={writeOffAmount}
-                  onChange={e => setWriteOffAmount(e.target.value)} placeholder="0.00" />
-              </div>
-              <div className="form-group">
-                <label>Notes</label>
-                <input type="text" value={writeOffNotes} onChange={e => setWriteOffNotes(e.target.value)}
-                  placeholder="e.g. Played on club cost Apr 5" />
-              </div>
-            </div>
-            <button type="submit" className="btn" style={{ background: '#0e7490', color: '#fff' }}
-              disabled={submitting || !writeOffPlayerId}>
-              {submitting ? 'Recording...' : '✏️ Record Write-off'}
+              {submitting ? 'Recording...' : 'Record'}
             </button>
           </form>
         </div>

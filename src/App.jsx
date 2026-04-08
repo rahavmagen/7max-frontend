@@ -91,9 +91,7 @@ function AppRoutes() {
       <nav className="navbar">
         <div className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <img src="/7maxlogo.png" alt="7MAX" style={{ height: '36px', verticalAlign: 'middle' }} />
-          {isPlayer && (
-            <span style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 500 }}>{auth.username}</span>
-          )}
+          <span style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 500 }}>{auth.username}</span>
         </div>
         <div className="nav-links">
           {isAdmin && (
