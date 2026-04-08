@@ -60,8 +60,8 @@ export default function TotalProfit() {
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
-  // All-time calculation (from XLS ImportSummary + player records)
-  const totalCredit = players.reduce((s, p) => s + Number(p.creditTotal || 0), 0);
+  // All-time calculation (from XLS ImportSummary — credit snapshotted at last upload)
+  const totalCredit = Number(summary?.snapshotCreditTotal || 0);
   const totalChips = players.filter(p => !p.chipsStale).reduce((s, p) => s + Number(p.currentChips || 0), 0);
   const willExpense = Number(summary?.willExpense || 0);
   const generalExpenses = Number(summary?.generalExpenses || 0);
