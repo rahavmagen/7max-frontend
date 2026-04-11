@@ -54,8 +54,8 @@ export default function ActivePlayers() {
             </thead>
             <tbody>
               {filtered.map((p, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 600 }}>{p.username}</td>
+                <tr key={i} style={{ cursor: p.id ? 'pointer' : 'default' }} onClick={() => p.id && navigate(`/player/${p.id}`)}>
+                  <td style={{ fontWeight: 600, color: '#a5b4fc' }}>{p.username}</td>
                   <td dir="rtl" style={{ textAlign: 'right', color: '#94a3b8' }}>{p.fullName || '—'}</td>
                 </tr>
               ))}

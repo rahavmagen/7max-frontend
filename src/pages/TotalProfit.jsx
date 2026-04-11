@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange } from '../api';
 
 const SOURCE_LABEL = {
@@ -8,6 +9,7 @@ const SOURCE_LABEL = {
 };
 
 export default function TotalProfit() {
+  const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -207,7 +209,7 @@ export default function TotalProfit() {
                 <tbody>
                   {playerSummaries.map(p => (
                     <tr key={p.playerId}>
-                      <td style={{ color: '#e2e8f0' }}>{p.name || p.username}</td>
+                      <td style={{ color: '#a5b4fc', cursor: 'pointer' }} onClick={() => navigate(`/player/${p.playerId}`)}>{p.name || p.username}</td>
                       <td style={{ textAlign: 'right' }} className={p.credits ? 'positive' : ''}>{p.credits ? fmt(p.credits) : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={p.payments ? 'negative' : ''}>{p.payments ? `(${fmt(p.payments)})` : '—'}</td>
                       <td style={{ textAlign: 'right' }} className={p.deposits ? 'positive' : ''}>{p.deposits ? fmt(p.deposits) : '—'}</td>
@@ -248,7 +250,7 @@ export default function TotalProfit() {
                     return (
                       <tr key={tx.id}>
                         <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{tx.transactionDate || '—'}</td>
-                        <td style={{ color: '#e2e8f0' }}>{tx.playerFullName || tx.playerUsername}</td>
+                        <td style={{ color: '#a5b4fc', cursor: 'pointer' }} onClick={() => navigate(`/player/${tx.playerId}`)}>{tx.playerFullName || tx.playerUsername}</td>
                         <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{label}</td>
                         <td style={{ textAlign: 'right' }}>
                           <span className={isWithdrawal ? 'negative' : 'positive'}>

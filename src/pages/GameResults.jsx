@@ -77,8 +77,8 @@ export default function GameResults() {
                       </strong>
                     ) : i + 1}
                   </td>
-                  <td>
-                    <div><strong style={{ color: '#e2e8f0' }}>{r.fullName || r.username}</strong></div>
+                  <td style={{ cursor: r.playerId ? 'pointer' : 'default' }} onClick={() => r.playerId && navigate(`/player/${r.playerId}`)}>
+                    <div><strong style={{ color: '#a5b4fc' }}>{r.fullName || r.username}</strong></div>
                     {r.fullName && r.fullName !== r.username && (
                       <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{r.username}</div>
                     )}
