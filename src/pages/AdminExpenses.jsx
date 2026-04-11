@@ -81,98 +81,34 @@ export default function AdminExpenses() {
   const grandTotal = data?.grandTotal || 0;
   const paidClubExpenses = data?.paidClubExpenses || [];
   const paidClubTotal = paidClubExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-  const totalWithPaid = Number(grandTotal) + paidClubTotal;
 
   // Split admins: Wheel goes to the Wheel & Promo group, rest are Club Expenses
   const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
   const clubAdmins = admins.filter(a => a.adminUsername !== 'Wheel');
   const wheelEntries = wheelAdmin?.entries || [];
-  const wheelTotal = wheelAdmin?.total || 0;
+  const wheelTotal = Number(wheelAdmin?.total || 0);
 
   const chipPromoEntries = promotions?.entries?.filter(e => e.type === 'CHIP_PROMO') || [];
   const writeOffEntries = promotions?.entries?.filter(e => e.type === 'PROMOTION') || [];
   const chipPromoTotal = Number(promotions?.chipPromoTotal || 0);
   const writeOffTotal = Number(promotions?.writeOffTotal || 0);
-  const wheelPromoTotal = Number(wheelTotal) + chipPromoTotal;
+  const wheelPromoTotal = wheelTotal + chipPromoTotal;
+
+  // Grand Total = non-wheel admin expenses + write-offs + paid club expenses (wheel is chip-based, shown below)
+  const totalWithPaid = (Number(grandTotal) - wheelTotal) + writeOffTotal + paidClubTotal;
 
   return (
     <div>
       <div className="page-header">
         <h1>Admin Expenses</h1>
         <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-          Grand Total: <strong style={{ color: '#e2e8f0' }}>{fmt(grandTotal)}</strong>
+          Grand Total: <strong style={{ color: '#e2e8f0' }}>{fmt(totalWithPaid)}</strong>
         </span>
       </div>
 
       {msg && (
         <div className={`alert alert-${msg.type}`} onClick={() => setMsg(null)} style={{ marginBottom: '1rem' }}>
           {msg.text}
-        </div>
-      )}
-
-      {/* Wheel & Promo group */}
-      {(wheelEntries.length > 0 || chipPromoEntries.length > 0) && (
-        <div className="card" style={{ marginBottom: '1rem', borderColor: '#d97706' }}>
-          <div
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => toggleExpand('__wheelpromo')}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#fbbf24', fontSize: '1.05rem' }}>🎡 Wheel & Chip Promo</strong>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                {wheelEntries.length + chipPromoEntries.length} entries
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                Wheel: <span style={{ color: '#fb923c' }}>{fmt(wheelTotal)}</span>
-                {' · '}
-                Chip Promo: <span style={{ color: '#fbbf24' }}>{fmt(chipPromoTotal)}</span>
-              </span>
-              <strong style={{ color: '#f59e0b', fontSize: '1.1rem' }}>{fmt(wheelPromoTotal)}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__wheelpromo'] ? '▲' : '▼'}</span>
-            </div>
-          </div>
-
-          {expandedAdmins['__wheelpromo'] && (
-            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
-              <table style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player / Source</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Type</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {wheelEntries.map(entry => (
-                    <tr key={`wheel-${entry.id}`}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.expenseDate || '—'}</td>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>—</td>
-                      <td>
-                        <span style={{ fontSize: '0.75rem', background: '#431407', color: '#fb923c', borderRadius: '4px', padding: '2px 6px' }}>Wheel</span>
-                      </td>
-                      <td style={{ color: '#fb923c', fontWeight: 600 }}>{fmt(entry.amount)}</td>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
-                    </tr>
-                  ))}
-                  {chipPromoEntries.map(entry => (
-                    <tr key={`chip-${entry.id}`}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
-                      <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
-                      <td>
-                        <span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Chip Promo</span>
-                      </td>
-                      <td style={{ color: '#fbbf24', fontWeight: 600 }}>{fmt(entry.amount)}</td>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       )}
 
@@ -401,10 +337,73 @@ export default function AdminExpenses() {
         </div>
       )}
 
-      {(clubAdmins.length > 0 || wheelEntries.length > 0 || chipPromoEntries.length > 0 || paidClubExpenses.length > 0) && (
-        <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {(clubAdmins.length > 0 || paidClubExpenses.length > 0 || writeOffEntries.length > 0) && (
+        <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
           <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
+        </div>
+      )}
+
+      {/* Wheel & Chip Promo — chip-based, shown below Grand Total for info only */}
+      {(wheelEntries.length > 0 || chipPromoEntries.length > 0) && (
+        <div className="card" style={{ marginBottom: '1rem', borderColor: '#d97706', opacity: 0.85 }}>
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => toggleExpand('__wheelpromo')}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <strong style={{ color: '#fbbf24', fontSize: '1.05rem' }}>🎡 Wheel & Chip Promo</strong>
+              <span style={{ fontSize: '0.72rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                {wheelEntries.length + chipPromoEntries.length} entries
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                Wheel: <span style={{ color: '#fb923c' }}>{fmt(wheelTotal)}</span>
+                {' · '}
+                Chip Promo: <span style={{ color: '#fbbf24' }}>{fmt(chipPromoTotal)}</span>
+              </span>
+              <strong style={{ color: '#f59e0b', fontSize: '1.1rem' }}>{fmt(wheelPromoTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__wheelpromo'] ? '▲' : '▼'}</span>
+            </div>
+          </div>
+
+          {expandedAdmins['__wheelpromo'] && (
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player / Source</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Type</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wheelEntries.map(entry => (
+                    <tr key={`wheel-${entry.id}`}>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.expenseDate || '—'}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>—</td>
+                      <td><span style={{ fontSize: '0.75rem', background: '#431407', color: '#fb923c', borderRadius: '4px', padding: '2px 6px' }}>Wheel</span></td>
+                      <td style={{ color: '#fb923c', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                    </tr>
+                  ))}
+                  {chipPromoEntries.map(entry => (
+                    <tr key={`chip-${entry.id}`}>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                      <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
+                      <td><span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Chip Promo</span></td>
+                      <td style={{ color: '#fbbf24', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
