@@ -105,4 +105,9 @@ export const registerLesson = (data) => api.post('/lesson/register', data);
 export const unregisterLesson = () => api.delete('/lesson/register');
 export const getMyPlayerInfo = () => api.get('/lesson/my-player');
 
+export const getClubExpenses = () => api.get('/club-expenses');
+export const createClubExpense = (data) => api.post('/club-expenses', data);
+export const settleClubExpense = (id, data) => api.patch(`/club-expenses/${id}/settle`, data);
+export const deleteClubExpense = (id) => api.delete(`/club-expenses/${id}`);
+
 export default api;

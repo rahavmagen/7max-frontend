@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, getClubExpenses, createClubExpense, settleClubExpense, deleteClubExpense } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -143,6 +143,12 @@ export default function Transfers() {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseNotes, setExpenseNotes] = useState('');
 
+  // Club expense form
+  const [clubExpenses, setClubExpenses] = useState([]);
+  const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: '', bankAccountId: '' });
+  const [settlingId, setSettlingId] = useState(null);
+  const [settleForm, setSettleForm] = useState({ bankAccountId: '', settledAt: new Date().toISOString().slice(0,10) });
+
   // Transfer form
   const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '' });
 
@@ -152,6 +158,7 @@ export default function Transfers() {
     getBankAccounts().then(r => setBankAccounts(r.data));
     getAdminUsers().then(r => setAdminUsers(r.data)).catch(() => {});
     getRecentTransactions(10).then(r => setRecentCredits(r.data)).catch(() => {});
+    getClubExpenses().then(r => setClubExpenses(r.data)).catch(() => {});
   };
 
   useEffect(() => { load(); }, []);
@@ -260,6 +267,66 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
+  // Club expense submit
+  const handleClubExpenseSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(clubExpForm.amount);
+    if (isNaN(amount) || amount <= 0 || !clubExpForm.description.trim()) {
+      setMsg({ type: 'error', text: 'Amount and description are required' });
+      return;
+    }
+    if (clubExpForm.paidBy === 'ADMIN' && !clubExpForm.adminUser) {
+      setMsg({ type: 'error', text: 'Select which admin paid' });
+      return;
+    }
+    if (clubExpForm.paidBy === 'CLUB' && !clubExpForm.bankAccountId) {
+      setMsg({ type: 'error', text: 'Select a bank account' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload = {
+        amount,
+        description: clubExpForm.description.trim(),
+        expenseDate: clubExpForm.expenseDate,
+        paidBy: clubExpForm.paidBy,
+        ...(clubExpForm.paidBy === 'ADMIN' ? { adminUser: clubExpForm.adminUser } : { bankAccountId: parseInt(clubExpForm.bankAccountId) }),
+      };
+      await createClubExpense(payload);
+      setMsg({ type: 'success', text: 'Club expense recorded' });
+      setClubExpForm({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: '', bankAccountId: '' });
+      getClubExpenses().then(r => setClubExpenses(r.data));
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to record expense' });
+    }
+    setSubmitting(false);
+  };
+
+  const handleSettle = async (id) => {
+    if (!settleForm.bankAccountId) {
+      setMsg({ type: 'error', text: 'Select a bank account for repayment' });
+      return;
+    }
+    try {
+      await settleClubExpense(id, { bankAccountId: parseInt(settleForm.bankAccountId), settledAt: settleForm.settledAt });
+      setSettlingId(null);
+      setSettleForm({ bankAccountId: '', settledAt: new Date().toISOString().slice(0,10) });
+      getClubExpenses().then(r => setClubExpenses(r.data));
+      setMsg({ type: 'success', text: 'Expense settled' });
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to settle expense' });
+    }
+  };
+
+  const handleDeleteClubExpense = async (id) => {
+    try {
+      await deleteClubExpense(id);
+      getClubExpenses().then(r => setClubExpenses(r.data));
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to delete expense' });
+    }
+  };
+
   const resolveParty = (id) => {
     if (!id || id === 'CLUB') return { playerId: null, bankAccountId: null };
     if (typeof id === 'string' && id.startsWith('BANK_')) return { playerId: null, bankAccountId: parseInt(id.slice(5)) };
@@ -351,6 +418,9 @@ export default function Transfers() {
         </button>
         <button className={`btn ${activeForm === 'expense' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('expense')}>
           💸 Admin Expense
+        </button>
+        <button className={`btn ${activeForm === 'clubExpense' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('clubExpense')}>
+          🧾 Club Expense
         </button>
       </div>
 
@@ -486,6 +556,133 @@ export default function Transfers() {
               {submitting ? 'Recording...' : '💸 Record Expense'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Club Expense Form */}
+      {activeForm === 'clubExpense' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#f59e0b' }}>
+          <h2 style={{ color: '#f59e0b' }}>🧾 Club Expense</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Record an operational expense for the club.
+          </p>
+          <form onSubmit={handleClubExpenseSubmit}>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Amount (₪) *</label>
+                <input type="number" min="0.01" step="0.01" required value={clubExpForm.amount}
+                  onChange={e => setClubExpForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Date *</label>
+                <input type="date" required value={clubExpForm.expenseDate}
+                  onChange={e => setClubExpForm(f => ({ ...f, expenseDate: e.target.value }))} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Description *</label>
+              <input type="text" required value={clubExpForm.description}
+                onChange={e => setClubExpForm(f => ({ ...f, description: e.target.value }))} placeholder="e.g. Parking, Accountant, Internet bill..." />
+            </div>
+            <div className="form-group">
+              <label>Paid By</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {['ADMIN', 'CLUB'].map(opt => (
+                  <button key={opt} type="button"
+                    onClick={() => setClubExpForm(f => ({ ...f, paidBy: opt, adminUser: '', bankAccountId: '' }))}
+                    style={{ padding: '6px 18px', borderRadius: '6px', border: '1px solid', cursor: 'pointer', fontSize: '0.875rem',
+                      background: clubExpForm.paidBy === opt ? '#2d3148' : 'transparent',
+                      borderColor: clubExpForm.paidBy === opt ? '#f59e0b' : '#2d3148',
+                      color: clubExpForm.paidBy === opt ? '#f59e0b' : '#64748b', fontWeight: clubExpForm.paidBy === opt ? 600 : 400 }}>
+                    {opt === 'ADMIN' ? '👤 Admin paid' : '🏦 Club paid directly'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {clubExpForm.paidBy === 'ADMIN' && (
+              <div className="form-group">
+                <label>Admin Username *</label>
+                <select value={clubExpForm.adminUser} onChange={e => setClubExpForm(f => ({ ...f, adminUser: e.target.value }))}
+                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px', width: '100%' }}>
+                  <option value="">Select admin...</option>
+                  {adminUsers.map(u => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+            )}
+            {clubExpForm.paidBy === 'CLUB' && (
+              <div className="form-group">
+                <label>Bank Account *</label>
+                <select value={clubExpForm.bankAccountId} onChange={e => setClubExpForm(f => ({ ...f, bankAccountId: e.target.value }))}
+                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px', width: '100%' }}>
+                  <option value="">Select bank account...</option>
+                  {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}{b.accountNumber ? ` — ${b.accountNumber}` : ''}</option>)}
+                </select>
+              </div>
+            )}
+            <button type="submit" className="btn" style={{ background: '#f59e0b', color: '#000', border: 'none', fontWeight: 600 }}
+              disabled={submitting}>
+              {submitting ? 'Saving...' : '🧾 Save Expense'}
+            </button>
+          </form>
+
+          {/* Expenses list */}
+          {clubExpenses.length > 0 && (
+            <div style={{ marginTop: '1.5rem' }}>
+              <h3 style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.75rem' }}>All Club Expenses</h3>
+              <div className="table-wrap"><table>
+                <thead><tr>
+                  <th>Date</th><th>Description</th><th>Paid By</th><th style={{ textAlign: 'right' }}>Amount</th><th>Status</th><th></th>
+                </tr></thead>
+                <tbody>
+                  {clubExpenses.map(exp => (
+                    <tr key={exp.id}>
+                      <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{exp.expenseDate}</td>
+                      <td>{exp.description}</td>
+                      <td style={{ color: exp.paidBy === 'ADMIN' ? '#a5b4fc' : '#94a3b8', fontSize: '0.85rem' }}>
+                        {exp.paidBy === 'ADMIN' ? `👤 ${exp.adminUser}` : `🏦 ${exp.bankAccount?.name || 'Club'}`}
+                      </td>
+                      <td style={{ textAlign: 'right', color: '#f87171' }}>₪{Number(exp.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                      <td>
+                        {exp.settled
+                          ? <span style={{ background: '#16a34a22', color: '#22c55e', padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem' }}>✓ Settled</span>
+                          : <span style={{ background: '#f59e0b22', color: '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem' }}>Unsettled</span>}
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {!exp.settled && settlingId !== exp.id && (
+                          <button onClick={() => setSettlingId(exp.id)}
+                            style={{ fontSize: '0.78rem', padding: '2px 8px', background: '#1e3a5f', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: '4px', cursor: 'pointer' }}>
+                            Settle
+                          </button>
+                        )}
+                        {!exp.settled && settlingId === exp.id && (
+                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <select value={settleForm.bankAccountId} onChange={e => setSettleForm(f => ({ ...f, bankAccountId: e.target.value }))}
+                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.78rem' }}>
+                              <option value="">Bank...</option>
+                              {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                            </select>
+                            <input type="date" value={settleForm.settledAt} onChange={e => setSettleForm(f => ({ ...f, settledAt: e.target.value }))}
+                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.78rem' }} />
+                            <button onClick={() => handleSettle(exp.id)}
+                              style={{ fontSize: '0.78rem', padding: '2px 8px', background: '#166534', border: '1px solid #22c55e', color: '#22c55e', borderRadius: '4px', cursor: 'pointer' }}>
+                              ✓ Confirm
+                            </button>
+                            <button onClick={() => setSettlingId(null)}
+                              style={{ fontSize: '0.78rem', padding: '2px 8px', background: 'transparent', border: '1px solid #475569', color: '#94a3b8', borderRadius: '4px', cursor: 'pointer' }}>
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                        <button onClick={() => handleDeleteClubExpense(exp.id)}
+                          style={{ fontSize: '0.78rem', padding: '2px 6px', background: 'transparent', border: 'none', color: '#475569', cursor: 'pointer', marginLeft: '4px' }}
+                          title="Delete">✕</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            </div>
+          )}
         </div>
       )}
 
