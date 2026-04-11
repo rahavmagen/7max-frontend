@@ -280,10 +280,6 @@ export default function Transfers() {
       setMsg({ type: 'error', text: 'Select which admin paid' });
       return;
     }
-    if (clubExpForm.paidBy === 'CLUB' && !clubExpForm.bankAccountId) {
-      setMsg({ type: 'error', text: 'Select a bank account' });
-      return;
-    }
     setSubmitting(true);
     try {
       const payload = {
@@ -291,7 +287,7 @@ export default function Transfers() {
         description: clubExpForm.description.trim(),
         expenseDate: clubExpForm.expenseDate,
         paidBy: clubExpForm.paidBy,
-        ...(clubExpForm.paidBy === 'ADMIN' ? { adminUser: clubExpForm.adminUser } : { bankAccountId: parseInt(clubExpForm.bankAccountId) }),
+        ...(clubExpForm.paidBy === 'ADMIN' ? { adminUser: clubExpForm.adminUser } : { bankAccountId: bankAccounts[0]?.id }),
       };
       await createClubExpense(payload);
       setMsg({ type: 'success', text: 'Club expense recorded' });
@@ -603,16 +599,6 @@ export default function Transfers() {
                   style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px', width: '100%' }}>
                   <option value="">Select admin...</option>
                   {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
-                </select>
-              </div>
-            )}
-            {clubExpForm.paidBy === 'CLUB' && (
-              <div className="form-group">
-                <label>Bank Account *</label>
-                <select value={clubExpForm.bankAccountId} onChange={e => setClubExpForm(f => ({ ...f, bankAccountId: e.target.value }))}
-                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px', width: '100%' }}>
-                  <option value="">Select bank account...</option>
-                  {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}{b.accountNumber ? ` — ${b.accountNumber}` : ''}</option>)}
                 </select>
               </div>
             )}
