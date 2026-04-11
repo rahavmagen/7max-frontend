@@ -300,8 +300,8 @@ export default function TotalProfit() {
               <td className="negative" style={{ paddingTop: '1rem' }}><strong>({fmt(willExpense + chipPromoTotal)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>Wheel ({fmt(willExpense)}) + Chip Promo ({fmt(chipPromoTotal)})</td>
             </tr>
-            <tr>
-              <td style={{ color: '#94a3b8' }}>− General Expenses</td>
+            <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/admin-expenses')}>
+              <td style={{ color: '#94a3b8' }}>− General Expenses <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
               <td className="negative"><strong>({fmt(generalExpenses)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>הוצאות col C</td>
             </tr>
