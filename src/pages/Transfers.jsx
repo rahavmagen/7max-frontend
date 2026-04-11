@@ -145,7 +145,7 @@ export default function Transfers() {
 
   // Club expense form
   const [clubExpenses, setClubExpenses] = useState([]);
-  const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: '', bankAccountId: '' });
+  const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
   const [settlingId, setSettlingId] = useState(null);
   const [settleForm, setSettleForm] = useState({ bankAccountId: '', settledAt: new Date().toISOString().slice(0,10) });
 
@@ -294,7 +294,7 @@ export default function Transfers() {
       };
       await createClubExpense(payload);
       setMsg({ type: 'success', text: 'Club expense recorded' });
-      setClubExpForm({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: '', bankAccountId: '' });
+      setClubExpForm({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
       getClubExpenses().then(r => setClubExpenses(r.data));
     } catch {
       setMsg({ type: 'error', text: 'Failed to record expense' });
