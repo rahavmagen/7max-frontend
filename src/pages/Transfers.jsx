@@ -409,9 +409,6 @@ export default function Transfers() {
         <button className={`btn ${activeForm === 'promotion' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('promotion')}>
           🎁 Promotion
         </button>
-        <button className={`btn ${activeForm === 'expense' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('expense')}>
-          💸 Admin Expense
-        </button>
         <button className={`btn ${activeForm === 'clubExpense' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('clubExpense')}>
           🧾 Club Expense
         </button>
@@ -514,39 +511,6 @@ export default function Transfers() {
             </div>
             <button type="submit" className="btn btn-primary" disabled={submitting || !promoPlayerId}>
               {submitting ? 'Recording...' : 'Record'}
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* Admin Expense Form */}
-      {activeForm === 'expense' && (
-        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#ef4444' }}>
-          <h2 style={{ color: '#ef4444' }}>Admin Expense</h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Record an expense for an admin. This will appear in the Admin Expenses page.
-          </p>
-          <form onSubmit={handleExpenseSubmit}>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Admin</label>
-                <div style={{ padding: '8px 12px', background: '#1a1d2e', border: '1px solid #2d3148', borderRadius: '6px', color: '#e2e8f0', fontWeight: 600 }}>
-                  {auth?.username}
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Amount (₪) *</label>
-                <input type="number" min="0.01" step="0.01" required value={expenseAmount}
-                  onChange={e => setExpenseAmount(e.target.value)} placeholder="0.00" />
-              </div>
-              <div className="form-group">
-                <label>Notes</label>
-                <input type="text" value={expenseNotes} onChange={e => setExpenseNotes(e.target.value)} placeholder="Optional" />
-              </div>
-            </div>
-            <button type="submit" className="btn" style={{ background: '#ef4444', color: '#fff', border: 'none' }}
-              disabled={submitting}>
-              {submitting ? 'Recording...' : '💸 Record Expense'}
             </button>
           </form>
         </div>
