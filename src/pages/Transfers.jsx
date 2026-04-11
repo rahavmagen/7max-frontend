@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { Fragment, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, getClubExpenses, createClubExpense, settleClubExpense, deleteClubExpense } from '../api';
@@ -108,7 +108,8 @@ const TYPE_BADGE = {
   PROMOTION:     { bg: '#14532d', color: '#4ade80', label: 'Promotion' },
   CHIP_PROMO:    { bg: '#3b2a00', color: '#fbbf24', label: '🎁 Chip Promo' },
   WHEEL_EXPENSE: { bg: '#7c2d12', color: '#fb923c', label: 'גלגל (Wheel)' },
-  XLS_UNMATCHED: { bg: '#422006', color: '#fbbf24', label: '⚠ XLS Unmatched' },
+  XLS_UNMATCHED:      { bg: '#422006', color: '#fbbf24', label: '⚠ XLS Unmatched' },
+  EXPENSE_REPAYMENT:  { bg: '#166534', color: '#22c55e', label: '💸 Paid Expense' },
 };
 
 export default function Transfers() {
@@ -147,7 +148,7 @@ export default function Transfers() {
   const [clubExpenses, setClubExpenses] = useState([]);
   const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
   const [settlingId, setSettlingId] = useState(null);
-  const [settleForm, setSettleForm] = useState({ bankAccountId: '', settledAt: new Date().toISOString().slice(0,10) });
+  const [settleForm, setSettleForm] = useState({ method: 'CASH', settledAt: new Date().toISOString().slice(0,10) });
 
   // Transfer form
   const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '' });
@@ -303,14 +304,10 @@ export default function Transfers() {
   };
 
   const handleSettle = async (id) => {
-    if (!settleForm.bankAccountId) {
-      setMsg({ type: 'error', text: 'Select a bank account for repayment' });
-      return;
-    }
     try {
-      await settleClubExpense(id, { bankAccountId: parseInt(settleForm.bankAccountId), settledAt: settleForm.settledAt });
+      await settleClubExpense(id, { method: settleForm.method, settledAt: settleForm.settledAt });
       setSettlingId(null);
-      setSettleForm({ bankAccountId: '', settledAt: new Date().toISOString().slice(0,10) });
+      setSettleForm({ method: 'CASH', settledAt: new Date().toISOString().slice(0,10) });
       getClubExpenses().then(r => setClubExpenses(r.data));
       setMsg({ type: 'success', text: 'Expense settled' });
     } catch {
@@ -655,20 +652,29 @@ export default function Transfers() {
                           </button>
                         )}
                         {!exp.settled && settlingId === exp.id && (
-                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <select value={settleForm.bankAccountId} onChange={e => setSettleForm(f => ({ ...f, bankAccountId: e.target.value }))}
-                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.78rem' }}>
-                              <option value="">Bank...</option>
-                              {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
+                          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.3rem' }}>
+                            <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #2d3148' }}>
+                              <button onClick={() => setSettleForm(f => ({ ...f, method: 'CASH' }))}
+                                style={{ padding: '4px 12px', fontSize: '0.85rem', cursor: 'pointer', border: 'none',
+                                  background: settleForm.method === 'CASH' ? '#166534' : '#1a1d2e',
+                                  color: settleForm.method === 'CASH' ? '#22c55e' : '#64748b' }}>
+                                💵 Cash
+                              </button>
+                              <button onClick={() => setSettleForm(f => ({ ...f, method: 'CHIPS' }))}
+                                style={{ padding: '4px 12px', fontSize: '0.85rem', cursor: 'pointer', border: 'none', borderLeft: '1px solid #2d3148',
+                                  background: settleForm.method === 'CHIPS' ? '#1e3a5f' : '#1a1d2e',
+                                  color: settleForm.method === 'CHIPS' ? '#60a5fa' : '#64748b' }}>
+                                🎰 Chips
+                              </button>
+                            </div>
                             <input type="date" value={settleForm.settledAt} onChange={e => setSettleForm(f => ({ ...f, settledAt: e.target.value }))}
-                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontSize: '0.78rem' }} />
+                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 10px', borderRadius: '4px', fontSize: '0.9rem' }} />
                             <button onClick={() => handleSettle(exp.id)}
-                              style={{ fontSize: '0.78rem', padding: '2px 8px', background: '#166534', border: '1px solid #22c55e', color: '#22c55e', borderRadius: '4px', cursor: 'pointer' }}>
+                              style={{ fontSize: '0.9rem', padding: '4px 14px', background: '#166534', border: '1px solid #22c55e', color: '#22c55e', borderRadius: '4px', cursor: 'pointer' }}>
                               ✓ Confirm
                             </button>
                             <button onClick={() => setSettlingId(null)}
-                              style={{ fontSize: '0.78rem', padding: '2px 8px', background: 'transparent', border: '1px solid #475569', color: '#94a3b8', borderRadius: '4px', cursor: 'pointer' }}>
+                              style={{ fontSize: '0.9rem', padding: '4px 10px', background: 'transparent', border: '1px solid #475569', color: '#94a3b8', borderRadius: '4px', cursor: 'pointer' }}>
                               ✕
                             </button>
                           </div>
@@ -777,8 +783,8 @@ export default function Transfers() {
                 const fmtDate = rawDate ? rawDate.substring(8, 10) + '-' + rawDate.substring(5, 7) + '-' + rawDate.substring(0, 4) : '—';
                 const fmtTime = item.createdAt && item.createdAt.length > 10 ? item.createdAt.substring(11, 16) : '';
                 return (
-                  <>
-                    <tr key={`${item.pendingType}-${item.id}`}>
+                  <Fragment key={`${item.pendingType}-${item.id}`}>
+                    <tr>
                       <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                         {fmtDate}{fmtTime && <span style={{ color: '#475569', marginLeft: '0.3rem' }}>{fmtTime}</span>}
                       </td>
@@ -869,7 +875,7 @@ export default function Transfers() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
