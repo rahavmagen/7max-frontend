@@ -605,7 +605,7 @@ export default function Transfers() {
                 <select value={clubExpForm.adminUser} onChange={e => setClubExpForm(f => ({ ...f, adminUser: e.target.value }))}
                   style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px', width: '100%' }}>
                   <option value="">Select admin...</option>
-                  {adminUsers.map(u => <option key={u} value={u}>{u}</option>)}
+                  {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
                 </select>
               </div>
             )}
