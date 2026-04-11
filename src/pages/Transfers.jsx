@@ -572,16 +572,16 @@ export default function Transfers() {
             </button>
           </form>
 
-          {/* Expenses list */}
-          {clubExpenses.length > 0 && (
+          {/* Expenses list — only unsettled */}
+          {clubExpenses.filter(e => !e.settled).length > 0 && (
             <div style={{ marginTop: '1.5rem' }}>
-              <h3 style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.75rem' }}>All Club Expenses</h3>
+              <h3 style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.75rem' }}>Pending Club Expenses</h3>
               <div className="table-wrap"><table>
                 <thead><tr>
-                  <th>Date</th><th>Description</th><th>Paid By</th><th style={{ textAlign: 'right' }}>Amount</th><th>Status</th><th></th>
+                  <th>Date</th><th>Description</th><th>Paid By</th><th style={{ textAlign: 'right' }}>Amount</th><th></th>
                 </tr></thead>
                 <tbody>
-                  {clubExpenses.map(exp => (
+                  {clubExpenses.filter(e => !e.settled).map(exp => (
                     <tr key={exp.id}>
                       <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{exp.expenseDate}</td>
                       <td>{exp.description}</td>
@@ -589,16 +589,11 @@ export default function Transfers() {
                         {exp.paidBy === 'ADMIN' ? `👤 ${exp.adminUser}` : `🏦 ${exp.bankAccount?.name || 'Club'}`}
                       </td>
                       <td style={{ textAlign: 'right', color: '#f87171' }}>₪{Number(exp.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td>
-                        {exp.settled
-                          ? <span style={{ background: '#16a34a22', color: '#22c55e', padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem' }}>✓ Settled</span>
-                          : <span style={{ background: '#f59e0b22', color: '#f59e0b', padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem' }}>Unsettled</span>}
-                      </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {!exp.settled && settlingId !== exp.id && (
+                        {settlingId !== exp.id && (
                           <button onClick={() => setSettlingId(exp.id)}
                             style={{ fontSize: '0.78rem', padding: '2px 8px', background: '#1e3a5f', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: '4px', cursor: 'pointer' }}>
-                            Settle
+                            Pay
                           </button>
                         )}
                         {!exp.settled && settlingId === exp.id && (
