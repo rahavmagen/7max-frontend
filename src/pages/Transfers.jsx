@@ -563,7 +563,7 @@ export default function Transfers() {
               {[...pending].sort((a, b) => {
                 const { col, dir } = pendingSort;
                 const getVal = (item) => {
-                  if (col === 'createdAt') return item.transferDate || item.transactionDate || item.createdAt || '';
+                  if (col === 'createdAt') return item.createdAt || '';
                   return item[col];
                 };
                 let av = getVal(a), bv = getVal(b);

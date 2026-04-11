@@ -150,7 +150,7 @@ export default function BringAFriend() {
       {referrals.length > 0 && (
         <div className="card">
           <h2>Referral History</h2>
-          <table>
+          <div className="table-wrap"><table>
             <thead>
               <tr>
                 <th>Referring Player</th>
@@ -190,7 +190,7 @@ export default function BringAFriend() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

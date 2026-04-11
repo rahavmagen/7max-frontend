@@ -154,7 +154,7 @@ export default function Import() {
 
       <div className="card" style={{ marginTop: '2rem' }}>
         <h2>What gets imported</h2>
-        <table>
+        <div className="table-wrap"><table>
           <thead>
             <tr><th>Field</th><th>Source</th></tr>
           </thead>
@@ -167,7 +167,7 @@ export default function Import() {
             <tr><td>Current Chips</td><td>Set via Upload Report → Club Member Balance</td></tr>
             <tr><td>Profit / Loss</td><td>Current Chips − Credit Total</td></tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );

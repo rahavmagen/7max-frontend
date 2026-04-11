@@ -212,7 +212,7 @@ export default function Upload() {
           <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
             These players were in the management system but are no longer in the Club Member Balance:
           </p>
-          <table>
+          <div className="table-wrap"><table>
             <thead><tr><th>Username</th><th>Full Name</th><th>Club ID</th><th></th></tr></thead>
             <tbody>
               {leftClub.map((p, i) => (
@@ -224,7 +224,7 @@ export default function Upload() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
@@ -233,7 +233,7 @@ export default function Upload() {
         {reports.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No reports uploaded yet</div>
         ) : (
-          <table>
+          <div className="table-wrap"><table>
             <thead>
               <tr>
                 <th>File</th>
@@ -270,7 +270,7 @@ export default function Upload() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </div>

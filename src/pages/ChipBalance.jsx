@@ -112,7 +112,7 @@ export default function ChipBalance() {
 
       <div className="card">
         <h2 style={{ marginTop: 0, color: '#e2e8f0' }}>חישוב מצב צ'יפים</h2>
-        <table>
+        <div className="table-wrap"><table>
           <tbody>
             <tr>
               <td style={{ color: '#94a3b8', width: '50%' }}>צ'יפים בדוח האחרון</td>
@@ -166,7 +166,7 @@ export default function ChipBalance() {
               </td>
             </tr>
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );

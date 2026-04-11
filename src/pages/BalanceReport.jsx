@@ -242,7 +242,7 @@ export default function BalanceReport() {
         {sorted.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No players match the filter</div>
         ) : (
-          <table>
+          <div className="table-wrap"><table>
             <thead>
               <tr>
                 <th style={thStyle} onClick={() => handleSort('username')}>Username{arrow('username')}</th>
@@ -273,7 +273,7 @@ export default function BalanceReport() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </div>

@@ -56,7 +56,7 @@ export default function GameResults() {
         </div>
       ) : (
         <div className="card">
-          <table>
+          <div className="table-wrap"><table>
             <thead>
               <tr>
                 <th>#</th>
@@ -90,7 +90,7 @@ export default function GameResults() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

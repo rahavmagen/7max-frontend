@@ -100,7 +100,7 @@ export default function Games() {
         </div>
       ) : (
         <div className="card">
-          <table>
+          <div className="table-wrap"><table>
             <thead>
               <tr>
                 <th>Tournament</th>
@@ -144,7 +144,7 @@ export default function Games() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

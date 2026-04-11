@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getActivePlayers } from '../api';
 
 export default function ActivePlayers() {
   const [players, setPlayers] = useState([]);
   const [search, setSearch] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     getActivePlayers().then(r => setPlayers(r.data));
@@ -43,7 +45,7 @@ export default function ActivePlayers() {
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No players found</div>
         ) : (
-          <table>
+          <div className="table-wrap"><table>
             <thead>
               <tr>
                 <th>Username</th>
@@ -58,7 +60,7 @@ export default function ActivePlayers() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
     </div>
