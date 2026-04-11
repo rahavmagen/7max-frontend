@@ -80,6 +80,8 @@ export default function AdminExpenses() {
   const admins = data?.admins || [];
   const grandTotal = data?.grandTotal || 0;
   const paidClubExpenses = data?.paidClubExpenses || [];
+  const paidClubTotal = paidClubExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+  const totalWithPaid = Number(grandTotal) + paidClubTotal;
 
   // Split admins: Wheel goes to the Wheel & Promo group, rest are Club Expenses
   const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
@@ -352,16 +354,9 @@ export default function AdminExpenses() {
         </div>
       ))}
 
-      {(clubAdmins.length > 0 || wheelEntries.length > 0 || chipPromoEntries.length > 0) && (
-        <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
-          <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(grandTotal)}</strong>
-        </div>
-      )}
-
       {/* Paid Club Expenses */}
       {paidClubExpenses.length > 0 && (
-        <div className="card" style={{ marginTop: '1.5rem', borderColor: '#16a34a' }}>
+        <div className="card" style={{ marginBottom: '1rem', borderColor: '#16a34a' }}>
           <div
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__paid')}
@@ -370,7 +365,10 @@ export default function AdminExpenses() {
               <strong style={{ color: '#22c55e', fontSize: '1.05rem' }}>✓ Paid Expenses</strong>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paidClubExpenses.length} entries</span>
             </div>
-            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid'] ? '▲' : '▼'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <strong style={{ color: '#22c55e', fontSize: '1.1rem' }}>{fmt(paidClubTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid'] ? '▲' : '▼'}</span>
+            </div>
           </div>
           {expandedAdmins['__paid'] && (
             <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
@@ -400,6 +398,13 @@ export default function AdminExpenses() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {(clubAdmins.length > 0 || wheelEntries.length > 0 || chipPromoEntries.length > 0 || paidClubExpenses.length > 0) && (
+        <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
+          <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
         </div>
       )}
     </div>
