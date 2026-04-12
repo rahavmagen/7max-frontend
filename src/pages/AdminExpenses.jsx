@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, settleClubExpense } from '../api';
+import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, settleClubExpense, updateClubExpense, deleteClubExpense, settleAdminExpense } from '../api';
 
 export default function AdminExpenses() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState(null); // { id, type: 'ADMIN_EXPENSE'|'CLUB_EXPENSE', amount, notes }
   const [msg, setMsg] = useState(null);
   const [expandedAdmins, setExpandedAdmins] = useState({});
   const [promotions, setPromotions] = useState(null);
   const [payingId, setPayingId] = useState(null);
+  const [payingType, setPayingType] = useState(null); // 'CLUB_EXPENSE' | 'ADMIN_EXPENSE'
   const [payForm, setPayForm] = useState({ settledAt: new Date().toISOString().slice(0, 10), method: 'CASH' });
 
   const load = () => {
@@ -23,10 +24,21 @@ export default function AdminExpenses() {
     });
   };
 
-  const handlePay = async (id) => {
+  const startPay = (id, type) => {
+    setPayingId(id);
+    setPayingType(type);
+    setPayForm({ settledAt: new Date().toISOString().slice(0, 10), method: 'CASH' });
+  };
+
+  const handlePay = async (id, type) => {
     try {
-      await settleClubExpense(id, { settledAt: payForm.settledAt, method: payForm.method });
+      if (type === 'CLUB_EXPENSE') {
+        await settleClubExpense(id, { settledAt: payForm.settledAt, method: payForm.method });
+      } else {
+        await settleAdminExpense(id, { settledAt: payForm.settledAt });
+      }
       setPayingId(null);
+      setPayingType(null);
       setPayForm({ settledAt: new Date().toISOString().slice(0, 10), method: 'CASH' });
       setMsg({ type: 'success', text: 'Paid' });
       load();
@@ -66,12 +78,31 @@ export default function AdminExpenses() {
       return;
     }
     try {
-      await updateAdminExpense(editing.id, { amount, notes: editing.notes || null });
+      if (editing.type === 'CLUB_EXPENSE') {
+        await updateClubExpense(editing.id, { amount, description: editing.notes || null });
+      } else {
+        await updateAdminExpense(editing.id, { amount, notes: editing.notes || null });
+      }
       setMsg({ type: 'success', text: 'Updated' });
       setEditing(null);
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to update' });
+    }
+  };
+
+  const handleDeleteEntry = async (entry) => {
+    if (!confirm('Delete this expense?')) return;
+    try {
+      if (entry.type === 'CLUB_EXPENSE') {
+        await deleteClubExpense(entry.id);
+      } else {
+        await deleteAdminExpense(entry.id);
+      }
+      setMsg({ type: 'success', text: 'Deleted' });
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to delete' });
     }
   };
 
@@ -237,45 +268,42 @@ export default function AdminExpenses() {
                             )}
                           </td>
                           <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                            {entry.type === 'CLUB_EXPENSE' ? (
-                              payingId === entry.id ? (
-                                <span style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                  {['CASH', 'CHIPS'].map(m => (
-                                    <button key={m} type="button"
-                                      onClick={() => setPayForm(f => ({ ...f, method: m }))}
-                                      style={{ padding: '2px 10px', borderRadius: '4px', border: '1px solid', fontSize: '0.78rem', cursor: 'pointer',
-                                        background: payForm.method === m ? '#2d3148' : 'transparent',
-                                        borderColor: payForm.method === m ? '#22c55e' : '#475569',
-                                        color: payForm.method === m ? '#22c55e' : '#94a3b8' }}>
-                                      {m === 'CASH' ? '💵 Cash' : '🎰 Chips'}
-                                    </button>
-                                  ))}
-                                  <input type="date" value={payForm.settledAt} onChange={e => setPayForm(f => ({ ...f, settledAt: e.target.value }))}
-                                    style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '3px 8px', borderRadius: '4px', fontSize: '0.82rem' }} />
-                                  <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: '0.78rem' }}
-                                    onClick={() => handlePay(entry.id)}>✓ Confirm</button>
-                                  <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '0.78rem' }}
-                                    onClick={() => setPayingId(null)}>✕</button>
-                                </span>
-                              ) : (
-                                <button className="btn btn-primary"
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', background: '#166534', borderColor: '#22c55e', color: '#22c55e' }}
-                                  onClick={() => { setPayingId(entry.id); setPayForm({ settledAt: new Date().toISOString().slice(0, 10), method: 'CASH' }); }}>
-                                  💸 Pay
-                                </button>
-                              )
+                            {payingId === entry.id ? (
+                              <span style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                {entry.type === 'CLUB_EXPENSE' && ['CASH', 'CHIPS'].map(m => (
+                                  <button key={m} type="button"
+                                    onClick={() => setPayForm(f => ({ ...f, method: m }))}
+                                    style={{ padding: '2px 10px', borderRadius: '4px', border: '1px solid', fontSize: '0.78rem', cursor: 'pointer',
+                                      background: payForm.method === m ? '#2d3148' : 'transparent',
+                                      borderColor: payForm.method === m ? '#22c55e' : '#475569',
+                                      color: payForm.method === m ? '#22c55e' : '#94a3b8' }}>
+                                    {m === 'CASH' ? '💵 Cash' : '🎰 Chips'}
+                                  </button>
+                                ))}
+                                <input type="date" value={payForm.settledAt} onChange={e => setPayForm(f => ({ ...f, settledAt: e.target.value }))}
+                                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '3px 8px', borderRadius: '4px', fontSize: '0.82rem' }} />
+                                <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: '0.78rem' }}
+                                  onClick={() => handlePay(entry.id, payingType)}>✓ Confirm</button>
+                                <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '0.78rem' }}
+                                  onClick={() => { setPayingId(null); setPayingType(null); }}>✕</button>
+                              </span>
                             ) : (
                               <>
                                 <button
                                   className="btn btn-secondary"
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.35rem' }}
-                                  onClick={() => setEditing({ id: entry.id, adminUsername: admin.adminUsername, amount: entry.amount, notes: entry.notes })}
+                                  style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.25rem' }}
+                                  onClick={() => setEditing({ id: entry.id, type: entry.type || 'ADMIN_EXPENSE', amount: entry.amount, notes: entry.notes })}
                                 >Edit</button>
                                 <button
                                   className="btn btn-secondary"
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444' }}
-                                  onClick={() => handleDelete(entry.id)}
+                                  style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444', marginRight: '0.25rem' }}
+                                  onClick={() => handleDeleteEntry(entry)}
                                 >Delete</button>
+                                <button className="btn btn-primary"
+                                  style={{ padding: '3px 10px', fontSize: '0.78rem', background: '#166534', borderColor: '#22c55e', color: '#22c55e' }}
+                                  onClick={() => startPay(entry.id, entry.type || 'ADMIN_EXPENSE')}>
+                                  💸 Pay
+                                </button>
                               </>
                             )}
                           </td>

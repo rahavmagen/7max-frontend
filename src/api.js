@@ -108,6 +108,8 @@ export const getMyPlayerInfo = () => api.get('/lesson/my-player');
 export const getClubExpenses = () => api.get('/club-expenses');
 export const createClubExpense = (data) => api.post('/club-expenses', data);
 export const settleClubExpense = (id, data) => api.patch(`/club-expenses/${id}/settle`, data);
+export const updateClubExpense = (id, data) => api.put(`/club-expenses/${id}`, data);
 export const deleteClubExpense = (id) => api.delete(`/club-expenses/${id}`);
+export const settleAdminExpense = (id, data) => api.patch(`/admin-expenses/${id}/settle`, data);
 
 export default api;
