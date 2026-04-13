@@ -327,15 +327,16 @@ export default function TotalProfit() {
                           .filter(r => (!bankFrom || !r.date || r.date >= bankFrom) && (!bankTo || !r.date || r.date <= bankTo))
                           .map((r, i) => {
                             running += Number(r.delta);
-                            const playerId = r.fromPlayerId || r.toPlayerId;
-                            const playerName = r.fromPlayerId ? r.fromName : (r.toPlayerId ? r.toName : null);
+                            const Name = ({ id, name }) => id
+                              ? <span style={{ color: '#a5b4fc', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); navigate(`/player/${id}`); }}>{name}</span>
+                              : <span style={{ color: '#64748b' }}>{name}</span>;
                             return (
                               <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
                                 <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.date || '—'}</td>
                                 <td style={{ paddingTop: '0.3rem' }}>
-                                  {playerId
-                                    ? <span style={{ color: '#a5b4fc', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); navigate(`/player/${playerId}`); }}>{playerName}</span>
-                                    : <span style={{ color: '#64748b' }}>—</span>}
+                                  <Name id={r.fromPlayerId} name={r.fromName} />
+                                  <span style={{ color: '#475569', margin: '0 0.3rem' }}>→</span>
+                                  <Name id={r.toPlayerId} name={r.toName} />
                                 </td>
                                 <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.method || '—'}</td>
                                 <td style={{ color: '#94a3b8', paddingTop: '0.3rem', fontSize: '0.8rem' }}>{r.createdBy || '—'}</td>
