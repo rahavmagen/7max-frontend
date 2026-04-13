@@ -125,8 +125,8 @@ export default function AdminExpenses() {
   const writeOffTotal = Number(promotions?.writeOffTotal || 0);
   const wheelPromoTotal = wheelTotal + chipPromoTotal;
 
-  // Grand Total = non-wheel admin expenses + paid club expenses (wheel, chip promo, write-offs are chip-based, shown below)
-  const totalWithPaid = (Number(grandTotal) - wheelTotal) + paidClubTotal;
+  // Grand Total = non-wheel admin expenses + write-offs + paid club expenses (wheel & chip promo are chip-based, shown below)
+  const totalWithPaid = (Number(grandTotal) - wheelTotal) + writeOffTotal + paidClubTotal;
 
   return (
     <div>

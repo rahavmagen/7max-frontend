@@ -68,11 +68,11 @@ export default function TotalProfit() {
   const willExpense = Number(summary?.willExpense || 0);
   const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
   const generalExpenses = Number(summary?.generalExpenses || 0);
-  const promotionsTotal = Number(summary?.promotionsTotal || 0);
   const bankDeposits = Number(summary?.bankDeposits || 0);
-  const chipsPlayersPaidFor = totalChips - willExpense - chipPromoTotal - promotionsTotal;
+  const chipsPlayersPaidFor = totalChips - willExpense - chipPromoTotal;
   const clubEarning = bankDeposits + totalCredit - chipsPlayersPaidFor;
   // Wheel & chipPromo cancel out in the formula (added back in chipsPlayersPaidFor, not re-deducted here)
+  // Write-offs (promotionsTotal) are in generalExpenses, not chips deduction
   const netProfit = clubEarning - generalExpenses;
 
   // Group transactions by player for summary
@@ -288,7 +288,7 @@ export default function TotalProfit() {
               <td style={{ color: '#94a3b8' }}>− Chips Players Paid For</td>
               <td className="negative"><strong>({fmt(chipsPlayersPaidFor)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                Chips ({fmt(totalChips)}) − Wheel ({fmt(willExpense)}) − Chip Promo ({fmt(chipPromoTotal)}) − Write-offs ({fmt(promotionsTotal)})
+                Chips ({fmt(totalChips)}) − Wheel ({fmt(willExpense)}) − Chip Promo ({fmt(chipPromoTotal)})
               </td>
             </tr>
             <tr style={{ borderTop: '2px solid #334155' }}>
