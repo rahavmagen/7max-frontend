@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange } from '../api';
+import { getBalanceSheet, getBankHistory, getPlayers, getProfitSummary, getTransactionRange } from '../api';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -19,6 +19,8 @@ export default function TotalProfit() {
   const [txRows, setTxRows] = useState([]);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [showTx, setShowTx] = useState(true);
+  const [bankHistory, setBankHistory] = useState(null);
+  const [showBankHistory, setShowBankHistory] = useState(false);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -38,6 +40,14 @@ export default function TotalProfit() {
       setLoading(false);
     });
   }, []);
+
+  const loadBankHistory = () => {
+    if (bankHistory) { setShowBankHistory(v => !v); return; }
+    getBankHistory().then(res => {
+      setBankHistory(res.data);
+      setShowBankHistory(true);
+    });
+  };
 
   const loadPeriod = () => {
     if (!fromDate || !toDate) return;
@@ -274,11 +284,47 @@ export default function TotalProfit() {
         <h2>All-Time P&L</h2>
         <div className="table-wrap"><table>
           <tbody>
-            <tr>
-              <td style={{ color: '#94a3b8' }}>Bank Balance</td>
+            <tr style={{ cursor: 'pointer' }} onClick={loadBankHistory}>
+              <td style={{ color: '#94a3b8' }}>Bank Balance <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>{showBankHistory ? '▲' : '▼'}</span></td>
               <td className="positive"><strong>{fmt(bankDeposits)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>From XLS P2 + club transfers</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>From XLS P2 + club transfers — click to expand</td>
             </tr>
+            {showBankHistory && bankHistory && (
+              <tr>
+                <td colSpan={3} style={{ padding: '0.5rem 0 0.5rem 1rem' }}>
+                  <table style={{ width: '100%', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ color: '#64748b' }}>
+                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Date</th>
+                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Description</th>
+                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Method</th>
+                        <th style={{ textAlign: 'right', paddingBottom: '0.4rem' }}>Amount</th>
+                        <th style={{ textAlign: 'right', paddingBottom: '0.4rem' }}>Running Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        let running = 0;
+                        return bankHistory.rows.map((r, i) => {
+                          running += Number(r.delta);
+                          return (
+                            <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
+                              <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.date || '—'}</td>
+                              <td style={{ color: '#e2e8f0', paddingTop: '0.3rem' }}>{r.description}</td>
+                              <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.method || '—'}</td>
+                              <td style={{ textAlign: 'right', paddingTop: '0.3rem' }} className={Number(r.delta) >= 0 ? 'positive' : 'negative'}>
+                                {Number(r.delta) >= 0 ? fmt(r.delta) : `(${fmt(Math.abs(r.delta))})`}
+                              </td>
+                              <td style={{ textAlign: 'right', paddingTop: '0.3rem', color: '#e2e8f0' }}>{fmt(running)}</td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            )}
             <tr>
               <td style={{ color: '#94a3b8' }}>+ Total Credit Given</td>
               <td className="positive"><strong>{fmt(totalCredit)}</strong></td>

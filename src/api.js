@@ -56,6 +56,7 @@ export const addWheelExpense = (id, amount, notes) => api.post(`/players/${id}/w
 export const getIncomeReport = (params) => api.get('/reports/admin/income', { params });
 export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');
 export const getProfitSummary = () => api.get('/import/profit-summary');
+export const getBankHistory = () => api.get('/transfers/bank-history');
 export const getBalanceSheet = (from, to) => {
   const params = {};
   if (from) params.from = from;
