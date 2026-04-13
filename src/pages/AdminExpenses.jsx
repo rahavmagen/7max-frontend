@@ -9,10 +9,6 @@ export default function AdminExpenses() {
   const [expandedAdmins, setExpandedAdmins] = useState({});
   const [promotions, setPromotions] = useState(null);
 
-  // Pay state: { id, type, vatType } — vatType chosen by which button clicked
-  const [paying, setPaying] = useState(null);
-  const [payForm, setPayForm] = useState({ settledAt: new Date().toISOString().slice(0, 10), method: 'CASH' });
-
   const load = () => {
     setLoading(true);
     Promise.all([
@@ -25,20 +21,14 @@ export default function AdminExpenses() {
     });
   };
 
-  const startPay = (id, type, vatType) => {
-    setPaying({ id, type, vatType });
-    setPayForm({ settledAt: new Date().toISOString().slice(0, 10), method: 'CASH' });
-  };
-
-  const handlePay = async () => {
-    if (!paying) return;
+  const handlePay = async (id, type, vatType) => {
+    const today = new Date().toISOString().slice(0, 10);
     try {
-      if (paying.type === 'CLUB_EXPENSE') {
-        await settleClubExpense(paying.id, { settledAt: payForm.settledAt, method: payForm.method, vatType: paying.vatType });
+      if (type === 'CLUB_EXPENSE') {
+        await settleClubExpense(id, { settledAt: today, method: 'CASH', vatType });
       } else {
-        await settleAdminExpense(paying.id, { settledAt: payForm.settledAt, vatType: paying.vatType });
+        await settleAdminExpense(id, { settledAt: today, vatType });
       }
-      setPaying(null);
       setMsg({ type: 'success', text: 'Paid' });
       load();
     } catch {
@@ -270,50 +260,22 @@ export default function AdminExpenses() {
                             )}
                           </td>
                           <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                            {paying?.id === entry.id ? (
-                              <span style={{ display: 'inline-flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                {entry.type === 'CLUB_EXPENSE' && ['CASH', 'CHIPS'].map(m => (
-                                  <button key={m} type="button"
-                                    onClick={() => setPayForm(f => ({ ...f, method: m }))}
-                                    style={{ padding: '2px 10px', borderRadius: '4px', border: '1px solid', fontSize: '0.78rem', cursor: 'pointer',
-                                      background: payForm.method === m ? '#2d3148' : 'transparent',
-                                      borderColor: payForm.method === m ? '#22c55e' : '#475569',
-                                      color: payForm.method === m ? '#22c55e' : '#94a3b8' }}>
-                                    {m === 'CASH' ? '💵 Cash' : '🎰 Chips'}
-                                  </button>
-                                ))}
-                                <input type="date" value={payForm.settledAt} onChange={e => setPayForm(f => ({ ...f, settledAt: e.target.value }))}
-                                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '3px 8px', borderRadius: '4px', fontSize: '0.82rem' }} />
-                                <span style={{ fontSize: '0.72rem', background: paying.vatType === 'WITH_VAT' ? '#1a2e5f' : '#1a3020',
-                                  color: paying.vatType === 'WITH_VAT' ? '#60a5fa' : '#4ade80',
-                                  borderRadius: '4px', padding: '2px 6px' }}>
-                                  {paying.vatType === 'WITH_VAT' ? 'VAT' : 'No VAT'}
-                                </span>
-                                <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: '0.78rem' }}
-                                  onClick={handlePay}>✓ Confirm</button>
-                                <button className="btn btn-secondary" style={{ padding: '3px 8px', fontSize: '0.78rem' }}
-                                  onClick={() => setPaying(null)}>✕</button>
-                              </span>
-                            ) : (
-                              <>
-                                <button className="btn btn-secondary"
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.25rem' }}
-                                  onClick={() => setEditing({ id: entry.id, type: entry.type || 'ADMIN_EXPENSE', amount: entry.amount, notes: entry.notes })}
-                                >Edit</button>
-                                <button className="btn btn-secondary"
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444', marginRight: '0.25rem' }}
-                                  onClick={() => handleDeleteEntry(entry)}
-                                >Delete</button>
-                                <button style={{ ...payBtnStyle('#4ade80'), marginRight: '0.25rem' }}
-                                  onClick={() => startPay(entry.id, entry.type || 'ADMIN_EXPENSE', 'NO_VAT')}>
-                                  No VAT
-                                </button>
-                                <button style={payBtnStyle('#60a5fa')}
-                                  onClick={() => startPay(entry.id, entry.type || 'ADMIN_EXPENSE', 'WITH_VAT')}>
-                                  VAT
-                                </button>
-                              </>
-                            )}
+                            <button className="btn btn-secondary"
+                              style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.25rem' }}
+                              onClick={() => setEditing({ id: entry.id, type: entry.type || 'ADMIN_EXPENSE', amount: entry.amount, notes: entry.notes })}
+                            >Edit</button>
+                            <button className="btn btn-secondary"
+                              style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444', marginRight: '0.25rem' }}
+                              onClick={() => handleDeleteEntry(entry)}
+                            >Delete</button>
+                            <button style={{ ...payBtnStyle('#4ade80'), marginRight: '0.25rem' }}
+                              onClick={() => handlePay(entry.id, entry.type || 'ADMIN_EXPENSE', 'NO_VAT')}>
+                              No VAT
+                            </button>
+                            <button style={payBtnStyle('#60a5fa')}
+                              onClick={() => handlePay(entry.id, entry.type || 'ADMIN_EXPENSE', 'WITH_VAT')}>
+                              VAT
+                            </button>
                           </td>
                         </>
                       )}
