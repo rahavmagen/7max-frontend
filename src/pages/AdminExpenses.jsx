@@ -319,14 +319,7 @@ export default function AdminExpenses() {
         </div>
       )}
 
-      {(clubAdmins.length > 0 || paidClubExpenses.length > 0) && (
-        <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
-          <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
-        </div>
-      )}
-
-      {/* Write-offs — chip-based, shown below Grand Total for info only */}
+      {/* Write-offs — chip-based, shown above Grand Total */}
       {writeOffEntries.length > 0 && (
         <div className="card" style={{ marginBottom: '1rem', borderColor: '#0891b2', opacity: 0.85 }}>
           <div
@@ -370,6 +363,13 @@ export default function AdminExpenses() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {(clubAdmins.length > 0 || paidClubExpenses.length > 0 || writeOffEntries.length > 0) && (
+        <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
+          <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
         </div>
       )}
 
