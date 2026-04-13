@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getBalanceSheet, getBankHistory, getPaidTotals, getPlayers, getProfitSummary, getTransactionRange } from '../api';
+import { getAdminExpenses, getBalanceSheet, getBankHistory, getPlayers, getProfitSummary, getTransactionRange } from '../api';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -37,11 +37,16 @@ export default function TotalProfit() {
     Promise.all([
       getPlayers(),
       getProfitSummary().catch(() => ({ data: null })),
-      getPaidTotals().catch(() => ({ data: null })),
-    ]).then(([playersRes, summaryRes, paidRes]) => {
+      getAdminExpenses().catch(() => ({ data: null })),
+    ]).then(([playersRes, summaryRes, expRes]) => {
       setPlayers(playersRes.data);
       setSummary(summaryRes.data);
-      setPaidTotals(paidRes.data);
+      const paidNoVat = expRes.data?.paidNoVat || [];
+      const paidWithVat = expRes.data?.paidWithVat || [];
+      setPaidTotals({
+        noVatTotal: paidNoVat.reduce((s, e) => s + Number(e.amount || 0), 0),
+        withVatTotal: paidWithVat.reduce((s, e) => s + Number(e.amount || 0), 0),
+      });
       setLoading(false);
     });
   }, []);
