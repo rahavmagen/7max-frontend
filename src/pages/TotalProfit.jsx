@@ -21,6 +21,8 @@ export default function TotalProfit() {
   const [showTx, setShowTx] = useState(true);
   const [bankHistory, setBankHistory] = useState(null);
   const [showBankHistory, setShowBankHistory] = useState(false);
+  const [bankFrom, setBankFrom] = useState('');
+  const [bankTo, setBankTo] = useState('');
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -291,12 +293,28 @@ export default function TotalProfit() {
             </tr>
             {showBankHistory && bankHistory && (
               <tr>
-                <td colSpan={3} style={{ padding: '0.5rem 0 0.5rem 1rem' }}>
+                <td colSpan={3} style={{ padding: '0.75rem 0 0.5rem 0' }}>
+                  {/* Date filter */}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Filter:</span>
+                    <input type="date" value={bankFrom} onChange={e => setBankFrom(e.target.value)}
+                      style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.8rem' }} />
+                    <span style={{ color: '#64748b' }}>→</span>
+                    <input type="date" value={bankTo} onChange={e => setBankTo(e.target.value)}
+                      style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.8rem' }} />
+                    {(bankFrom || bankTo) && (
+                      <button onClick={() => { setBankFrom(''); setBankTo(''); }}
+                        style={{ background: 'transparent', color: '#64748b', border: '1px solid #334155', borderRadius: '4px', padding: '0.15rem 0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <table style={{ width: '100%', fontSize: '0.85rem' }}>
                     <thead>
                       <tr style={{ color: '#64748b' }}>
                         <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Date</th>
-                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Description</th>
+                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>From</th>
+                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>To</th>
                         <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Method</th>
                         <th style={{ textAlign: 'right', paddingBottom: '0.4rem' }}>Amount</th>
                         <th style={{ textAlign: 'right', paddingBottom: '0.4rem' }}>Running Total</th>
@@ -305,20 +323,26 @@ export default function TotalProfit() {
                     <tbody>
                       {(() => {
                         let running = 0;
-                        return bankHistory.rows.map((r, i) => {
-                          running += Number(r.delta);
-                          return (
-                            <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
-                              <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.date || '—'}</td>
-                              <td style={{ color: '#e2e8f0', paddingTop: '0.3rem' }}>{r.description}</td>
-                              <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.method || '—'}</td>
-                              <td style={{ textAlign: 'right', paddingTop: '0.3rem' }} className={Number(r.delta) >= 0 ? 'positive' : 'negative'}>
-                                {Number(r.delta) >= 0 ? fmt(r.delta) : `(${fmt(Math.abs(r.delta))})`}
-                              </td>
-                              <td style={{ textAlign: 'right', paddingTop: '0.3rem', color: '#e2e8f0' }}>{fmt(running)}</td>
-                            </tr>
-                          );
-                        });
+                        return bankHistory.rows
+                          .filter(r => (!bankFrom || !r.date || r.date >= bankFrom) && (!bankTo || !r.date || r.date <= bankTo))
+                          .map((r, i) => {
+                            running += Number(r.delta);
+                            const PlayerLink = ({ id, name }) => id
+                              ? <span style={{ color: '#a5b4fc', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); navigate(`/player/${id}`); }}>{name}</span>
+                              : <span style={{ color: '#64748b' }}>{name}</span>;
+                            return (
+                              <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
+                                <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.date || '—'}</td>
+                                <td style={{ paddingTop: '0.3rem' }}><PlayerLink id={r.fromPlayerId} name={r.fromName || '—'} /></td>
+                                <td style={{ paddingTop: '0.3rem' }}><PlayerLink id={r.toPlayerId} name={r.toName || '—'} /></td>
+                                <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.method || '—'}</td>
+                                <td style={{ textAlign: 'right', paddingTop: '0.3rem' }} className={Number(r.delta) >= 0 ? 'positive' : 'negative'}>
+                                  {Number(r.delta) >= 0 ? fmt(r.delta) : `(${fmt(Math.abs(r.delta))})`}
+                                </td>
+                                <td style={{ textAlign: 'right', paddingTop: '0.3rem', color: '#e2e8f0' }}>{fmt(running)}</td>
+                              </tr>
+                            );
+                          });
                       })()}
                     </tbody>
                   </table>
