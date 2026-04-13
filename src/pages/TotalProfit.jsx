@@ -332,7 +332,10 @@ export default function TotalProfit() {
                               : <span style={{ color: '#64748b' }}>{name}</span>;
                             return (
                               <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
-                                <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.date || '—'}</td>
+                                <td style={{ color: '#64748b', paddingTop: '0.3rem', whiteSpace: 'nowrap' }}>
+                                  <div>{r.date || '—'}</div>
+                                  {r.createdAt && <div style={{ fontSize: '0.75rem', color: '#475569' }}>{r.createdAt.replace('T', ' ').substring(0, 16)}</div>}
+                                </td>
                                 <td style={{ paddingTop: '0.3rem' }}>
                                   <Name id={r.fromPlayerId} name={r.fromName} />
                                   <span style={{ color: '#475569', margin: '0 0.3rem' }}>→</span>
