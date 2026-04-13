@@ -287,7 +287,7 @@ export default function AdminExpenses() {
                                 <span style={{ fontSize: '0.72rem', background: paying.vatType === 'WITH_VAT' ? '#1a2e5f' : '#1a3020',
                                   color: paying.vatType === 'WITH_VAT' ? '#60a5fa' : '#4ade80',
                                   borderRadius: '4px', padding: '2px 6px' }}>
-                                  {paying.vatType === 'WITH_VAT' ? 'עם מע"מ' : 'ללא מע"מ'}
+                                  {paying.vatType === 'WITH_VAT' ? 'VAT' : 'No VAT'}
                                 </span>
                                 <button className="btn btn-primary" style={{ padding: '3px 10px', fontSize: '0.78rem' }}
                                   onClick={handlePay}>✓ Confirm</button>
@@ -306,11 +306,11 @@ export default function AdminExpenses() {
                                 >Delete</button>
                                 <button style={{ ...payBtnStyle('#4ade80'), marginRight: '0.25rem' }}
                                   onClick={() => startPay(entry.id, entry.type || 'ADMIN_EXPENSE', 'NO_VAT')}>
-                                  ללא מע"מ
+                                  No VAT
                                 </button>
                                 <button style={payBtnStyle('#60a5fa')}
                                   onClick={() => startPay(entry.id, entry.type || 'ADMIN_EXPENSE', 'WITH_VAT')}>
-                                  עם מע"מ
+                                  VAT
                                 </button>
                               </>
                             )}
@@ -377,10 +377,10 @@ export default function AdminExpenses() {
       )}
 
       {/* Paid — No VAT */}
-      {renderPaidSection(paidNoVat, 'Paid — ללא מע"מ', '#4ade80', '__paidNoVat', 'WITH_VAT', 'עם מע"מ')}
+      {renderPaidSection(paidNoVat, 'Paid — No VAT', '#4ade80', '__paidNoVat', 'WITH_VAT', 'VAT')}
 
       {/* Paid — With VAT */}
-      {renderPaidSection(paidWithVat, 'Paid — עם מע"מ', '#60a5fa', '__paidWithVat', 'NO_VAT', 'ללא מע"מ')}
+      {renderPaidSection(paidWithVat, 'Paid — VAT', '#60a5fa', '__paidWithVat', 'NO_VAT', 'No VAT')}
 
       {/* Wheel & Chip Promo */}
       {(wheelEntries.length > 0 || chipPromoEntries.length > 0) && (

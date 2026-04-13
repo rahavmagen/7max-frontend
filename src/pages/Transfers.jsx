@@ -552,13 +552,13 @@ export default function Transfers() {
                   style={{ background: '#166534', color: '#4ade80', border: '1px solid #22c55e', fontWeight: 600 }}
                   disabled={submitting}
                   onClick={() => handleClubExpenseSubmit(null, 'NO_VAT')}>
-                  {submitting ? 'Saving...' : '🧾 Save — ללא מע"מ'}
+                  {submitting ? 'Saving...' : '🧾 Save — No VAT'}
                 </button>
                 <button type="button" className="btn"
                   style={{ background: '#1e3a5f', color: '#60a5fa', border: '1px solid #3b82f6', fontWeight: 600 }}
                   disabled={submitting}
                   onClick={() => handleClubExpenseSubmit(null, 'WITH_VAT')}>
-                  {submitting ? 'Saving...' : '🧾 Save — עם מע"מ'}
+                  {submitting ? 'Saving...' : '🧾 Save — VAT'}
                 </button>
               </div>
             )}

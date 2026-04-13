@@ -384,25 +384,25 @@ export default function TotalProfit() {
             </tr>
             {paidNoVatTotal > 0 && (
               <tr>
-                <td style={{ color: '#94a3b8' }}>− Paid Expenses ללא מע"מ</td>
+                <td style={{ color: '#94a3b8' }}>− Paid Expenses (No VAT)</td>
                 <td className="negative"><strong>({fmt(paidNoVatTotal)})</strong></td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin expenses paid without VAT</td>
               </tr>
             )}
             <tr style={{ borderTop: '1px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Profit before מע"מ expenses</strong></td>
+              <td><strong style={{ color: '#e2e8f0' }}>= Profit before VAT expenses</strong></td>
               <td><strong className={cls(afterNoVat)} style={{ fontSize: '1.05rem' }}>{fmt(afterNoVat)}</strong></td>
               <td></td>
             </tr>
             {paidWithVatTotal > 0 && (
               <tr>
-                <td style={{ color: '#94a3b8' }}>− Paid Expenses עם מע"מ</td>
+                <td style={{ color: '#94a3b8' }}>− Paid Expenses (VAT)</td>
                 <td className="negative"><strong>({fmt(paidWithVatTotal)})</strong></td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin expenses paid with VAT</td>
               </tr>
             )}
             <tr style={{ borderTop: '2px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Profit after מע"מ expenses</strong></td>
+              <td><strong style={{ color: '#e2e8f0' }}>= Profit after VAT expenses</strong></td>
               <td><strong className={cls(netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
