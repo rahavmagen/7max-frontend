@@ -390,7 +390,7 @@ export default function TotalProfit() {
               </tr>
             )}
             <tr style={{ borderTop: '1px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Subtotal (X − Y)</strong></td>
+              <td><strong style={{ color: '#e2e8f0' }}>= Profit before מע"מ expenses</strong></td>
               <td><strong className={cls(afterNoVat)} style={{ fontSize: '1.05rem' }}>{fmt(afterNoVat)}</strong></td>
               <td></td>
             </tr>
@@ -402,7 +402,7 @@ export default function TotalProfit() {
               </tr>
             )}
             <tr style={{ borderTop: '2px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Net Profit</strong></td>
+              <td><strong style={{ color: '#e2e8f0' }}>= Profit after מע"מ expenses</strong></td>
               <td><strong className={cls(netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
