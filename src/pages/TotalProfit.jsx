@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getBalanceSheet, getBankHistory, getPlayers, getProfitSummary, getTransactionRange } from '../api';
+import { getBalanceSheet, getBankHistory, getPaidTotals, getPlayers, getProfitSummary, getTransactionRange } from '../api';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -23,6 +23,7 @@ export default function TotalProfit() {
   const [showBankHistory, setShowBankHistory] = useState(false);
   const [bankFrom, setBankFrom] = useState('');
   const [bankTo, setBankTo] = useState('');
+  const [paidTotals, setPaidTotals] = useState(null);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -36,9 +37,11 @@ export default function TotalProfit() {
     Promise.all([
       getPlayers(),
       getProfitSummary().catch(() => ({ data: null })),
-    ]).then(([playersRes, summaryRes]) => {
+      getPaidTotals().catch(() => ({ data: null })),
+    ]).then(([playersRes, summaryRes, paidRes]) => {
       setPlayers(playersRes.data);
       setSummary(summaryRes.data);
+      setPaidTotals(paidRes.data);
       setLoading(false);
     });
   }, []);
@@ -81,11 +84,12 @@ export default function TotalProfit() {
   const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
   const generalExpenses = Number(summary?.generalExpenses || 0);
   const bankDeposits = Number(summary?.bankDeposits || 0);
+  const paidNoVatTotal = Number(paidTotals?.noVatTotal || 0);
+  const paidWithVatTotal = Number(paidTotals?.withVatTotal || 0);
   const chipsPlayersPaidFor = totalChips - willExpense - chipPromoTotal;
   const clubEarning = bankDeposits + totalCredit - chipsPlayersPaidFor;
-  // Wheel & chipPromo cancel out in the formula (added back in chipsPlayersPaidFor, not re-deducted here)
-  // Write-offs (promotionsTotal) are in generalExpenses, not chips deduction
-  const netProfit = clubEarning - generalExpenses;
+  const afterNoVat = clubEarning - generalExpenses - paidNoVatTotal;
+  const netProfit = afterNoVat - paidWithVatTotal;
 
   // Group transactions by player for summary
   const txByPlayer = {};
@@ -376,12 +380,30 @@ export default function TotalProfit() {
             <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/admin-expenses')}>
               <td style={{ color: '#94a3b8' }}>− General Expenses <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
               <td className="negative"><strong>({fmt(generalExpenses)})</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>see Expenses page ↗</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>XLS expenses + write-offs</td>
             </tr>
-
+            {paidNoVatTotal > 0 && (
+              <tr>
+                <td style={{ color: '#94a3b8' }}>− Paid Expenses ללא מע"מ</td>
+                <td className="negative"><strong>({fmt(paidNoVatTotal)})</strong></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin expenses paid without VAT</td>
+              </tr>
+            )}
             <tr style={{ borderTop: '1px solid #334155' }}>
+              <td><strong style={{ color: '#e2e8f0' }}>= Subtotal (X − Y)</strong></td>
+              <td><strong className={cls(afterNoVat)} style={{ fontSize: '1.05rem' }}>{fmt(afterNoVat)}</strong></td>
+              <td></td>
+            </tr>
+            {paidWithVatTotal > 0 && (
+              <tr>
+                <td style={{ color: '#94a3b8' }}>− Paid Expenses עם מע"מ</td>
+                <td className="negative"><strong>({fmt(paidWithVatTotal)})</strong></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin expenses paid with VAT</td>
+              </tr>
+            )}
+            <tr style={{ borderTop: '2px solid #334155' }}>
               <td><strong style={{ color: '#e2e8f0' }}>= Net Profit</strong></td>
-              <td><strong className={cls(netProfit)} style={{ fontSize: '1.1rem' }}>{fmt(netProfit)}</strong></td>
+              <td><strong className={cls(netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
             <tr>

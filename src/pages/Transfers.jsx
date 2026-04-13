@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, getClubExpenses, createClubExpense, settleClubExpense, deleteClubExpense } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, createClubExpense } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -145,10 +145,7 @@ export default function Transfers() {
   const [expenseNotes, setExpenseNotes] = useState('');
 
   // Club expense form
-  const [clubExpenses, setClubExpenses] = useState([]);
   const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
-  const [settlingId, setSettlingId] = useState(null);
-  const [settleForm, setSettleForm] = useState({ method: 'CASH', settledAt: new Date().toISOString().slice(0,10) });
 
   // Transfer form
   const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '' });
@@ -159,7 +156,6 @@ export default function Transfers() {
     getBankAccounts().then(r => setBankAccounts(r.data));
     getAdminUsers().then(r => setAdminUsers(r.data)).catch(() => {});
     getRecentTransactions(10).then(r => setRecentCredits(r.data)).catch(() => {});
-    getClubExpenses().then(r => setClubExpenses(r.data)).catch(() => {});
   };
 
   useEffect(() => { load(); }, []);
@@ -269,8 +265,8 @@ export default function Transfers() {
   };
 
   // Club expense submit
-  const handleClubExpenseSubmit = async (e) => {
-    e.preventDefault();
+  const handleClubExpenseSubmit = async (e, vatType) => {
+    if (e && e.preventDefault) e.preventDefault();
     const amount = parseFloat(clubExpForm.amount);
     if (isNaN(amount) || amount <= 0 || !clubExpForm.description.trim()) {
       setMsg({ type: 'error', text: 'Amount and description are required' });
@@ -288,36 +284,15 @@ export default function Transfers() {
         expenseDate: clubExpForm.expenseDate,
         paidBy: clubExpForm.paidBy,
         ...(clubExpForm.paidBy === 'ADMIN' ? { adminUser: clubExpForm.adminUser } : { bankAccountId: bankAccounts[0]?.id }),
+        ...(vatType ? { vatType } : {}),
       };
       await createClubExpense(payload);
       setMsg({ type: 'success', text: 'Club expense recorded' });
       setClubExpForm({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
-      getClubExpenses().then(r => setClubExpenses(r.data));
     } catch {
       setMsg({ type: 'error', text: 'Failed to record expense' });
     }
     setSubmitting(false);
-  };
-
-  const handleSettle = async (id) => {
-    try {
-      await settleClubExpense(id, { method: settleForm.method, settledAt: settleForm.settledAt });
-      setSettlingId(null);
-      setSettleForm({ method: 'CASH', settledAt: new Date().toISOString().slice(0,10) });
-      getClubExpenses().then(r => setClubExpenses(r.data));
-      setMsg({ type: 'success', text: 'Expense settled' });
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to settle expense' });
-    }
-  };
-
-  const handleDeleteClubExpense = async (id) => {
-    try {
-      await deleteClubExpense(id);
-      getClubExpenses().then(r => setClubExpenses(r.data));
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to delete expense' });
-    }
   };
 
   const resolveParty = (id) => {
@@ -566,74 +541,28 @@ export default function Transfers() {
                 </select>
               </div>
             )}
-            <button type="submit" className="btn" style={{ background: '#f59e0b', color: '#000', border: 'none', fontWeight: 600 }}
-              disabled={submitting}>
-              {submitting ? 'Saving...' : '🧾 Save Expense'}
-            </button>
+            {clubExpForm.paidBy === 'ADMIN' ? (
+              <button type="submit" className="btn" style={{ background: '#f59e0b', color: '#000', border: 'none', fontWeight: 600 }}
+                disabled={submitting}>
+                {submitting ? 'Saving...' : '🧾 Save Expense'}
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button type="button" className="btn"
+                  style={{ background: '#166534', color: '#4ade80', border: '1px solid #22c55e', fontWeight: 600 }}
+                  disabled={submitting}
+                  onClick={() => handleClubExpenseSubmit(null, 'NO_VAT')}>
+                  {submitting ? 'Saving...' : '🧾 Save — ללא מע"מ'}
+                </button>
+                <button type="button" className="btn"
+                  style={{ background: '#1e3a5f', color: '#60a5fa', border: '1px solid #3b82f6', fontWeight: 600 }}
+                  disabled={submitting}
+                  onClick={() => handleClubExpenseSubmit(null, 'WITH_VAT')}>
+                  {submitting ? 'Saving...' : '🧾 Save — עם מע"מ'}
+                </button>
+              </div>
+            )}
           </form>
-
-          {/* Expenses list — only unsettled */}
-          {clubExpenses.filter(e => !e.settled).length > 0 && (
-            <div style={{ marginTop: '1.5rem' }}>
-              <h3 style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.75rem' }}>Pending Club Expenses</h3>
-              <div className="table-wrap"><table>
-                <thead><tr>
-                  <th>Date</th><th>Description</th><th>Paid By</th><th style={{ textAlign: 'right' }}>Amount</th><th></th>
-                </tr></thead>
-                <tbody>
-                  {clubExpenses.filter(e => !e.settled).map(exp => (
-                    <tr key={exp.id}>
-                      <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{exp.expenseDate}</td>
-                      <td>{exp.description}</td>
-                      <td style={{ color: exp.paidBy === 'ADMIN' ? '#a5b4fc' : '#94a3b8', fontSize: '0.85rem' }}>
-                        {exp.paidBy === 'ADMIN' ? `👤 ${exp.adminUser}` : `🏦 ${exp.bankAccount?.name || 'Club'}`}
-                      </td>
-                      <td style={{ textAlign: 'right', color: '#f87171' }}>₪{Number(exp.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {settlingId !== exp.id && (
-                          <button onClick={() => setSettlingId(exp.id)}
-                            style={{ fontSize: '0.78rem', padding: '2px 8px', background: '#1e3a5f', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: '4px', cursor: 'pointer' }}>
-                            Pay
-                          </button>
-                        )}
-                        {!exp.settled && settlingId === exp.id && (
-                          <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', marginTop: '0.3rem' }}>
-                            <div style={{ display: 'flex', borderRadius: '4px', overflow: 'hidden', border: '1px solid #2d3148' }}>
-                              <button onClick={() => setSettleForm(f => ({ ...f, method: 'CASH' }))}
-                                style={{ padding: '4px 12px', fontSize: '0.85rem', cursor: 'pointer', border: 'none',
-                                  background: settleForm.method === 'CASH' ? '#166534' : '#1a1d2e',
-                                  color: settleForm.method === 'CASH' ? '#22c55e' : '#64748b' }}>
-                                💵 Cash
-                              </button>
-                              <button onClick={() => setSettleForm(f => ({ ...f, method: 'CHIPS' }))}
-                                style={{ padding: '4px 12px', fontSize: '0.85rem', cursor: 'pointer', border: 'none', borderLeft: '1px solid #2d3148',
-                                  background: settleForm.method === 'CHIPS' ? '#1e3a5f' : '#1a1d2e',
-                                  color: settleForm.method === 'CHIPS' ? '#60a5fa' : '#64748b' }}>
-                                🎰 Chips
-                              </button>
-                            </div>
-                            <input type="date" value={settleForm.settledAt} onChange={e => setSettleForm(f => ({ ...f, settledAt: e.target.value }))}
-                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 10px', borderRadius: '4px', fontSize: '0.9rem' }} />
-                            <button onClick={() => handleSettle(exp.id)}
-                              style={{ fontSize: '0.9rem', padding: '4px 14px', background: '#166534', border: '1px solid #22c55e', color: '#22c55e', borderRadius: '4px', cursor: 'pointer' }}>
-                              ✓ Confirm
-                            </button>
-                            <button onClick={() => setSettlingId(null)}
-                              style={{ fontSize: '0.9rem', padding: '4px 10px', background: 'transparent', border: '1px solid #475569', color: '#94a3b8', borderRadius: '4px', cursor: 'pointer' }}>
-                              ✕
-                            </button>
-                          </div>
-                        )}
-                        <button onClick={() => handleDeleteClubExpense(exp.id)}
-                          style={{ fontSize: '0.78rem', padding: '2px 6px', background: 'transparent', border: 'none', color: '#475569', cursor: 'pointer', marginLeft: '4px' }}
-                          title="Delete">✕</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table></div>
-            </div>
-          )}
         </div>
       )}
 

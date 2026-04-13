@@ -112,5 +112,8 @@ export const settleClubExpense = (id, data) => api.patch(`/club-expenses/${id}/s
 export const updateClubExpense = (id, data) => api.put(`/club-expenses/${id}`, data);
 export const deleteClubExpense = (id) => api.delete(`/club-expenses/${id}`);
 export const settleAdminExpense = (id, data) => api.patch(`/admin-expenses/${id}/settle`, data);
+export const setAdminExpenseVatType = (id, vatType) => api.patch(`/admin-expenses/${id}/vat-type`, { vatType });
+export const setClubExpenseVatType = (id, vatType) => api.patch(`/club-expenses/${id}/vat-type`, { vatType });
+export const getPaidTotals = () => api.get('/admin-expenses/paid-totals');
 
 export default api;
