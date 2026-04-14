@@ -984,6 +984,20 @@ export default function Wheel() {
         </div>
       </div>
 
+      {/* OCR source image(s) — shown next to wheel for cross-referencing */}
+      {ocrImages.length > 0 && (
+        <div style={{ display:'flex', flexDirection:'column', gap:'8px', alignSelf:'flex-start' }}>
+          <div style={{ color:goldDark, fontFamily:'Cinzel, serif', fontSize:'0.75rem', letterSpacing:'0.12em' }}>
+            SOURCE IMAGE{ocrImages.length > 1 ? 'S' : ''}
+          </div>
+          {ocrImages.map((src, i) => (
+            <img key={i} src={src}
+              style={{ width:'220px', borderRadius:'6px', border:'1px solid #2d3148',
+                       boxShadow:'0 2px 12px rgba(0,0,0,0.5)' }} />
+          ))}
+        </div>
+      )}
+
       {/* Right: history */}
       <div style={{ minWidth:'200px', maxWidth:'240px', flex:1 }}>
         <div style={{ ...card, marginBottom:'1rem' }}>
