@@ -8,7 +8,7 @@ import { getActivePlayers } from '../api';
 /* ─── Parse raw OCR text from a ClubGG player list screenshot ─── */
 function parseOcrNames(text, debug = false) {
   const UI = /^(rank|players?|bounty|chips?|tables?|information|blinds?|prize|satellites?|register|host\s*option|early|bird|mtt|7max|max7|players\s+tables|total\s+players?)/i;
-  const seen = new Map();
+  const seen = new Map(); // lowercase → { name, lineIdx }
   const log = debug ? (...a) => console.log(...a) : () => {};
 
   const isValidName = (s) =>
@@ -19,9 +19,9 @@ function parseOcrNames(text, debug = false) {
     !/[()[\]{}]/.test(s) &&                // brackets (appear in chip counts, not names)
     !/^[\d,\.\s\-]+$/.test(s);
 
-  const addName = (name, tag) => {
+  const addName = (name, tag, lineIdx) => {
     const key = name.toLowerCase();
-    if (!seen.has(key)) { seen.set(key, name); log('[' + tag + ']', name); }
+    if (!seen.has(key)) { seen.set(key, { name, lineIdx }); log('[' + tag + ']', name); }
     else log('[DUP ' + tag + ']', name);
   };
 
@@ -38,25 +38,25 @@ function parseOcrNames(text, debug = false) {
   };
 
   const lines = text.split('\n');
-  const secondaryQueue = []; // deferred to pass 2
+  const secondaryQueue = []; // { line, lineIdx } — deferred to pass 2
 
   // PASS 1: primary + fallback — builds the high-confidence name set
-  for (let raw of lines) {
-    let line = raw.trim();
+  for (let li = 0; li < lines.length; li++) {
+    let line = lines[li].trim();
     if (!line) continue;
 
     // PRIMARY: "- PlayerName - 28,750(287.5 BB)" or "PlayerName - 28,750(287.5 BB)"
     const primary = line.match(/^(?:[-—\s]*\d*\s*[-—.]\s*)?(.+?)\s*[-—]\s*[\d,]+(?:\.\d+)?\s*(?:\(.*?BB.*?\))?\s*$/i);
     if (primary) {
       const name = cleanOcrName(primary[1].trim());
-      if (isValidName(name)) addName(name, 'P');
+      if (isValidName(name)) addName(name, 'P', li);
       else log('[P-skip]', primary[1]);
       continue;
     }
 
     // SECONDARY: defer to pass 2 (needs known names for merge detection)
     const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}(?:\.\d+)?(?:\s*\([\d.]+ BB\))?\s*$/i);
-    if (secondary) { secondaryQueue.push(line); continue; }
+    if (secondary) { secondaryQueue.push({ line, lineIdx: li }); continue; }
 
     // FALLBACK: plain name-only line
     line = line.replace(/^[-—\s]*\d+\s*[-—.]\s*/, '').trim();
@@ -67,11 +67,11 @@ function parseOcrNames(text, debug = false) {
     if (/^[\d,\.\s]+$/.test(line)) { log('[F-num]', line); continue; }
     if (/,/.test(line)) { log('[F-comma]', line); continue; }
     if (!isValidName(line)) { log('[F-skip]', line); continue; }
-    addName(line, 'F');
+    addName(line, 'F', li);
   }
 
   // PASS 2: secondary matches — validate against known names to block merged rows
-  for (const line of secondaryQueue) {
+  for (const { line, lineIdx } of secondaryQueue) {
     const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}(?:\.\d+)?(?:\s*\([\d.]+ BB\))?\s*$/i);
     if (!secondary) continue;
     let name = secondary[1].trim();
@@ -80,11 +80,13 @@ function parseOcrNames(text, debug = false) {
     name = cleanOcrName(name);
     if (!isValidName(name) || name.includes(',')) { log('[S-skip]', secondary[1]); continue; }
     if (isMergedName(name)) { log('[S-merged]', name); continue; }
-    addName(name, 'S');
+    addName(name, 'S', lineIdx); // use original line position
   }
 
-  log('[TOTAL]', seen.size, [...seen.values()]);
-  return [...seen.values()];
+  // Sort by original line index so review list matches visual order in the image
+  const sorted = [...seen.values()].sort((a, b) => a.lineIdx - b.lineIdx);
+  log('[TOTAL]', sorted.length, sorted.map(x => x.name));
+  return sorted.map(x => x.name);
 }
 
 /* ─── colours cycling through segments ─── */
@@ -874,6 +876,22 @@ export default function Wheel() {
           )}
         </div>
       )}
+
+      {/* Add free-form new player */}
+      <div style={{ display:'flex', gap:'0.5rem', marginBottom:'0.5rem' }}>
+        <input
+          value={addingName}
+          onChange={e => setAddingName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') addName(); }}
+          placeholder="Add player by name…"
+          style={{ flex:1, background:'#0f1117', border:'1px solid #2d3148', borderRadius:'4px',
+                   color:'#e2e8f0', padding:'7px 12px', fontSize:'0.85rem', boxSizing:'border-box' }}
+        />
+        <button onClick={addName}
+          style={{...btn(false), padding:'7px 16px', fontSize:'0.85rem'}}>
+          + Add
+        </button>
+      </div>
 
       {/* Add player from list */}
       <div ref={pickerRef} style={{ position:'relative', marginBottom:'1rem' }}>
