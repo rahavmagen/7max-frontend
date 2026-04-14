@@ -58,16 +58,9 @@ function parseOcrNames(text, debug = false) {
     const secondary = line.match(/^(.*?)\s+\d[\d]*,\d{3}(?:\.\d+)?(?:\s*\([\d.]+ BB\))?\s*$/i);
     if (secondary) { secondaryQueue.push({ line, lineIdx: li }); continue; }
 
-    // FALLBACK: plain name-only line
-    line = line.replace(/^[-—\s]*\d+\s*[-—.]\s*/, '').trim();
-    line = line.replace(/^[-—\s]+/, '').trim();
-    line = line.replace(/\s*[-—\s]+$/, '').trim();
-    if (!line) continue;
-    if (/[\d,]+\s*BB/i.test(line)) { log('[F-BB]', line); continue; }
-    if (/^[\d,\.\s]+$/.test(line)) { log('[F-num]', line); continue; }
-    if (/,/.test(line)) { log('[F-comma]', line); continue; }
-    if (!isValidName(line)) { log('[F-skip]', line); continue; }
-    addName(line, 'F', li);
+    // No FALLBACK — plain name-only lines produce too many false positives (e.g. UI labels, OCR noise).
+    // Player lines always have a chip count; anything without one is ignored.
+    log('[SKIP]', line);
   }
 
   // PASS 2: secondary matches — validate against known names to block merged rows
