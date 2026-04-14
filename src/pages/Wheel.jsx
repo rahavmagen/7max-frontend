@@ -93,6 +93,7 @@ function parseOcrNames(text, debug = false) {
 /* ─── Strip OCR artifacts from extracted name before validation ─── */
 function cleanOcrName(s) {
   s = s.replace(/^[^a-zA-Z0-9]+/, '').trim();                          // strip leading non-alphanumeric (= : | etc.)
+  s = s.replace(/\[.*?\]/g, '').trim();                                // strip [...] anywhere (e.g. VIVIPUTZ[])
   s = s.replace(/\s*[-—=]\s*$/, '').trim();                            // strip trailing - = —
   s = s.replace(/\s+[©®™£€¥¢=&@#$~|^*<>+%]+\d*\s*$/, '').trim();     // strip trailing OCR symbol [+ digits] (£5, ® etc.)
   s = s.replace(/\s+[A-Z]\s*$/, '').trim();                            // strip trailing isolated uppercase letter (e.g. "Einpoker E")
@@ -984,22 +985,8 @@ export default function Wheel() {
         </div>
       </div>
 
-      {/* OCR source image(s) — shown next to wheel for cross-referencing */}
-      {ocrImages.length > 0 && (
-        <div style={{ display:'flex', flexDirection:'column', gap:'8px', alignSelf:'flex-start' }}>
-          <div style={{ color:goldDark, fontFamily:'Cinzel, serif', fontSize:'0.75rem', letterSpacing:'0.12em' }}>
-            SOURCE IMAGE{ocrImages.length > 1 ? 'S' : ''}
-          </div>
-          {ocrImages.map((src, i) => (
-            <img key={i} src={src}
-              style={{ width:'220px', borderRadius:'6px', border:'1px solid #2d3148',
-                       boxShadow:'0 2px 12px rgba(0,0,0,0.5)' }} />
-          ))}
-        </div>
-      )}
-
       {/* Right: history */}
-      <div style={{ minWidth:'200px', maxWidth:'240px', flex:1 }}>
+      <div style={{ minWidth:'200px', maxWidth:'260px', flex:1 }}>
         <div style={{ ...card, marginBottom:'1rem' }}>
           <div style={{ color:goldDark, fontFamily:'Cinzel, serif', fontSize:'0.85rem',
                         letterSpacing:'0.15em', marginBottom:'0.75rem' }}>
@@ -1014,6 +1001,21 @@ export default function Wheel() {
             ))}
           </div>
         </div>
+
+        {/* OCR source image(s) for cross-referencing */}
+        {ocrImages.length > 0 && (
+          <div style={{ marginBottom:'1rem' }}>
+            <div style={{ color:goldDark, fontFamily:'Cinzel, serif', fontSize:'0.75rem',
+                          letterSpacing:'0.12em', marginBottom:'6px' }}>
+              SOURCE IMAGE{ocrImages.length > 1 ? 'S' : ''}
+            </div>
+            {ocrImages.map((src, i) => (
+              <img key={i} src={src}
+                style={{ width:'100%', borderRadius:'6px', border:'1px solid #2d3148',
+                         boxShadow:'0 2px 12px rgba(0,0,0,0.5)', marginBottom:'6px', display:'block' }} />
+            ))}
+          </div>
+        )}
 
         {history.length > 0 && (
           <div style={card}>
