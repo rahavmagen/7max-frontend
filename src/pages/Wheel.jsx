@@ -853,6 +853,21 @@ export default function Wheel() {
         </div>
       </div>
 
+      {/* OCR source image(s) — for comparing names while reviewing */}
+      {ocrImages.length > 0 && (
+        <div style={{ marginBottom:'1rem' }}>
+          <div style={{ color:goldDark, fontFamily:'Cinzel, serif', fontSize:'0.7rem',
+                        letterSpacing:'0.12em', marginBottom:'6px' }}>
+            SOURCE IMAGE{ocrImages.length > 1 ? 'S' : ''}
+          </div>
+          {ocrImages.map((src, i) => (
+            <img key={i} src={src}
+              style={{ width:'100%', borderRadius:'6px', border:'1px solid #2d3148',
+                       boxShadow:'0 2px 12px rgba(0,0,0,0.5)', marginBottom:'6px', display:'block' }} />
+          ))}
+        </div>
+      )}
+
       {/* Raw OCR debug */}
       {ocrRawText && (
         <div style={{ marginBottom:'1rem' }}>
