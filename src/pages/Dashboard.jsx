@@ -94,18 +94,6 @@ export default function Dashboard() {
           <div className="label">Total Players</div>
           <div className="value neutral">{activeCount}</div>
         </div>
-        <div className="stat-card">
-          <div className="label">Total Chips in System</div>
-          <div className="value neutral">{fmt(totalChips)}</div>
-        </div>
-        <div className="stat-card">
-          <div className="label">Total Credit Given</div>
-          <div className="value neutral">{fmt(totalCredit)}</div>
-        </div>
-        <div className="stat-card" style={{ borderTopColor: totalPnl > 0 ? '#22c55e' : totalPnl < 0 ? '#ef4444' : '#64748b' }}>
-          <div className="label">Total Profit / Loss</div>
-          <div className={`value ${cls(totalPnl)}`}>{fmt(totalPnl)}</div>
-        </div>
         {staleCount > 0 && (
           <div
             className="stat-card"
