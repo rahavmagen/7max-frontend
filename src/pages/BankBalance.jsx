@@ -33,7 +33,8 @@ export default function BankBalance() {
     ? <span style={{ color: '#a5b4fc', cursor: 'pointer' }} onClick={() => navigate(`/player/${id}`)}>{name}</span>
     : <span style={{ color: '#64748b' }}>{name}</span>;
 
-  let running = 0;
+  // Start from current total, subtract each delta going newest→oldest
+  let running = Number(total);
 
   return (
     <div className="container">
@@ -77,7 +78,7 @@ export default function BankBalance() {
               </thead>
               <tbody>
                 {filtered.map((r, i) => {
-                  running += Number(r.delta);
+                  running -= Number(r.delta);
                   return (
                     <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
                       <td style={{ color: '#64748b', paddingTop: '0.4rem', whiteSpace: 'nowrap' }}>
