@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminExpenses, getBalanceSheet, getBankHistory, getPlayers, getProfitSummary, getTransactionRange } from '../api';
+import { getAdminExpenses, getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange } from '../api';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -19,10 +19,6 @@ export default function TotalProfit() {
   const [txRows, setTxRows] = useState([]);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [showTx, setShowTx] = useState(true);
-  const [bankHistory, setBankHistory] = useState(null);
-  const [showBankHistory, setShowBankHistory] = useState(false);
-  const [bankFrom, setBankFrom] = useState('');
-  const [bankTo, setBankTo] = useState('');
   const [paidTotals, setPaidTotals] = useState(null);
 
   const fmt = (n) => {
@@ -50,14 +46,6 @@ export default function TotalProfit() {
       setLoading(false);
     });
   }, []);
-
-  const loadBankHistory = () => {
-    if (bankHistory) { setShowBankHistory(v => !v); return; }
-    getBankHistory().then(res => {
-      setBankHistory(res.data);
-      setShowBankHistory(true);
-    });
-  };
 
   const loadPeriod = () => {
     if (!fromDate || !toDate) return;
@@ -295,76 +283,11 @@ export default function TotalProfit() {
         <h2>All-Time P&L</h2>
         <div className="table-wrap"><table>
           <tbody>
-            <tr style={{ cursor: 'pointer' }} onClick={loadBankHistory}>
-              <td style={{ color: '#94a3b8' }}>Bank Balance <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>{showBankHistory ? '▲' : '▼'}</span></td>
+            <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/bank-balance')}>
+              <td style={{ color: '#94a3b8' }}>Bank Balance <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
               <td className="positive"><strong>{fmt(bankDeposits)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>From XLS P2 + club transfers — click to expand</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>From XLS P2 + club transfers — click to view</td>
             </tr>
-            {showBankHistory && bankHistory && (
-              <tr>
-                <td colSpan={3} style={{ padding: '0.75rem 0 0.5rem 0' }}>
-                  {/* Date filter */}
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                    <span style={{ color: '#64748b', fontSize: '0.8rem' }}>Filter:</span>
-                    <input type="date" value={bankFrom} onChange={e => setBankFrom(e.target.value)}
-                      style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.8rem' }} />
-                    <span style={{ color: '#64748b' }}>→</span>
-                    <input type="date" value={bankTo} onChange={e => setBankTo(e.target.value)}
-                      style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.2rem 0.5rem', fontSize: '0.8rem' }} />
-                    {(bankFrom || bankTo) && (
-                      <button onClick={() => { setBankFrom(''); setBankTo(''); }}
-                        style={{ background: 'transparent', color: '#64748b', border: '1px solid #334155', borderRadius: '4px', padding: '0.15rem 0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <table style={{ width: '100%', fontSize: '0.85rem' }}>
-                    <thead>
-                      <tr style={{ color: '#64748b' }}>
-                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Date</th>
-                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Player</th>
-                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Method</th>
-                        <th style={{ textAlign: 'left', paddingBottom: '0.4rem' }}>Created By</th>
-                        <th style={{ textAlign: 'right', paddingBottom: '0.4rem' }}>Amount</th>
-                        <th style={{ textAlign: 'right', paddingBottom: '0.4rem' }}>Running Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        let running = 0;
-                        return bankHistory.rows
-                          .filter(r => (!bankFrom || !r.date || r.date >= bankFrom) && (!bankTo || !r.date || r.date <= bankTo))
-                          .map((r, i) => {
-                            running += Number(r.delta);
-                            const Name = ({ id, name }) => id
-                              ? <span style={{ color: '#a5b4fc', cursor: 'pointer' }} onClick={e => { e.stopPropagation(); navigate(`/player/${id}`); }}>{name}</span>
-                              : <span style={{ color: '#64748b' }}>{name}</span>;
-                            return (
-                              <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
-                                <td style={{ color: '#64748b', paddingTop: '0.3rem', whiteSpace: 'nowrap' }}>
-                                  <div>{r.date || '—'}</div>
-                                  {r.createdAt && <div style={{ fontSize: '0.75rem', color: '#475569' }}>{r.createdAt.replace('T', ' ').substring(0, 16)}</div>}
-                                </td>
-                                <td style={{ paddingTop: '0.3rem' }}>
-                                  <Name id={r.fromPlayerId} name={r.fromName} />
-                                  <span style={{ color: '#475569', margin: '0 0.3rem' }}>→</span>
-                                  <Name id={r.toPlayerId} name={r.toName} />
-                                </td>
-                                <td style={{ color: '#64748b', paddingTop: '0.3rem' }}>{r.method || '—'}</td>
-                                <td style={{ color: '#94a3b8', paddingTop: '0.3rem', fontSize: '0.8rem' }}>{r.createdBy || '—'}</td>
-                                <td style={{ textAlign: 'right', paddingTop: '0.3rem' }} className={Number(r.delta) >= 0 ? 'positive' : 'negative'}>
-                                  {Number(r.delta) >= 0 ? fmt(r.delta) : `(${fmt(Math.abs(r.delta))})`}
-                                </td>
-                                <td style={{ textAlign: 'right', paddingTop: '0.3rem', color: '#e2e8f0' }}>{fmt(running)}</td>
-                              </tr>
-                            );
-                          });
-                      })()}
-                    </tbody>
-                  </table>
-                </td>
-              </tr>
-            )}
             <tr>
               <td style={{ color: '#94a3b8' }}>+ Total Credit Given</td>
               <td className="positive"><strong>{fmt(totalCredit)}</strong></td>
