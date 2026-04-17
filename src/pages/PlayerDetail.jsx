@@ -412,7 +412,8 @@ export default function PlayerDetail() {
                 const amountClass = isTransfer
                   ? (isOutgoing ? 'negative' : isIncoming ? 'positive' : (t.type === 'DEPOSIT' || t.type === 'PAYMENT' ? 'positive' : 'negative'))
                   : (t.type === 'DEPOSIT' || t.type === 'PAYMENT' ? 'positive' : 'negative');
-                const displayAmount = isOutgoing ? fmt(-t.amount) : fmt(t.amount);
+                const isNegative = isOutgoing || t.type === 'WITHDRAWAL';
+                const displayAmount = isNegative ? fmt(-t.amount) : fmt(t.amount);
                 return (
                 <tr key={t.id}>
                   <td>{t.createdAt ? t.createdAt.replace('T', ' ').substring(0, 16) : t.transactionDate || '—'}</td>
