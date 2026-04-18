@@ -105,17 +105,22 @@ export default function ClubWallets() {
 
   const handleSetStartingBalance = async (adminUsername) => {
     const form = startingBalanceForms[adminUsername] || {};
-    const amount = parseFloat(form.amount);
-    if (isNaN(amount)) { setMsg({ type: 'error', text: 'Enter a valid amount' }); return; }
+    const toNum = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
     setStartingBalanceSaving(adminUsername);
     try {
-      await setAdminStartingBalance(adminUsername, amount, form.notes || null);
+      await setAdminStartingBalance(adminUsername, {
+        cashAmount: toNum(form.cash),
+        bitAmount: toNum(form.bit),
+        payboxAmount: toNum(form.paybox),
+        otherAmount: toNum(form.other),
+        notes: form.notes || null,
+      });
       setMsg({ type: 'success', text: `Starting balance set for ${adminUsername}` });
       setStartingBalanceForms(f => { const n = { ...f }; delete n[adminUsername]; return n; });
       load();
     } catch (e) {
-      const msg = e?.response?.data?.error || 'Failed to set starting balance';
-      setMsg({ type: 'error', text: msg });
+      const errMsg = e?.response?.data?.error || 'Failed to set starting balance';
+      setMsg({ type: 'error', text: errMsg });
     }
     setStartingBalanceSaving(null);
   };
@@ -128,8 +133,8 @@ export default function ClubWallets() {
     });
   };
 
-  const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', CASH: 'Cash', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses', STARTING: 'Starting Balance' };
-  const METHOD_COLOR = { BIT: '#3b82f6', PAYBOX: '#a855f7', CASH: '#22c55e', TRANSFER: '#64748b', ADJUSTMENT: '#f59e0b', EXPENSES: '#ef4444', STARTING: '#94a3b8' };
+  const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', CASH: 'Cash', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses', STARTING_CASH: 'Starting Cash', STARTING_BIT: 'Starting Bit', STARTING_PAYBOX: 'Starting Paybox', STARTING_OTHER: 'Starting Other' };
+  const METHOD_COLOR = { BIT: '#3b82f6', PAYBOX: '#a855f7', CASH: '#22c55e', TRANSFER: '#64748b', ADJUSTMENT: '#f59e0b', EXPENSES: '#ef4444', STARTING_CASH: '#475569', STARTING_BIT: '#475569', STARTING_PAYBOX: '#475569', STARTING_OTHER: '#475569' };
 
   const MethodPill = ({ method }) => {
     if (!method) return null;
@@ -186,7 +191,7 @@ export default function ClubWallets() {
                       {alreadySet ? (
                         <span style={{ fontSize: '0.7rem', color: '#475569', marginLeft: '6px' }}>🔒 Starting: {fmt(w.startingBalance)}</span>
                       ) : (
-                        <button onClick={() => setStartingBalanceForms(f => form ? (({ [w.adminUsername]: _, ...rest }) => rest)(f) : { ...f, [w.adminUsername]: { amount: '', notes: '' } })}
+                        <button onClick={() => setStartingBalanceForms(f => form ? (({ [w.adminUsername]: _, ...rest }) => rest)(f) : { ...f, [w.adminUsername]: { cash: '', bit: '', paybox: '', other: '', notes: '' } })}
                           style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #334155', color: '#64748b', borderRadius: '4px', padding: '1px 6px', cursor: 'pointer', marginLeft: '6px' }}>
                           {form ? '✕' : '+ Set Starting'}
                         </button>
@@ -196,19 +201,21 @@ export default function ClubWallets() {
                   </tr>
                   {form && !alreadySet && (
                     <tr key={`${w.adminUsername}-starting-form`}>
-                      <td colSpan={2} style={{ background: '#12151f', padding: '0.5rem 1rem' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Amount (₪)</label>
-                            <input type="number" step="0.01" placeholder="e.g. 5000" value={form.amount}
-                              onChange={e => setStartingBalanceForms(f => ({ ...f, [w.adminUsername]: { ...f[w.adminUsername], amount: e.target.value } }))}
-                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '130px' }} />
-                          </div>
+                      <td colSpan={2} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          {[['cash', 'Cash', '#22c55e'], ['bit', 'Bit', '#3b82f6'], ['paybox', 'Paybox', '#a855f7'], ['other', 'Other', '#64748b']].map(([key, label, color]) => (
+                            <div key={key}>
+                              <label style={{ fontSize: '0.72rem', color, display: 'block', marginBottom: '2px' }}>{label} (₪)</label>
+                              <input type="number" step="0.01" placeholder="0" value={form[key] || ''}
+                                onChange={e => setStartingBalanceForms(f => ({ ...f, [w.adminUsername]: { ...f[w.adminUsername], [key]: e.target.value } }))}
+                                style={{ background: '#1a1d2e', border: `1px solid ${color}55`, color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '100px' }} />
+                            </div>
+                          ))}
                           <div>
                             <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Notes</label>
-                            <input type="text" placeholder="e.g. Balance as of April 2026" value={form.notes}
+                            <input type="text" placeholder="e.g. Balance as of April 2026" value={form.notes || ''}
                               onChange={e => setStartingBalanceForms(f => ({ ...f, [w.adminUsername]: { ...f[w.adminUsername], notes: e.target.value } }))}
-                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '220px' }} />
+                              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '200px' }} />
                           </div>
                           <button onClick={() => handleSetStartingBalance(w.adminUsername)} disabled={isSaving}
                             style={{ padding: '5px 12px', borderRadius: '5px', background: '#1e3a5f', border: 'none', color: '#60a5fa', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
