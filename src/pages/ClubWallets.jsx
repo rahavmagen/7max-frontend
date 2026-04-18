@@ -75,20 +75,27 @@ export default function ClubWallets() {
 
   // Returns { signedAmount, color } for a history row based on selected holder
   const getAmountDisplay = (h) => {
-    if (!filterHolder) return { signedAmount: h.amount, color: '#94a3b8' };
-    const isBank = filterHolder.startsWith('BANK_');
     let isReceiving = false;
     let isPaying = false;
-    if (!isBank) {
-      isReceiving = h.toAdminUsername === filterHolder;
-      isPaying = h.fromAdminUsername === filterHolder;
+
+    if (filterHolder) {
+      const isBank = filterHolder.startsWith('BANK_');
+      if (!isBank) {
+        isReceiving = h.toAdminUsername === filterHolder;
+        isPaying = h.fromAdminUsername === filterHolder;
+      } else {
+        const bankId = parseInt(filterHolder.replace('BANK_', ''), 10);
+        const bank = bankWallets.find(b => b.id === bankId);
+        const bankName = bank?.name;
+        isReceiving = h.toBankAccount === bankName;
+        isPaying = h.fromBankAccount === bankName;
+      }
     } else {
-      const bankId = parseInt(filterHolder.replace('BANK_', ''), 10);
-      const bank = bankWallets.find(b => b.id === bankId);
-      const bankName = bank?.name;
-      isReceiving = h.toBankAccount === bankName;
-      isPaying = h.fromBankAccount === bankName;
+      // No filter: color by direction — fromAdmin = paying out (red), toAdmin = receiving (green)
+      isPaying = !!h.fromAdminUsername || h.type === 'EXPENSE_PAID';
+      isReceiving = !!h.toAdminUsername && h.type !== 'EXPENSE_PAID';
     }
+
     if (isReceiving) return { signedAmount: Math.abs(h.amount), color: '#4ade80' };
     if (isPaying) return { signedAmount: -Math.abs(h.amount), color: '#ef4444' };
     return { signedAmount: h.amount, color: '#94a3b8' };
