@@ -72,6 +72,27 @@ export default function ClubWallets() {
   const assignedHistory = history.filter(h => !h.unassigned);
   const unassignedHistory = history.filter(h => h.unassigned);
 
+  // Returns { signedAmount, color } for a history row based on selected holder
+  const getAmountDisplay = (h) => {
+    if (!filterHolder) return { signedAmount: h.amount, color: '#94a3b8' };
+    const isBank = filterHolder.startsWith('BANK_');
+    let isReceiving = false;
+    let isPaying = false;
+    if (!isBank) {
+      isReceiving = h.toAdminUsername === filterHolder;
+      isPaying = h.fromAdminUsername === filterHolder;
+    } else {
+      const bankId = parseInt(filterHolder.replace('BANK_', ''), 10);
+      const bank = bankWallets.find(b => b.id === bankId);
+      const bankName = bank?.name;
+      isReceiving = h.toBankAccount === bankName;
+      isPaying = h.fromBankAccount === bankName;
+    }
+    if (isReceiving) return { signedAmount: Math.abs(h.amount), color: '#4ade80' };
+    if (isPaying) return { signedAmount: -Math.abs(h.amount), color: '#ef4444' };
+    return { signedAmount: h.amount, color: '#94a3b8' };
+  };
+
   // Holder options for filter
   const holderOptions = [
     ...adminWallets.map(w => ({ value: w.adminUsername, label: w.adminUsername })),
@@ -178,20 +199,23 @@ export default function ClubWallets() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assignedHistory.map(h => (
-                    <tr key={h.id}>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.transferDate)}</td>
-                      <td><span style={{ fontSize: '0.78rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
-                      <td style={{ color: h.fromAdminUsername ? '#e2e8f0' : h.fromBankAccount ? '#34d399' : '#f59e0b' }}>
-                        {h.fromAdminUsername || (h.fromBankAccount ? `🏦 ${h.fromBankAccount}` : (h.fromPlayer || 'CLUB'))}
-                      </td>
-                      <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
-                        {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, color: '#4ade80' }}>{fmt(h.amount)}</td>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
-                    </tr>
-                  ))}
+                  {assignedHistory.map(h => {
+                    const { signedAmount, color } = getAmountDisplay(h);
+                    return (
+                      <tr key={h.id}>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.transferDate)}</td>
+                        <td><span style={{ fontSize: '0.78rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
+                        <td style={{ color: h.fromAdminUsername ? '#e2e8f0' : h.fromBankAccount ? '#34d399' : '#f59e0b' }}>
+                          {h.fromAdminUsername || (h.fromBankAccount ? `🏦 ${h.fromBankAccount}` : (h.fromPlayer || 'CLUB'))}
+                        </td>
+                        <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
+                          {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color }}>{fmt(signedAmount)}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
