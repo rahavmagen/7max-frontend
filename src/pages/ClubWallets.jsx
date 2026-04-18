@@ -7,6 +7,7 @@ export default function ClubWallets() {
   const [bankAccounts, setBankAccountsState] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
+  const [expandedAdmins, setExpandedAdmins] = useState(new Set());
 
   // Filters
   const [filterFrom, setFilterFrom] = useState('');
@@ -93,6 +94,28 @@ export default function ClubWallets() {
     return { signedAmount: h.amount, color: '#94a3b8' };
   };
 
+  const toggleAdmin = (username) => {
+    setExpandedAdmins(prev => {
+      const next = new Set(prev);
+      next.has(username) ? next.delete(username) : next.add(username);
+      return next;
+    });
+  };
+
+  const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', CASH: 'Cash', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses' };
+  const METHOD_COLOR = { BIT: '#3b82f6', PAYBOX: '#a855f7', CASH: '#22c55e', TRANSFER: '#64748b', ADJUSTMENT: '#f59e0b', EXPENSES: '#ef4444' };
+
+  const MethodPill = ({ method }) => {
+    if (!method) return null;
+    const label = METHOD_LABEL[method] || method;
+    const color = METHOD_COLOR[method] || '#64748b';
+    return (
+      <span style={{ fontSize: '0.72rem', background: color + '22', color, border: `1px solid ${color}55`, borderRadius: '4px', padding: '1px 6px', whiteSpace: 'nowrap' }}>
+        {label}
+      </span>
+    );
+  };
+
   // Holder options for filter
   const holderOptions = [
     ...adminWallets.map(w => ({ value: w.adminUsername, label: w.adminUsername })),
@@ -116,12 +139,34 @@ export default function ClubWallets() {
             </tr>
           </thead>
           <tbody>
-            {adminWallets.map(w => (
-              <tr key={w.adminUsername}>
-                <td style={{ color: '#e2e8f0', padding: '0.4rem 0' }}>{w.adminUsername}</td>
-                <td style={{ textAlign: 'right', fontWeight: 600, color: Number(w.balance) >= 0 ? '#4ade80' : '#ef4444' }}>{fmt(w.balance)}</td>
-              </tr>
-            ))}
+            {adminWallets.map(w => {
+              const isOpen = expandedAdmins.has(w.adminUsername);
+              const breakdown = w.breakdown || {};
+              const hasBreakdown = Object.keys(breakdown).length > 0;
+              return (
+                <>
+                  <tr key={w.adminUsername}
+                    onClick={() => hasBreakdown && toggleAdmin(w.adminUsername)}
+                    style={{ cursor: hasBreakdown ? 'pointer' : 'default' }}>
+                    <td style={{ color: '#e2e8f0', padding: '0.4rem 0', userSelect: 'none' }}>
+                      {hasBreakdown && (
+                        <span style={{ marginRight: '6px', fontSize: '0.7rem', color: '#64748b', display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+                      )}
+                      {w.adminUsername}
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, color: Number(w.balance) >= 0 ? '#4ade80' : '#ef4444' }}>{fmt(w.balance)}</td>
+                  </tr>
+                  {isOpen && Object.entries(breakdown).map(([method, amount]) => (
+                    <tr key={`${w.adminUsername}-${method}`}>
+                      <td style={{ paddingLeft: '1.5rem', paddingTop: '2px', paddingBottom: '2px' }}>
+                        <MethodPill method={method} />
+                      </td>
+                      <td style={{ textAlign: 'right', fontSize: '0.85rem', color: Number(amount) >= 0 ? '#4ade80' : '#ef4444' }}>{fmt(amount)}</td>
+                    </tr>
+                  ))}
+                </>
+              );
+            })}
             {bankWallets.map(b => (
               <tr key={b.id}>
                 <td style={{ color: '#34d399', padding: '0.4rem 0' }}>🏦 {b.name}</td>
@@ -194,6 +239,7 @@ export default function ClubWallets() {
                     <th>Type</th>
                     <th>From</th>
                     <th>To</th>
+                    <th>Method</th>
                     <th style={{ textAlign: 'right' }}>Amount</th>
                     <th>Notes</th>
                   </tr>
@@ -211,6 +257,7 @@ export default function ClubWallets() {
                         <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
                           {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
                         </td>
+                        <td><MethodPill method={h.method} /></td>
                         <td style={{ textAlign: 'right', fontWeight: 600, color }}>{fmt(signedAmount)}</td>
                         <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
                       </tr>
