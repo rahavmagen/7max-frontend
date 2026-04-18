@@ -121,6 +121,7 @@ export const payClubExpense = (id, data) => api.patch(`/club-expenses/${id}/pay`
 export const getWalletSummary = () => api.get('/wallets/summary');
 export const getWalletHistory = (params) => api.get('/wallets/history', { params });
 export const setBankBalance = (bankBalance) => api.patch('/import-summary/bank-balance', { bankBalance });
+export const setAdminStartingBalance = (adminUsername, amount, notes) => api.post('/wallets/starting-balance', { adminUsername, amount, notes });
 
 export const getTicketAssets = () => api.get('/ticket-assets');
 export const getTicketAssetsSummary = () => api.get('/ticket-assets/summary');
