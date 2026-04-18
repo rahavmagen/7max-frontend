@@ -148,7 +148,7 @@ export default function Transfers() {
   const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
 
   // Transfer form
-  const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '' });
+  const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '' });
 
   const load = () => {
     getPlayers().then(r => setPlayers(r.data));
@@ -324,9 +324,11 @@ export default function Transfers() {
         method: transferForm.method,
         amount: parseFloat(transferForm.amount),
         notes: transferForm.notes || null,
+        fromAdminUsername: transferForm.fromId === 'CLUB' ? (transferForm.fromAdminUsername || null) : null,
+        toAdminUsername: transferForm.toId === 'CLUB' ? (transferForm.toAdminUsername || null) : null,
       });
       setMsg({ type: 'success', text: 'Transfer recorded successfully' });
-      setTransferForm({ fromId: '', toId: '', method: '', amount: '', notes: '' });
+      setTransferForm({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '' });
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record transfer' });
@@ -575,8 +577,32 @@ export default function Transfers() {
           </p>
           <form onSubmit={handleTransferSubmit}>
             <div className="form-row">
-              <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.toId} includeClub />
-              <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.fromId} includeClub />
+              <div>
+                <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v, fromAdminUsername: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.toId} includeClub />
+                {transferForm.fromId === 'CLUB' && (
+                  <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Handled by admin (optional)</label>
+                    <select value={transferForm.fromAdminUsername} onChange={e => setTransferForm(f => ({ ...f, fromAdminUsername: e.target.value }))}
+                      style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
+                      <option value="">— Unassigned —</option>
+                      {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div>
+                <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v, toAdminUsername: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.fromId} includeClub />
+                {transferForm.toId === 'CLUB' && (
+                  <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Handled by admin (optional)</label>
+                    <select value={transferForm.toAdminUsername} onChange={e => setTransferForm(f => ({ ...f, toAdminUsername: e.target.value }))}
+                      style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
+                      <option value="">— Unassigned —</option>
+                      {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group">

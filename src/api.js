@@ -115,5 +115,16 @@ export const settleAdminExpense = (id, data) => api.patch(`/admin-expenses/${id}
 export const setAdminExpenseVatType = (id, vatType) => api.patch(`/admin-expenses/${id}/vat-type`, { vatType });
 export const setClubExpenseVatType = (id, vatType) => api.patch(`/club-expenses/${id}/vat-type`, { vatType });
 export const getPaidTotals = () => api.get('/admin-expenses/paid-totals');
+export const payAdminExpense = (id, data) => api.patch(`/admin-expenses/${id}/pay`, data);
+export const payClubExpense = (id, data) => api.patch(`/club-expenses/${id}/pay`, data);
+
+export const getWalletSummary = () => api.get('/wallets/summary');
+export const getWalletHistory = (params) => api.get('/wallets/history', { params });
+export const setBankBalance = (bankBalance) => api.patch('/import-summary/bank-balance', { bankBalance });
+
+export const getTicketAssets = () => api.get('/ticket-assets');
+export const getTicketAssetsSummary = () => api.get('/ticket-assets/summary');
+export const buyTickets = (data) => api.post('/ticket-assets', data);
+export const grantTicket = (id, playerUsername) => api.post(`/ticket-assets/${id}/grant`, { playerUsername });
 
 export default api;

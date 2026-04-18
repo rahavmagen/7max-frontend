@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminExpenses, getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange } from '../api';
+import { getAdminExpenses, getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange, getTicketAssetsSummary } from '../api';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -20,6 +20,7 @@ export default function TotalProfit() {
   const [periodLoading, setPeriodLoading] = useState(false);
   const [showTx, setShowTx] = useState(true);
   const [paidTotals, setPaidTotals] = useState(null);
+  const [ticketAssetsFaceValue, setTicketAssetsFaceValue] = useState(0);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -34,15 +35,17 @@ export default function TotalProfit() {
       getPlayers(),
       getProfitSummary().catch(() => ({ data: null })),
       getAdminExpenses().catch(() => ({ data: null })),
-    ]).then(([playersRes, summaryRes, expRes]) => {
+      getTicketAssetsSummary().catch(() => ({ data: { totalFaceValue: 0 } })),
+    ]).then(([playersRes, summaryRes, expRes, ticketRes]) => {
       setPlayers(playersRes.data);
       setSummary(summaryRes.data);
-      const paidNoVat = expRes.data?.paidNoVat || [];
-      const paidWithVat = expRes.data?.paidWithVat || [];
+      const paid = expRes.data?.paid || [];
+      // Compute paid totals from unified paid list
       setPaidTotals({
-        noVatTotal: paidNoVat.reduce((s, e) => s + Number(e.amount || 0), 0),
-        withVatTotal: paidWithVat.reduce((s, e) => s + Number(e.amount || 0), 0),
+        noVatTotal: paid.filter(e => e.vatType !== 'WITH_VAT').reduce((s, e) => s + Number(e.amount || 0), 0),
+        withVatTotal: paid.filter(e => e.vatType === 'WITH_VAT').reduce((s, e) => s + Number(e.amount || 0), 0),
       });
+      setTicketAssetsFaceValue(Number(ticketRes.data?.totalFaceValue || 0));
       setLoading(false);
     });
   }, []);
@@ -283,10 +286,10 @@ export default function TotalProfit() {
         <h2>All-Time P&L</h2>
         <div className="table-wrap"><table>
           <tbody>
-            <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/bank-balance')}>
+            <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/club-wallets')}>
               <td style={{ color: '#94a3b8' }}>Bank Balance <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
               <td className="positive"><strong>{fmt(bankDeposits)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>From XLS P2 + club transfers — click to view</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Club wallets total — click to view breakdown</td>
             </tr>
             <tr>
               <td style={{ color: '#94a3b8' }}>+ Total Credit Given</td>
@@ -334,6 +337,13 @@ export default function TotalProfit() {
               <td><strong className={cls(netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
+            {ticketAssetsFaceValue > 0 && (
+              <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/ticket-assets')}>
+                <td style={{ color: '#94a3b8' }}>🎟 Ticket Assets <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
+                <td className="positive"><strong>{fmt(ticketAssetsFaceValue)}</strong></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Remaining ticket inventory at face value</td>
+              </tr>
+            )}
             <tr>
               <td style={{ color: '#64748b', paddingTop: '1rem', fontSize: '0.85rem' }}>🎡 Wheel & Chip Promo</td>
               <td style={{ color: '#f59e0b', paddingTop: '1rem' }}><strong>{fmt(willExpense + chipPromoTotal)}</strong></td>

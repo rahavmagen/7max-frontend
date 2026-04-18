@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, settleClubExpense, updateClubExpense, deleteClubExpense, settleAdminExpense, setAdminExpenseVatType, setClubExpenseVatType } from '../api';
+import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, updateClubExpense, deleteClubExpense, payAdminExpense, payClubExpense, getBankAccounts, getAdminUsers } from '../api';
 
 export default function AdminExpenses() {
   const [data, setData] = useState(null);
@@ -8,45 +8,48 @@ export default function AdminExpenses() {
   const [msg, setMsg] = useState(null);
   const [expandedAdmins, setExpandedAdmins] = useState({});
   const [promotions, setPromotions] = useState(null);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  // payForm: { entryId, entryType, source: 'admin'|'bank', adminUsername: '', bankAccountId: '' }
+  const [payForm, setPayForm] = useState(null);
+  const [paying, setPaying] = useState(false);
 
   const load = () => {
     setLoading(true);
     Promise.all([
       getAdminExpenses(),
       getPromotions(),
-    ]).then(([expRes, promoRes]) => {
+      getBankAccounts(),
+      getAdminUsers(),
+    ]).then(([expRes, promoRes, bankRes, adminRes]) => {
       setData(expRes.data);
       setPromotions(promoRes.data);
+      setBankAccounts(bankRes.data);
+      setAdminUsers(adminRes.data);
       setLoading(false);
     });
   };
 
-  const handlePay = async (id, type, vatType) => {
-    const today = new Date().toISOString().slice(0, 10);
+  const handleConfirmPay = async () => {
+    if (!payForm) return;
+    setPaying(true);
     try {
-      if (type === 'CLUB_EXPENSE') {
-        await settleClubExpense(id, { settledAt: today, method: 'CASH', vatType });
+      const payload = payForm.source === 'admin'
+        ? { paidFromAdminUsername: payForm.adminUsername }
+        : { paidFromBankAccountId: payForm.bankAccountId };
+
+      if (payForm.entryType === 'CLUB_EXPENSE') {
+        await payClubExpense(payForm.entryId, payload);
       } else {
-        await settleAdminExpense(id, { settledAt: today, vatType });
+        await payAdminExpense(payForm.entryId, payload);
       }
       setMsg({ type: 'success', text: 'Paid' });
+      setPayForm(null);
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to pay' });
     }
-  };
-
-  const handleMoveVat = async (entry, newVatType) => {
-    try {
-      if (entry.entityType === 'CLUB_EXPENSE') {
-        await setClubExpenseVatType(entry.id, newVatType);
-      } else {
-        await setAdminExpenseVatType(entry.id, newVatType);
-      }
-      load();
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to move expense' });
-    }
+    setPaying(false);
   };
 
   useEffect(() => { load(); }, []);
@@ -101,10 +104,8 @@ export default function AdminExpenses() {
 
   const admins = data?.admins || [];
   const grandTotal = data?.grandTotal || 0;
-  const paidNoVat = data?.paidNoVat || [];
-  const paidWithVat = data?.paidWithVat || [];
-  const paidNoVatTotal = paidNoVat.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const paidWithVatTotal = paidWithVat.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const paid = data?.paid || [];
+  const paidTotal = paid.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
   const clubAdmins = admins.filter(a => a.adminUsername !== 'Wheel');
@@ -117,64 +118,9 @@ export default function AdminExpenses() {
   const writeOffTotal = Number(promotions?.writeOffTotal || 0);
   const wheelPromoTotal = wheelTotal + chipPromoTotal;
 
-  const totalWithPaid = (Number(grandTotal) - wheelTotal) + writeOffTotal + paidNoVatTotal + paidWithVatTotal;
+  const totalWithPaid = (Number(grandTotal) - wheelTotal) + writeOffTotal + paidTotal;
 
-  const payBtnStyle = (color) => ({
-    padding: '3px 8px', fontSize: '0.72rem', borderRadius: '4px', border: `1px solid ${color}`,
-    color, background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap'
-  });
-
-  const renderPaidSection = (entries, title, color, sectionKey, otherVatType, otherLabel) => {
-    if (entries.length === 0) return null;
-    const total = entries.reduce((s, e) => s + Number(e.amount || 0), 0);
-    return (
-      <div className="card" style={{ marginBottom: '1rem', borderColor: color }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-          onClick={() => toggleExpand(sectionKey)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <strong style={{ color, fontSize: '1.05rem' }}>✓ {title}</strong>
-            <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{entries.length} entries</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <strong style={{ color, fontSize: '1.1rem' }}>{fmt(total)}</strong>
-            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins[sectionKey] ? '▲' : '▼'}</span>
-          </div>
-        </div>
-        {expandedAdmins[sectionKey] && (
-          <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
-            <table style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
-                  <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Who</th>
-                  <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Description</th>
-                  <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
-                  <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid On</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map(e => (
-                  <tr key={`${e.entityType}-${e.id}`}>
-                    <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{e.expenseDate || '—'}</td>
-                    <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{e.who || '—'}</td>
-                    <td style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{e.notes || '—'}</td>
-                    <td style={{ textAlign: 'right', color, fontWeight: 600 }}>{fmt(e.amount)}</td>
-                    <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.settledAt || '—'}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      <button onClick={() => handleMoveVat(e, otherVatType)} style={payBtnStyle('#94a3b8')}>
-                        → {otherLabel}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    );
-  };
+  const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 9px', borderRadius: '5px', fontSize: '0.82rem' };
 
   return (
     <div>
@@ -227,60 +173,98 @@ export default function AdminExpenses() {
                   </tr>
                 </thead>
                 <tbody>
-                  {admin.entries.map(entry => (
-                    <tr key={`${entry.type || 'ADMIN_EXPENSE'}-${entry.id}`}>
-                      {editing?.id === entry.id ? (
-                        <td colSpan={5} style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
-                          <form onSubmit={handleEditSubmit} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <input type="number" step="0.01" min="0.01" required value={editing.amount}
-                              onChange={e => setEditing(prev => ({ ...prev, amount: e.target.value }))}
-                              style={{ width: '120px', background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px' }} />
-                            <input type="text" value={editing.notes || ''}
-                              onChange={e => setEditing(prev => ({ ...prev, notes: e.target.value }))}
-                              placeholder="Notes"
-                              style={{ flex: 1, minWidth: '160px', background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px' }} />
-                            <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>Save</button>
-                            <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditing(null)}>Cancel</button>
-                          </form>
-                        </td>
-                      ) : (
-                        <>
-                          <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
-                            {entry.expenseDate || '—'}
-                          </td>
-                          <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
-                          <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
-                          <td>
-                            {entry.sourceRef === 'CLUB_EXPENSE' ? (
-                              <span style={{ fontSize: '0.75rem', background: '#3b1f00', color: '#f59e0b', borderRadius: '4px', padding: '2px 6px' }}>Club Expense</span>
-                            ) : (entry.sourceRef === 'XLS' || (entry.sourceRef?.startsWith('XLS:') && entry.sourceRef !== 'XLS:WHEEL')) ? (
-                              <span style={{ fontSize: '0.75rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>XLS</span>
-                            ) : (
-                              <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>Manual</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                            <button className="btn btn-secondary"
-                              style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.25rem' }}
-                              onClick={() => setEditing({ id: entry.id, type: entry.type || 'ADMIN_EXPENSE', amount: entry.amount, notes: entry.notes })}
-                            >Edit</button>
-                            <button className="btn btn-secondary"
-                              style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444', marginRight: '0.25rem' }}
-                              onClick={() => handleDeleteEntry(entry)}
-                            >Delete</button>
-                            <button style={{ ...payBtnStyle('#4ade80'), marginRight: '0.25rem' }}
-                              onClick={() => handlePay(entry.id, entry.type || 'ADMIN_EXPENSE', 'NO_VAT')}>
-                              No VAT
-                            </button>
-                            <button style={payBtnStyle('#60a5fa')}
-                              onClick={() => handlePay(entry.id, entry.type || 'ADMIN_EXPENSE', 'WITH_VAT')}>
-                              VAT
-                            </button>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
+                  {admin.entries.map(entry => {
+                    const isPayOpen = payForm?.entryId === entry.id;
+                    return (
+                      <>
+                        <tr key={`${entry.type || 'ADMIN_EXPENSE'}-${entry.id}`}>
+                          {editing?.id === entry.id ? (
+                            <td colSpan={5} style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
+                              <form onSubmit={handleEditSubmit} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <input type="number" step="0.01" min="0.01" required value={editing.amount}
+                                  onChange={e => setEditing(prev => ({ ...prev, amount: e.target.value }))}
+                                  style={{ width: '120px', ...inputStyle }} />
+                                <input type="text" value={editing.notes || ''}
+                                  onChange={e => setEditing(prev => ({ ...prev, notes: e.target.value }))}
+                                  placeholder="Notes"
+                                  style={{ flex: 1, minWidth: '160px', ...inputStyle }} />
+                                <button type="submit" className="btn btn-primary" style={{ padding: '6px 14px', fontSize: '0.85rem' }}>Save</button>
+                                <button type="button" className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.85rem' }} onClick={() => setEditing(null)}>Cancel</button>
+                              </form>
+                            </td>
+                          ) : (
+                            <>
+                              <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
+                                {entry.expenseDate || '—'}
+                              </td>
+                              <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                              <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                              <td>
+                                {entry.sourceRef === 'CLUB_EXPENSE' ? (
+                                  <span style={{ fontSize: '0.75rem', background: '#3b1f00', color: '#f59e0b', borderRadius: '4px', padding: '2px 6px' }}>Club Expense</span>
+                                ) : (entry.sourceRef === 'XLS' || (entry.sourceRef?.startsWith('XLS:') && entry.sourceRef !== 'XLS:WHEEL')) ? (
+                                  <span style={{ fontSize: '0.75rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>XLS</span>
+                                ) : (
+                                  <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>Manual</span>
+                                )}
+                              </td>
+                              <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                <button className="btn btn-secondary"
+                                  style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.25rem' }}
+                                  onClick={() => setEditing({ id: entry.id, type: entry.type || 'ADMIN_EXPENSE', amount: entry.amount, notes: entry.notes })}
+                                >Edit</button>
+                                <button className="btn btn-secondary"
+                                  style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444', marginRight: '0.25rem' }}
+                                  onClick={() => handleDeleteEntry(entry)}
+                                >Delete</button>
+                                <button style={{ padding: '3px 10px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #4ade80', color: '#4ade80', background: 'transparent', cursor: 'pointer' }}
+                                  onClick={() => setPayForm(isPayOpen ? null : { entryId: entry.id, entryType: entry.type || 'ADMIN_EXPENSE', source: 'admin', adminUsername: '', bankAccountId: '' })}>
+                                  {isPayOpen ? 'Cancel' : 'Pay'}
+                                </button>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                        {isPayOpen && (
+                          <tr key={`pay-${entry.id}`}>
+                            <td colSpan={5} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Paid from</label>
+                                  <select value={payForm.source} onChange={e => setPayForm(f => ({ ...f, source: e.target.value, adminUsername: '', bankAccountId: '' }))} style={inputStyle}>
+                                    <option value="admin">Admin wallet</option>
+                                    <option value="bank">Bank account</option>
+                                  </select>
+                                </div>
+                                {payForm.source === 'admin' && (
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Admin</label>
+                                    <select value={payForm.adminUsername} onChange={e => setPayForm(f => ({ ...f, adminUsername: e.target.value }))} style={inputStyle}>
+                                      <option value="">Select admin...</option>
+                                      {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
+                                    </select>
+                                  </div>
+                                )}
+                                {payForm.source === 'bank' && (
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Bank account</label>
+                                    <select value={payForm.bankAccountId} onChange={e => setPayForm(f => ({ ...f, bankAccountId: Number(e.target.value) }))} style={inputStyle}>
+                                      <option value="">Select bank...</option>
+                                      {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                    </select>
+                                  </div>
+                                )}
+                                <button onClick={handleConfirmPay} disabled={paying || (payForm.source === 'admin' && !payForm.adminUsername) || (payForm.source === 'bank' && !payForm.bankAccountId)}
+                                  style={{ padding: '5px 14px', borderRadius: '5px', background: '#166534', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
+                                  {paying ? '...' : 'Confirm Pay'}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -331,18 +315,57 @@ export default function AdminExpenses() {
       )}
 
       {/* Grand Total */}
-      {(clubAdmins.length > 0 || paidNoVat.length > 0 || paidWithVat.length > 0 || writeOffEntries.length > 0) && (
+      {(clubAdmins.length > 0 || paid.length > 0 || writeOffEntries.length > 0) && (
         <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
           <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
         </div>
       )}
 
-      {/* Paid — No VAT */}
-      {renderPaidSection(paidNoVat, 'Paid — No VAT', '#4ade80', '__paidNoVat', 'WITH_VAT', 'VAT')}
-
-      {/* Paid — With VAT */}
-      {renderPaidSection(paidWithVat, 'Paid — VAT', '#60a5fa', '__paidWithVat', 'NO_VAT', 'No VAT')}
+      {/* Unified Paid section */}
+      {paid.length > 0 && (
+        <div className="card" style={{ marginBottom: '1rem', borderColor: '#4ade80' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => toggleExpand('__paid')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <strong style={{ color: '#4ade80', fontSize: '1.05rem' }}>✓ Paid</strong>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paid.length} entries</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>{fmt(paidTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid'] ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          {expandedAdmins['__paid'] && (
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Who</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Description</th>
+                    <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid On</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid From</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paid.map(e => (
+                    <tr key={`${e.entityType}-${e.id}`}>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{e.expenseDate || '—'}</td>
+                      <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{e.who || '—'}</td>
+                      <td style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{e.notes || '—'}</td>
+                      <td style={{ textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>{fmt(e.amount)}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.settledAt || '—'}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.paidFromAdminUsername || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Wheel & Chip Promo */}
       {(wheelEntries.length > 0 || chipPromoEntries.length > 0) && (

@@ -25,6 +25,8 @@ import BringAFriend from './pages/BringAFriend';
 import Wheel from './pages/Wheel';
 import CreditCompare from './pages/CreditCompare';
 import BankBalance from './pages/BankBalance';
+import ClubWallets from './pages/ClubWallets';
+import TicketAssets from './pages/TicketAssets';
 import './App.css';
 
 const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/credit-compare'];
@@ -107,6 +109,8 @@ function AppRoutes() {
               <NavLink to="/balance-report">Balance Report</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
               <NavLink to="/bank-balance">Bank Balance</NavLink>
+              <NavLink to="/club-wallets">Club Wallets</NavLink>
+              <NavLink to="/ticket-assets">Tickets</NavLink>
               <AccountingDropdown />
               <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
@@ -152,6 +156,8 @@ function AppRoutes() {
               <Route path="/club-income" element={<ClubIncome />} />
               <Route path="/total-profit" element={<TotalProfit />} />
               <Route path="/bank-balance" element={<BankBalance />} />
+              <Route path="/club-wallets" element={<ClubWallets />} />
+              <Route path="/ticket-assets" element={<TicketAssets />} />
               <Route path="/games" element={<Games />} />
               <Route path="/game-results/:id" element={<GameResults />} />
               <Route path="/chip-balance" element={<ChipBalance />} />
