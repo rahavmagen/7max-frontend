@@ -118,7 +118,8 @@ export default function AdminExpenses() {
   const writeOffTotal = Number(promotions?.writeOffTotal || 0);
   const wheelPromoTotal = wheelTotal + chipPromoTotal;
 
-  const totalWithPaid = (Number(grandTotal) - wheelTotal) + writeOffTotal + paidTotal;
+  const adminExpensesTotal = Number(grandTotal) - wheelTotal;
+  const totalWithPaid = adminExpensesTotal + paidTotal;
 
   const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 9px', borderRadius: '5px', fontSize: '0.82rem' };
 
@@ -266,92 +267,6 @@ export default function AdminExpenses() {
         </div>
       ))}
 
-      {/* Write-offs */}
-      {writeOffEntries.length > 0 && (
-        <div className="card" style={{ marginBottom: '1rem', borderColor: '#0891b2', opacity: 0.85 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => toggleExpand('__writeoffs')}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#22d3ee', fontSize: '1.05rem' }}>✏️ Write-offs</strong>
-              <span style={{ fontSize: '0.72rem', background: '#0c2232', color: '#22d3ee', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{writeOffEntries.length} entries</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#22d3ee', fontSize: '1.1rem' }}>{fmt(writeOffTotal)}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__writeoffs'] ? '▲' : '▼'}</span>
-            </div>
-          </div>
-          {expandedAdmins['__writeoffs'] && (
-            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
-              <table style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player</th>
-                    <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {writeOffEntries.map(entry => (
-                    <tr key={entry.id}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
-                      <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
-                      <td style={{ textAlign: 'right', color: '#22d3ee', fontWeight: 600 }}>{fmt(entry.amount)}</td>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Grand Total */}
-      {(clubAdmins.length > 0 || paid.length > 0 || writeOffEntries.length > 0) && (
-        <div className="card" style={{ borderTopColor: '#ef4444', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => toggleExpand('__grandtotal')}>
-            <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__grandtotal'] ? '▲' : '▼'}</span>
-            </div>
-          </div>
-          {expandedAdmins['__grandtotal'] && (
-            <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
-              <table style={{ width: '100%' }}>
-                <tbody>
-                  {clubAdmins.map(a => (
-                    <tr key={a.adminUsername}>
-                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>{a.adminUsername}</td>
-                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(a.total)}</td>
-                    </tr>
-                  ))}
-                  {writeOffTotal > 0 && (
-                    <tr>
-                      <td style={{ color: '#22d3ee', padding: '0.2rem 0' }}>✏️ Write-offs</td>
-                      <td style={{ textAlign: 'right', color: '#22d3ee', fontWeight: 600 }}>{fmt(writeOffTotal)}</td>
-                    </tr>
-                  )}
-                  {paidTotal > 0 && (
-                    <tr>
-                      <td style={{ color: '#4ade80', padding: '0.2rem 0' }}>✓ Paid</td>
-                      <td style={{ textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>{fmt(paidTotal)}</td>
-                    </tr>
-                  )}
-                  <tr style={{ borderTop: '1px solid #334155' }}>
-                    <td style={{ color: '#e2e8f0', fontWeight: 700, paddingTop: '0.4rem' }}>Total</td>
-                    <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 700, fontSize: '1.05rem', paddingTop: '0.4rem' }}>{fmt(totalWithPaid)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Unified Paid section */}
       {paid.length > 0 && (
         <div className="card" style={{ marginBottom: '1rem', borderColor: '#4ade80' }}>
@@ -390,6 +305,44 @@ export default function AdminExpenses() {
                       <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.paidFromAdminUsername || '—'}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Grand Total */}
+      {(clubAdmins.length > 0 || paid.length > 0) && (
+        <div className="card" style={{ borderTopColor: '#ef4444', marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => toggleExpand('__grandtotal')}>
+            <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__grandtotal'] ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          {expandedAdmins['__grandtotal'] && (
+            <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+              <table style={{ width: '100%' }}>
+                <tbody>
+                  {clubAdmins.map(a => (
+                    <tr key={a.adminUsername}>
+                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>{a.adminUsername}</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(a.total)}</td>
+                    </tr>
+                  ))}
+                  {paidTotal > 0 && (
+                    <tr>
+                      <td style={{ color: '#4ade80', padding: '0.2rem 0' }}>✓ Paid</td>
+                      <td style={{ textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>{fmt(paidTotal)}</td>
+                    </tr>
+                  )}
+                  <tr style={{ borderTop: '1px solid #334155' }}>
+                    <td style={{ color: '#e2e8f0', fontWeight: 700, paddingTop: '0.4rem' }}>Total</td>
+                    <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 700, fontSize: '1.05rem', paddingTop: '0.4rem' }}>{fmt(totalWithPaid)}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -445,6 +398,48 @@ export default function AdminExpenses() {
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
                       <td><span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Chip Promo</span></td>
                       <td style={{ color: '#fbbf24', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Write-offs */}
+      {writeOffEntries.length > 0 && (
+        <div className="card" style={{ marginBottom: '1rem', borderColor: '#0891b2', opacity: 0.85 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => toggleExpand('__writeoffs')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <strong style={{ color: '#22d3ee', fontSize: '1.05rem' }}>✏️ Write-offs</strong>
+              <span style={{ fontSize: '0.72rem', background: '#0c2232', color: '#22d3ee', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{writeOffEntries.length} entries</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <strong style={{ color: '#22d3ee', fontSize: '1.1rem' }}>{fmt(writeOffTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__writeoffs'] ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          {expandedAdmins['__writeoffs'] && (
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player</th>
+                    <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {writeOffEntries.map(entry => (
+                    <tr key={entry.id}>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                      <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
+                      <td style={{ textAlign: 'right', color: '#22d3ee', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                     </tr>
                   ))}
