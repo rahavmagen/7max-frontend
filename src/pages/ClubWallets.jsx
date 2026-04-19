@@ -80,7 +80,21 @@ export default function ClubWallets() {
   const clubTotal = summary?.clubTotal || 0;
   const unassignedTotal = summary?.unassignedTotal || 0;
 
-  const assignedHistory = history.filter(h => !h.unassigned && (!filterMethod || h.method === filterMethod || (filterMethod === 'EXPENSE_PAID' && h.type === 'EXPENSE_PAID')));
+  const assignedHistory = history.filter(h => {
+    if (h.unassigned) return false;
+    if (filterMethod && h.method !== filterMethod && !(filterMethod === 'EXPENSE_PAID' && h.type === 'EXPENSE_PAID')) return false;
+    if (filterHolder) {
+      const isBank = filterHolder.startsWith('BANK_');
+      if (isBank) {
+        const bank = bankWallets.find(b => `BANK_${b.id}` === filterHolder);
+        const bankName = bank?.name;
+        if (h.fromBankAccount !== bankName && h.toBankAccount !== bankName) return false;
+      } else {
+        if (h.fromAdminUsername !== filterHolder && h.toAdminUsername !== filterHolder) return false;
+      }
+    }
+    return true;
+  });
   const unassignedHistory = history.filter(h => h.unassigned);
 
   // Unique methods present in history for the method filter dropdown
