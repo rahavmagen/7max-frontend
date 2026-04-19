@@ -80,6 +80,29 @@ export default function ClubWallets() {
   const clubTotal = summary?.clubTotal || 0;
   const unassignedTotal = summary?.unassignedTotal || 0;
 
+  // Synthetic starting-balance rows for the selected admin holder
+  const startingBalanceRows = (() => {
+    if (!filterHolder || filterHolder.startsWith('BANK_')) return [];
+    const wallet = adminWallets.find(w => w.adminUsername === filterHolder);
+    if (!wallet || !wallet.breakdown) return [];
+    const STARTING_METHOD = { STARTING_CASH: 'CASH', STARTING_BIT: 'BIT', STARTING_PAYBOX: 'PAYBOX', STARTING_OTHER: 'OTHER' };
+    return Object.entries(wallet.breakdown)
+      .filter(([key]) => STARTING_METHOD[key])
+      .map(([key, amount]) => ({
+        id: `sb_${key}`,
+        type: 'STARTING_BALANCE',
+        transferDate: null,
+        createdAt: null,
+        fromAdminUsername: null,
+        toAdminUsername: filterHolder,
+        amount: Number(amount),
+        method: STARTING_METHOD[key],
+        notes: 'Starting balance',
+        createdByUsername: wallet.startingBalanceNotes || null,
+        _synthetic: true,
+      }));
+  })();
+
   const assignedHistory = history.filter(h => {
     if (h.unassigned) return false;
     if (filterMethod && h.method !== filterMethod && !(filterMethod === 'EXPENSE_PAID' && h.type === 'EXPENSE_PAID')) return false;
@@ -95,10 +118,11 @@ export default function ClubWallets() {
     }
     return true;
   });
+  const filteredStartingRows = startingBalanceRows.filter(r => !filterMethod || r.method === filterMethod);
+  const allAssignedHistory = [...filteredStartingRows, ...assignedHistory];
   const unassignedHistory = history.filter(h => h.unassigned);
 
-  // Unique methods present in history for the method filter dropdown
-  const historyMethods = [...new Set(history.filter(h => !h.unassigned).map(h => h.method || (h.type === 'EXPENSE_PAID' ? 'EXPENSE_PAID' : null)).filter(Boolean))];
+  const ALL_METHODS = ['BIT', 'PAYBOX', 'CASH', 'OTHER', 'TRANSFER', 'ADJUSTMENT', 'EXPENSE_PAID'];
 
   // Returns { signedAmount, color } for a history row based on selected holder
   const getAmountDisplay = (h) => {
@@ -349,13 +373,13 @@ export default function ClubWallets() {
             <select value={filterMethod} onChange={e => setFilterMethod(e.target.value)}
               style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }}>
               <option value="">All methods</option>
-              {historyMethods.map(m => <option key={m} value={m}>{METHOD_LABEL[m] || m}</option>)}
+              {ALL_METHODS.map(m => <option key={m} value={m}>{METHOD_LABEL[m] || m}</option>)}
             </select>
           </div>
           <button className="btn btn-secondary" onClick={applyFilters}>Apply</button>
         </div>
 
-        {assignedHistory.length === 0 && unassignedHistory.length === 0 ? (
+        {allAssignedHistory.length === 0 && unassignedHistory.length === 0 ? (
           <div style={{ color: '#64748b', textAlign: 'center', padding: '1.5rem' }}>No history entries</div>
         ) : (
           <>
@@ -374,15 +398,15 @@ export default function ClubWallets() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assignedHistory.map(h => {
-                    const { signedAmount, color } = getAmountDisplay(h);
+                  {allAssignedHistory.map(h => {
+                    const { signedAmount, color } = h._synthetic
+                      ? { signedAmount: Math.abs(h.amount), color: '#4ade80' }
+                      : getAmountDisplay(h);
                     return (
-                      <tr key={h.id}>
-                        <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.createdAt || h.transferDate)}</td>
-                        <td><span style={{ fontSize: '0.78rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
-                        <td style={{ color: h.fromAdminUsername ? '#e2e8f0' : h.fromBankAccount ? '#34d399' : '#f59e0b' }}>
-                          {h.fromAdminUsername || (h.fromBankAccount ? `🏦 ${h.fromBankAccount}` : (h.fromPlayer || 'CLUB'))}
-                        </td>
+                      <tr key={h.id} style={h._synthetic ? { opacity: 0.75, fontStyle: 'italic' } : undefined}>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{h._synthetic ? '—' : fmtDate(h.createdAt || h.transferDate)}</td>
+                        <td><span style={{ fontSize: '0.78rem', background: h._synthetic ? '#1e3a1e' : '#1e3a5f', color: h._synthetic ? '#4ade80' : '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h._synthetic ? 'STARTING' : (h.type || 'Transfer')}</span></td>
+                        <td style={{ color: '#64748b' }}>{h._synthetic ? '—' : (h.fromAdminUsername ? <span style={{ color: '#e2e8f0' }}>{h.fromAdminUsername}</span> : h.fromBankAccount ? <span style={{ color: '#34d399' }}>🏦 {h.fromBankAccount}</span> : <span style={{ color: '#f59e0b' }}>{h.fromPlayer || 'CLUB'}</span>)}</td>
                         <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
                           {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
                         </td>
@@ -395,12 +419,12 @@ export default function ClubWallets() {
                   })}
                 </tbody>
                 {(() => {
-                  const total = assignedHistory.reduce((sum, h) => sum + getAmountDisplay(h).signedAmount, 0);
+                  const total = allAssignedHistory.reduce((sum, h) => sum + (h._synthetic ? Math.abs(h.amount) : getAmountDisplay(h).signedAmount), 0);
                   const totalColor = total > 0 ? '#4ade80' : total < 0 ? '#ef4444' : '#94a3b8';
                   return (
                     <tfoot>
                       <tr style={{ borderTop: '2px solid #334155' }}>
-                        <td colSpan={5} style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Total ({assignedHistory.length} entries)</td>
+                        <td colSpan={5} style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Total ({allAssignedHistory.length} entries)</td>
                         <td style={{ textAlign: 'right', fontWeight: 700, color: totalColor, fontSize: '1rem', paddingTop: '0.5rem' }}>{fmt(total)}</td>
                         <td colSpan={2} />
                       </tr>
