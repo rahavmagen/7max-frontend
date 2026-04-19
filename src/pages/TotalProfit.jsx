@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminExpenses, getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange, getTicketAssetsSummary } from '../api';
+import { getAdminExpenses, getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange, getTicketAssetsSummary, getWalletSummary } from '../api';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -21,6 +21,7 @@ export default function TotalProfit() {
   const [showTx, setShowTx] = useState(true);
   const [paidTotals, setPaidTotals] = useState(null);
   const [ticketAssetsFaceValue, setTicketAssetsFaceValue] = useState(0);
+  const [clubWalletTotal, setClubWalletTotal] = useState(null);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -36,7 +37,8 @@ export default function TotalProfit() {
       getProfitSummary().catch(() => ({ data: null })),
       getAdminExpenses().catch(() => ({ data: null })),
       getTicketAssetsSummary().catch(() => ({ data: { totalFaceValue: 0 } })),
-    ]).then(([playersRes, summaryRes, expRes, ticketRes]) => {
+      getWalletSummary().catch(() => ({ data: null })),
+    ]).then(([playersRes, summaryRes, expRes, ticketRes, walletRes]) => {
       setPlayers(playersRes.data);
       setSummary(summaryRes.data);
       const paid = expRes.data?.paid || [];
@@ -46,6 +48,7 @@ export default function TotalProfit() {
         withVatTotal: paid.filter(e => e.vatType === 'WITH_VAT').reduce((s, e) => s + Number(e.amount || 0), 0),
       });
       setTicketAssetsFaceValue(Number(ticketRes.data?.totalFaceValue || 0));
+      if (walletRes.data?.clubTotal != null) setClubWalletTotal(Number(walletRes.data.clubTotal));
       setLoading(false);
     });
   }, []);
@@ -79,7 +82,7 @@ export default function TotalProfit() {
   const willExpense = Number(summary?.willExpense || 0);
   const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
   const generalExpenses = Number(summary?.generalExpenses || 0);
-  const bankDeposits = Number(summary?.bankDeposits || 0);
+  const bankDeposits = clubWalletTotal !== null ? clubWalletTotal : Number(summary?.bankDeposits || 0);
   const paidNoVatTotal = Number(paidTotals?.noVatTotal || 0);
   const paidWithVatTotal = Number(paidTotals?.withVatTotal || 0);
   const chipsPlayersPaidFor = totalChips - willExpense - chipPromoTotal;
