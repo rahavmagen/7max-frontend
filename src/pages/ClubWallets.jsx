@@ -380,6 +380,19 @@ export default function ClubWallets() {
                     );
                   })}
                 </tbody>
+                {(() => {
+                  const total = assignedHistory.reduce((sum, h) => sum + getAmountDisplay(h).signedAmount, 0);
+                  const totalColor = total > 0 ? '#4ade80' : total < 0 ? '#ef4444' : '#94a3b8';
+                  return (
+                    <tfoot>
+                      <tr style={{ borderTop: '2px solid #334155' }}>
+                        <td colSpan={5} style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Total ({assignedHistory.length} entries)</td>
+                        <td style={{ textAlign: 'right', fontWeight: 700, color: totalColor, fontSize: '1rem', paddingTop: '0.5rem' }}>{fmt(total)}</td>
+                        <td colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  );
+                })()}
               </table>
             </div>
 
