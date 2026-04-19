@@ -231,7 +231,10 @@ export default function AdminExpenses() {
                               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                                 <div>
                                   <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Paid from</label>
-                                  <select value={payForm.source} onChange={e => setPayForm(f => ({ ...f, source: e.target.value, adminUsername: '', bankAccountId: '' }))} style={inputStyle}>
+                                  <select value={payForm.source} onChange={e => {
+                                    const src = e.target.value;
+                                    setPayForm(f => ({ ...f, source: src, adminUsername: '', bankAccountId: src === 'bank' && bankAccounts.length > 0 ? bankAccounts[0].id : '' }));
+                                  }} style={inputStyle}>
                                     <option value="admin">Admin wallet</option>
                                     <option value="bank">Bank account</option>
                                   </select>
@@ -242,15 +245,6 @@ export default function AdminExpenses() {
                                     <select value={payForm.adminUsername} onChange={e => setPayForm(f => ({ ...f, adminUsername: e.target.value }))} style={inputStyle}>
                                       <option value="">Select admin...</option>
                                       {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
-                                    </select>
-                                  </div>
-                                )}
-                                {payForm.source === 'bank' && (
-                                  <div>
-                                    <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Bank account</label>
-                                    <select value={payForm.bankAccountId} onChange={e => setPayForm(f => ({ ...f, bankAccountId: Number(e.target.value) }))} style={inputStyle}>
-                                      <option value="">Select bank...</option>
-                                      {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                                     </select>
                                   </div>
                                 )}
