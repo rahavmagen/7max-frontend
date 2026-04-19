@@ -80,9 +80,42 @@ export default function ClubWallets() {
   const clubTotal = summary?.clubTotal || 0;
   const unassignedTotal = summary?.unassignedTotal || 0;
 
-  const assignedHistory = history.filter(h => {
+  const STARTING_KEY = { STARTING_CASH: 'CASH', STARTING_BIT: 'BIT', STARTING_PAYBOX: 'PAYBOX', STARTING_KASHCASH: 'KASHCASH', STARTING_OTHER: 'OTHER' };
+
+  // Synthetic starting-balance rows from the wallet summary
+  const startingRows = (() => {
+    const walletsToShow = filterHolder && !filterHolder.startsWith('BANK_')
+      ? adminWallets.filter(w => w.adminUsername === filterHolder)
+      : adminWallets;
+    const rows = [];
+    for (const w of walletsToShow) {
+      if (!w.breakdown) continue;
+      for (const [key, amount] of Object.entries(w.breakdown)) {
+        const method = STARTING_KEY[key];
+        if (!method) continue;
+        if (Number(amount) === 0) continue;
+        if (filterMethod && method !== filterMethod) continue;
+        rows.push({
+          id: `sb_${w.adminUsername}_${key}`,
+          _synthetic: true,
+          type: 'STARTING',
+          method,
+          toAdminUsername: w.adminUsername,
+          fromAdminUsername: null,
+          amount: Number(amount),
+          transferDate: null,
+          createdAt: null,
+          notes: 'Opening balance',
+          createdByUsername: null,
+        });
+      }
+    }
+    return rows;
+  })();
+
+  const transferHistory = history.filter(h => {
     if (h.unassigned) return false;
-    if (filterMethod && h.method !== filterMethod && !(filterMethod === 'EXPENSE_PAID' && h.type === 'EXPENSE_PAID')) return false;
+    if (filterMethod && h.method !== filterMethod) return false;
     if (filterHolder) {
       const isBank = filterHolder.startsWith('BANK_');
       if (isBank) {
@@ -95,6 +128,8 @@ export default function ClubWallets() {
     }
     return true;
   });
+
+  const assignedHistory = [...startingRows, ...transferHistory];
 
 
   const SUB_BALANCES = ['BIT', 'PAYBOX', 'KASHCASH', 'CASH', 'OTHER'];
@@ -374,14 +409,14 @@ export default function ClubWallets() {
               </thead>
               <tbody>
                 {assignedHistory.map(h => {
-                  const { signedAmount, color } = getAmountDisplay(h);
+                  const { signedAmount, color } = h._synthetic
+                    ? { signedAmount: Math.abs(h.amount), color: '#4ade80' }
+                    : getAmountDisplay(h);
                   return (
-                    <tr key={h.id}>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.createdAt || h.transferDate)}</td>
-                      <td><span style={{ fontSize: '0.78rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
-                      <td style={{ color: h.fromAdminUsername ? '#e2e8f0' : h.fromBankAccount ? '#34d399' : '#f59e0b' }}>
-                        {h.fromAdminUsername || (h.fromBankAccount ? `🏦 ${h.fromBankAccount}` : (h.fromPlayer || 'CLUB'))}
-                      </td>
+                    <tr key={h.id} style={h._synthetic ? { opacity: 0.8, fontStyle: 'italic' } : undefined}>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{h._synthetic ? '—' : fmtDate(h.createdAt || h.transferDate)}</td>
+                      <td><span style={{ fontSize: '0.78rem', background: h._synthetic ? '#1a3a1a' : '#1e3a5f', color: h._synthetic ? '#4ade80' : '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h._synthetic ? 'OPENING' : (h.type || 'Transfer')}</span></td>
+                      <td style={{ color: '#64748b' }}>{h._synthetic ? '—' : (h.fromAdminUsername ? <span style={{ color: '#e2e8f0' }}>{h.fromAdminUsername}</span> : h.fromBankAccount ? <span style={{ color: '#34d399' }}>🏦 {h.fromBankAccount}</span> : <span style={{ color: '#f59e0b' }}>{h.fromPlayer || 'CLUB'}</span>)}</td>
                       <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
                         {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
                       </td>
@@ -394,7 +429,7 @@ export default function ClubWallets() {
                 })}
               </tbody>
               {(() => {
-                const total = assignedHistory.reduce((sum, h) => sum + getAmountDisplay(h).signedAmount, 0);
+                const total = assignedHistory.reduce((sum, h) => sum + (h._synthetic ? Math.abs(h.amount) : getAmountDisplay(h).signedAmount), 0);
                 const totalColor = total > 0 ? '#4ade80' : total < 0 ? '#ef4444' : '#94a3b8';
                 return (
                   <tfoot>
