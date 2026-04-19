@@ -310,9 +310,45 @@ export default function AdminExpenses() {
 
       {/* Grand Total */}
       {(clubAdmins.length > 0 || paid.length > 0 || writeOffEntries.length > 0) && (
-        <div className="card" style={{ borderTopColor: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
-          <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
+        <div className="card" style={{ borderTopColor: '#ef4444', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => toggleExpand('__grandtotal')}>
+            <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(totalWithPaid)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__grandtotal'] ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          {expandedAdmins['__grandtotal'] && (
+            <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+              <table style={{ width: '100%' }}>
+                <tbody>
+                  {clubAdmins.map(a => (
+                    <tr key={a.adminUsername}>
+                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>{a.adminUsername}</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(a.total)}</td>
+                    </tr>
+                  ))}
+                  {writeOffTotal > 0 && (
+                    <tr>
+                      <td style={{ color: '#22d3ee', padding: '0.2rem 0' }}>✏️ Write-offs</td>
+                      <td style={{ textAlign: 'right', color: '#22d3ee', fontWeight: 600 }}>{fmt(writeOffTotal)}</td>
+                    </tr>
+                  )}
+                  {paidTotal > 0 && (
+                    <tr>
+                      <td style={{ color: '#4ade80', padding: '0.2rem 0' }}>✓ Paid</td>
+                      <td style={{ textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>{fmt(paidTotal)}</td>
+                    </tr>
+                  )}
+                  <tr style={{ borderTop: '1px solid #334155' }}>
+                    <td style={{ color: '#e2e8f0', fontWeight: 700, paddingTop: '0.4rem' }}>Total</td>
+                    <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 700, fontSize: '1.05rem', paddingTop: '0.4rem' }}>{fmt(totalWithPaid)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
