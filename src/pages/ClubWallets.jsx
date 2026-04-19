@@ -97,7 +97,7 @@ export default function ClubWallets() {
   });
 
 
-  const ALL_METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'CASH', 'OTHER', 'TRANSFER', 'ADJUSTMENT', 'EXPENSE_PAID'];
+  const SUB_BALANCES = ['BIT', 'PAYBOX', 'KASHCASH', 'CASH', 'OTHER'];
 
   // Returns { signedAmount, color } for a history row based on selected holder
   const getAmountDisplay = (h) => {
@@ -345,11 +345,11 @@ export default function ClubWallets() {
             </select>
           </div>
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Method</label>
+            <label>Sub-balance</label>
             <select value={filterMethod} onChange={e => setFilterMethod(e.target.value)}
               style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }}>
-              <option value="">All methods</option>
-              {ALL_METHODS.map(m => <option key={m} value={m}>{METHOD_LABEL[m] || m}</option>)}
+              <option value="">All</option>
+              {SUB_BALANCES.map(m => <option key={m} value={m}>{METHOD_LABEL[m] || m}</option>)}
             </select>
           </div>
           <button className="btn btn-secondary" onClick={applyFilters}>Apply</button>
