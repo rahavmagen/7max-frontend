@@ -273,11 +273,11 @@ export default function AdminExpenses() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__paid')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#4ade80', fontSize: '1.05rem' }}>✓ Paid</strong>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✓ Paid</strong>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paid.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>{fmt(paidTotal)}</strong>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(paidTotal)}</strong>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid'] ? '▲' : '▼'}</span>
             </div>
           </div>
@@ -335,8 +335,8 @@ export default function AdminExpenses() {
                   ))}
                   {paidTotal > 0 && (
                     <tr>
-                      <td style={{ color: '#4ade80', padding: '0.2rem 0' }}>✓ Paid</td>
-                      <td style={{ textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>{fmt(paidTotal)}</td>
+                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>✓ Paid</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(paidTotal)}</td>
                     </tr>
                   )}
                   <tr style={{ borderTop: '1px solid #334155' }}>
