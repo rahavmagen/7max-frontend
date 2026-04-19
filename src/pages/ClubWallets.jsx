@@ -95,7 +95,7 @@ export default function ClubWallets() {
     }
     return true;
   });
-  const unassignedHistory = history.filter(h => h.unassigned);
+
 
   const ALL_METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'CASH', 'OTHER', 'TRANSFER', 'ADJUSTMENT', 'EXPENSE_PAID'];
 
@@ -355,93 +355,63 @@ export default function ClubWallets() {
           <button className="btn btn-secondary" onClick={applyFilters}>Apply</button>
         </div>
 
-        {assignedHistory.length === 0 && unassignedHistory.length === 0 ? (
+        {!filterHolder ? (
+          <div style={{ color: '#64748b', textAlign: 'center', padding: '2rem', fontSize: '0.95rem' }}>
+            Select a wallet holder to view history
+          </div>
+        ) : assignedHistory.length === 0 ? (
           <div style={{ color: '#64748b', textAlign: 'center', padding: '1.5rem' }}>No history entries</div>
         ) : (
-          <>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>From</th>
-                    <th>To</th>
-                    <th>Method</th>
-                    <th style={{ textAlign: 'right' }}>Amount</th>
-                    <th>Notes</th>
-                    <th>By</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assignedHistory.map(h => {
-                    const { signedAmount, color } = getAmountDisplay(h);
-                    return (
-                      <tr key={h.id}>
-                        <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.createdAt || h.transferDate)}</td>
-                        <td><span style={{ fontSize: '0.78rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
-                        <td style={{ color: h.fromAdminUsername ? '#e2e8f0' : h.fromBankAccount ? '#34d399' : '#f59e0b' }}>
-                          {h.fromAdminUsername || (h.fromBankAccount ? `🏦 ${h.fromBankAccount}` : (h.fromPlayer || 'CLUB'))}
-                        </td>
-                        <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
-                          {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
-                        </td>
-                        <td><MethodPill method={h.method} /></td>
-                        <td style={{ textAlign: 'right', fontWeight: 600, color }}>{fmt(signedAmount)}</td>
-                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
-                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.createdByUsername || '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                {(() => {
-                  const total = assignedHistory.reduce((sum, h) => sum + getAmountDisplay(h).signedAmount, 0);
-                  const totalColor = total > 0 ? '#4ade80' : total < 0 ? '#ef4444' : '#94a3b8';
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Method</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                  <th>Notes</th>
+                  <th>By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignedHistory.map(h => {
+                  const { signedAmount, color } = getAmountDisplay(h);
                   return (
-                    <tfoot>
-                      <tr style={{ borderTop: '2px solid #334155' }}>
-                        <td colSpan={5} style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Total ({assignedHistory.length} entries)</td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: totalColor, fontSize: '1rem', paddingTop: '0.5rem' }}>{fmt(total)}</td>
-                        <td colSpan={2} />
-                      </tr>
-                    </tfoot>
+                    <tr key={h.id}>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.createdAt || h.transferDate)}</td>
+                      <td><span style={{ fontSize: '0.78rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
+                      <td style={{ color: h.fromAdminUsername ? '#e2e8f0' : h.fromBankAccount ? '#34d399' : '#f59e0b' }}>
+                        {h.fromAdminUsername || (h.fromBankAccount ? `🏦 ${h.fromBankAccount}` : (h.fromPlayer || 'CLUB'))}
+                      </td>
+                      <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
+                        {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
+                      </td>
+                      <td><MethodPill method={h.method} /></td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color }}>{fmt(signedAmount)}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.createdByUsername || '—'}</td>
+                    </tr>
                   );
-                })()}
-              </table>
-            </div>
-
-            {unassignedHistory.length > 0 && (
-              <div style={{ marginTop: '1.5rem' }}>
-                <h3 style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '0.5rem' }}>Unassigned (legacy — no admin set)</h3>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th>From</th>
-                        <th>To</th>
-                        <th style={{ textAlign: 'right' }}>Amount</th>
-                        <th>Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {unassignedHistory.map(h => (
-                        <tr key={h.id} style={{ opacity: 0.65 }}>
-                          <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.transferDate)}</td>
-                          <td><span style={{ fontSize: '0.78rem', background: '#2d3148', color: '#94a3b8', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
-                          <td style={{ color: '#94a3b8' }}>{h.fromPlayer || 'CLUB'}</td>
-                          <td style={{ color: '#94a3b8' }}>{h.toPlayer || 'CLUB'}</td>
-                          <td style={{ textAlign: 'right', color: '#94a3b8' }}>{fmt(h.amount)}</td>
-                          <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </>
+                })}
+              </tbody>
+              {(() => {
+                const total = assignedHistory.reduce((sum, h) => sum + getAmountDisplay(h).signedAmount, 0);
+                const totalColor = total > 0 ? '#4ade80' : total < 0 ? '#ef4444' : '#94a3b8';
+                return (
+                  <tfoot>
+                    <tr style={{ borderTop: '2px solid #334155' }}>
+                      <td colSpan={5} style={{ fontWeight: 600, color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.5rem' }}>Total ({assignedHistory.length} entries)</td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: totalColor, fontSize: '1rem', paddingTop: '0.5rem' }}>{fmt(total)}</td>
+                      <td colSpan={2} />
+                    </tr>
+                  </tfoot>
+                );
+              })()}
+            </table>
+          </div>
         )}
       </div>
     </div>
