@@ -206,7 +206,15 @@ export default function ClubWallets() {
                       </span>
                       {' '}
                       {alreadySet ? (
-                        <span style={{ fontSize: '0.7rem', color: '#475569', marginLeft: '6px' }}>🔒 Starting: {fmt(w.startingBalance)}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#475569', marginLeft: '6px' }}>
+                          🔒 Starting: {fmt(w.startingBalance)}
+                          {import.meta.env.VITE_ALLOW_STARTING_BALANCE_RESET === 'true' && (
+                            <button onClick={() => setStartingBalanceForms(f => form ? (({ [w.adminUsername]: _, ...rest }) => rest)(f) : { ...f, [w.adminUsername]: { cash: '', bit: '', paybox: '', other: '', notes: '' } })}
+                              style={{ fontSize: '0.65rem', background: 'none', border: '1px solid #7c3aed55', color: '#7c3aed', borderRadius: '4px', padding: '1px 5px', cursor: 'pointer', marginLeft: '6px' }}>
+                              {form ? '✕' : '✏️'}
+                            </button>
+                          )}
+                        </span>
                       ) : (
                         <button onClick={() => setStartingBalanceForms(f => form ? (({ [w.adminUsername]: _, ...rest }) => rest)(f) : { ...f, [w.adminUsername]: { cash: '', bit: '', paybox: '', other: '', notes: '' } })}
                           style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #334155', color: '#64748b', borderRadius: '4px', padding: '1px 6px', cursor: 'pointer', marginLeft: '6px' }}>
@@ -216,7 +224,7 @@ export default function ClubWallets() {
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 600, color: Number(w.balance) >= 0 ? '#4ade80' : '#ef4444' }}>{fmt(w.balance)}</td>
                   </tr>
-                  {form && !alreadySet && (
+                  {form && (
                     <tr key={`${w.adminUsername}-starting-form`}>
                       <td colSpan={2} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
                         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -258,7 +266,7 @@ export default function ClubWallets() {
                 <tr key={b.id}>
                   <td style={{ color: '#34d399', padding: '0.4rem 0' }}>
                     🏦 {b.name}
-                    <button onClick={() => { setBbEditing(e => !e); setBbInput(''); }}
+                    <button onClick={() => { setBbEditing(e => { if (!e) setBbInput(String(b.balance ?? '')); else setBbInput(''); return !e; }); }}
                       style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #334155', color: '#64748b', borderRadius: '4px', padding: '1px 6px', cursor: 'pointer', marginLeft: '8px' }}>
                       {bbEditing ? '✕' : '✏️ Edit'}
                     </button>
