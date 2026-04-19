@@ -24,9 +24,12 @@ export default function ClubWallets() {
 
   const load = () => {
     setLoading(true);
+    const historyPromise = filterHolder
+      ? getWalletHistory({ from: filterFrom || undefined, to: filterTo || undefined, holder: filterHolder })
+      : Promise.resolve({ data: [] });
     Promise.all([
       getWalletSummary(),
-      getWalletHistory({ from: filterFrom || undefined, to: filterTo || undefined, holder: filterHolder || undefined }),
+      historyPromise,
       getBankAccounts(),
     ]).then(([sumRes, histRes, bankRes]) => {
       setSummary(sumRes.data);
