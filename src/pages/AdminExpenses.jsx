@@ -292,6 +292,7 @@ export default function AdminExpenses() {
                     <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid On</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid From</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid By</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -300,9 +301,10 @@ export default function AdminExpenses() {
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{e.expenseDate || '—'}</td>
                       <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{e.who || '—'}</td>
                       <td style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{e.notes || '—'}</td>
-                      <td style={{ textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>{fmt(e.amount)}</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(e.amount)}</td>
                       <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.settledAt || '—'}</td>
                       <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.paidFromAdminUsername || '—'}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{e.settledBy || '—'}</td>
                     </tr>
                   ))}
                 </tbody>

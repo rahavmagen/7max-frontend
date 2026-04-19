@@ -65,7 +65,12 @@ export default function ClubWallets() {
 
   const fmtDate = (d) => {
     if (!d) return '—';
-    return d.substring(8, 10) + '-' + d.substring(5, 7) + '-' + d.substring(0, 4);
+    const date = d.substring(8, 10) + '-' + d.substring(5, 7) + '-' + d.substring(0, 4);
+    if (d.length > 10) {
+      const time = d.substring(11, 16);
+      return date + ' ' + time;
+    }
+    return date;
   };
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
@@ -351,6 +356,7 @@ export default function ClubWallets() {
                     <th>Method</th>
                     <th style={{ textAlign: 'right' }}>Amount</th>
                     <th>Notes</th>
+                    <th>By</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -358,7 +364,7 @@ export default function ClubWallets() {
                     const { signedAmount, color } = getAmountDisplay(h);
                     return (
                       <tr key={h.id}>
-                        <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.transferDate)}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{fmtDate(h.createdAt || h.transferDate)}</td>
                         <td><span style={{ fontSize: '0.78rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h.type || 'Transfer'}</span></td>
                         <td style={{ color: h.fromAdminUsername ? '#e2e8f0' : h.fromBankAccount ? '#34d399' : '#f59e0b' }}>
                           {h.fromAdminUsername || (h.fromBankAccount ? `🏦 ${h.fromBankAccount}` : (h.fromPlayer || 'CLUB'))}
@@ -369,6 +375,7 @@ export default function ClubWallets() {
                         <td><MethodPill method={h.method} /></td>
                         <td style={{ textAlign: 'right', fontWeight: 600, color }}>{fmt(signedAmount)}</td>
                         <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.createdByUsername || '—'}</td>
                       </tr>
                     );
                   })}
