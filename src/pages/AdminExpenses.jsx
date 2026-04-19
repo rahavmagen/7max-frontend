@@ -36,7 +36,7 @@ export default function AdminExpenses() {
     try {
       const payload = payForm.source === 'admin'
         ? { paidFromAdminUsername: payForm.adminUsername }
-        : { paidFromBankAccountId: payForm.bankAccountId };
+        : (payForm.bankAccountId ? { paidFromBankAccountId: payForm.bankAccountId } : {});
 
       if (payForm.entryType === 'CLUB_EXPENSE') {
         await payClubExpense(payForm.entryId, payload);
