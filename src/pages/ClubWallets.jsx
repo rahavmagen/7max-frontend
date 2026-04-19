@@ -410,7 +410,7 @@ export default function ClubWallets() {
               <tbody>
                 {assignedHistory.map(h => {
                   const { signedAmount, color } = h._synthetic
-                    ? { signedAmount: Math.abs(h.amount), color: '#4ade80' }
+                    ? { signedAmount: h.amount, color: h.amount >= 0 ? '#4ade80' : '#ef4444' }
                     : getAmountDisplay(h);
                   return (
                     <tr key={h.id} style={h._synthetic ? { opacity: 0.8, fontStyle: 'italic' } : undefined}>
@@ -429,7 +429,7 @@ export default function ClubWallets() {
                 })}
               </tbody>
               {(() => {
-                const total = assignedHistory.reduce((sum, h) => sum + (h._synthetic ? Math.abs(h.amount) : getAmountDisplay(h).signedAmount), 0);
+                const total = assignedHistory.reduce((sum, h) => sum + (h._synthetic ? h.amount : getAmountDisplay(h).signedAmount), 0);
                 const totalColor = total > 0 ? '#4ade80' : total < 0 ? '#ef4444' : '#94a3b8';
                 return (
                   <tfoot>
