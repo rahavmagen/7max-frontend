@@ -24,12 +24,9 @@ export default function ClubWallets() {
 
   const load = () => {
     setLoading(true);
-    const historyPromise = filterHolder
-      ? getWalletHistory({ from: filterFrom || undefined, to: filterTo || undefined, holder: filterHolder })
-      : Promise.resolve({ data: [] });
     Promise.all([
       getWalletSummary(),
-      historyPromise,
+      getWalletHistory({ from: filterFrom || undefined, to: filterTo || undefined, holder: filterHolder || undefined }),
       getBankAccounts(),
     ]).then(([sumRes, histRes, bankRes]) => {
       setSummary(sumRes.data);
@@ -358,11 +355,7 @@ export default function ClubWallets() {
           <button className="btn btn-secondary" onClick={applyFilters}>Apply</button>
         </div>
 
-        {!filterHolder ? (
-          <div style={{ color: '#64748b', textAlign: 'center', padding: '2rem', fontSize: '0.95rem' }}>
-            Select a wallet holder to view history
-          </div>
-        ) : assignedHistory.length === 0 ? (
+        {assignedHistory.length === 0 ? (
           <div style={{ color: '#64748b', textAlign: 'center', padding: '1.5rem' }}>No history entries</div>
         ) : (
           <div className="table-wrap">
