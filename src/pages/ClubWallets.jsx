@@ -15,10 +15,12 @@ export default function ClubWallets() {
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [filterHolder, setFilterHolder] = useState('');
+  const [filterMethod, setFilterMethod] = useState('');
 
   // Bank balance correction
   const [bbInput, setBbInput] = useState('');
   const [bbSaving, setBbSaving] = useState(false);
+  const [bbEditing, setBbEditing] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -39,7 +41,7 @@ export default function ClubWallets() {
   const applyFilters = () => load();
 
   const handleSetBankBalance = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const val = parseFloat(bbInput);
     if (isNaN(val)) { setMsg({ type: 'error', text: 'Enter a valid number' }); return; }
     setBbSaving(true);
@@ -47,6 +49,7 @@ export default function ClubWallets() {
       await setBankBalance(val);
       setMsg({ type: 'success', text: 'Bank balance updated' });
       setBbInput('');
+      setBbEditing(false);
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to update bank balance' });
@@ -72,8 +75,11 @@ export default function ClubWallets() {
   const clubTotal = summary?.clubTotal || 0;
   const unassignedTotal = summary?.unassignedTotal || 0;
 
-  const assignedHistory = history.filter(h => !h.unassigned);
+  const assignedHistory = history.filter(h => !h.unassigned && (!filterMethod || h.method === filterMethod || (filterMethod === 'EXPENSE_PAID' && h.type === 'EXPENSE_PAID')));
   const unassignedHistory = history.filter(h => h.unassigned);
+
+  // Unique methods present in history for the method filter dropdown
+  const historyMethods = [...new Set(history.filter(h => !h.unassigned).map(h => h.method || (h.type === 'EXPENSE_PAID' ? 'EXPENSE_PAID' : null)).filter(Boolean))];
 
   // Returns { signedAmount, color } for a history row based on selected holder
   const getAmountDisplay = (h) => {
@@ -133,8 +139,19 @@ export default function ClubWallets() {
     });
   };
 
-  const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', CASH: 'Cash', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses', STARTING_CASH: 'Starting Cash', STARTING_BIT: 'Starting Bit', STARTING_PAYBOX: 'Starting Paybox', STARTING_OTHER: 'Starting Other' };
-  const METHOD_COLOR = { BIT: '#3b82f6', PAYBOX: '#a855f7', CASH: '#22c55e', TRANSFER: '#64748b', ADJUSTMENT: '#f59e0b', EXPENSES: '#ef4444', STARTING_CASH: '#475569', STARTING_BIT: '#475569', STARTING_PAYBOX: '#475569', STARTING_OTHER: '#475569' };
+  const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', CASH: 'Cash', OTHER: 'Other', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses', EXPENSE_PAID: 'Expense', STARTING_CASH: 'Starting Cash', STARTING_BIT: 'Starting Bit', STARTING_PAYBOX: 'Starting Paybox', STARTING_OTHER: 'Starting Other' };
+  const METHOD_COLOR = { BIT: '#3b82f6', PAYBOX: '#a855f7', CASH: '#22c55e', OTHER: '#475569', TRANSFER: '#64748b', ADJUSTMENT: '#f59e0b', EXPENSES: '#ef4444', STARTING_CASH: '#475569', STARTING_BIT: '#475569', STARTING_PAYBOX: '#475569', STARTING_OTHER: '#475569' };
+
+  // Merge STARTING_* into base method keys for the breakdown panel
+  const consolidateBreakdown = (breakdown) => {
+    const MERGE_INTO = { STARTING_CASH: 'CASH', STARTING_BIT: 'BIT', STARTING_PAYBOX: 'PAYBOX', STARTING_OTHER: 'OTHER' };
+    const merged = {};
+    for (const [method, amount] of Object.entries(breakdown)) {
+      const key = MERGE_INTO[method] || method;
+      merged[key] = (merged[key] || 0) + Number(amount);
+    }
+    return merged;
+  };
 
   const MethodPill = ({ method }) => {
     if (!method) return null;
@@ -225,22 +242,46 @@ export default function ClubWallets() {
                       </td>
                     </tr>
                   )}
-                  {isOpen && Object.entries(breakdown).map(([method, amount]) => (
+                  {isOpen && Object.entries(consolidateBreakdown(breakdown)).map(([method, amount]) => (
                     <tr key={`${w.adminUsername}-${method}`}>
-                      <td style={{ paddingLeft: '1.5rem', paddingTop: '2px', paddingBottom: '2px' }}>
+                      <td style={{ paddingLeft: '2.5rem', paddingTop: '2px', paddingBottom: '2px', borderLeft: '2px solid #1e293b' }}>
                         <MethodPill method={method} />
                       </td>
-                      <td style={{ textAlign: 'right', fontSize: '0.85rem', color: Number(amount) >= 0 ? '#4ade80' : '#ef4444' }}>{fmt(amount)}</td>
+                      <td style={{ textAlign: 'right', fontSize: '0.85rem', color: Number(amount) >= 0 ? '#4ade80' : '#ef4444', paddingRight: '6rem' }}>{fmt(amount)}</td>
                     </tr>
                   ))}
                 </>
               );
             })}
             {bankWallets.map(b => (
-              <tr key={b.id}>
-                <td style={{ color: '#34d399', padding: '0.4rem 0' }}>🏦 {b.name}</td>
-                <td style={{ textAlign: 'right', fontWeight: 600, color: '#34d399' }}>{fmt(b.balance)}</td>
-              </tr>
+              <>
+                <tr key={b.id}>
+                  <td style={{ color: '#34d399', padding: '0.4rem 0' }}>
+                    🏦 {b.name}
+                    <button onClick={() => { setBbEditing(e => !e); setBbInput(''); }}
+                      style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #334155', color: '#64748b', borderRadius: '4px', padding: '1px 6px', cursor: 'pointer', marginLeft: '8px' }}>
+                      {bbEditing ? '✕' : '✏️ Edit'}
+                    </button>
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: 600, color: '#34d399' }}>{fmt(b.balance)}</td>
+                </tr>
+                {bbEditing && (
+                  <tr key={`${b.id}-edit`}>
+                    <td colSpan={2} style={{ background: '#12151f', padding: '0.6rem 1rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input type="number" step="0.01" placeholder="New balance (₪)" value={bbInput}
+                          onChange={e => setBbInput(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleSetBankBalance()}
+                          style={{ background: '#1a1d2e', border: '1px solid #34d39955', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '160px' }} />
+                        <button onClick={handleSetBankBalance} disabled={bbSaving}
+                          style={{ padding: '5px 12px', borderRadius: '5px', background: '#064e3b', border: 'none', color: '#34d399', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
+                          {bbSaving ? '...' : 'Save'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
             {unassignedTotal !== 0 && (
               <tr>
@@ -254,23 +295,6 @@ export default function ClubWallets() {
             </tr>
           </tbody>
         </table>
-      </div>
-
-      {/* Bank balance correction */}
-      <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#f59e0b' }}>
-        <h3 style={{ color: '#f59e0b', marginBottom: '0.75rem' }}>Set Bank Balance</h3>
-        <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-          Manually correct the raw bank balance figure used in the Total Profit calculation.
-        </p>
-        <form onSubmit={handleSetBankBalance} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>New Balance (₪)</label>
-            <input type="number" step="0.01" value={bbInput} onChange={e => setBbInput(e.target.value)} placeholder="e.g. 50000" style={{ width: '180px' }} />
-          </div>
-          <button type="submit" disabled={bbSaving} className="btn" style={{ background: '#f59e0b', color: '#000', border: 'none', fontWeight: 600 }}>
-            {bbSaving ? 'Saving...' : 'Set Balance'}
-          </button>
-        </form>
       </div>
 
       {/* History filters */}
@@ -291,6 +315,14 @@ export default function ClubWallets() {
               style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }}>
               <option value="">All holders</option>
               {holderOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Method</label>
+            <select value={filterMethod} onChange={e => setFilterMethod(e.target.value)}
+              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }}>
+              <option value="">All methods</option>
+              {historyMethods.map(m => <option key={m} value={m}>{METHOD_LABEL[m] || m}</option>)}
             </select>
           </div>
           <button className="btn btn-secondary" onClick={applyFilters}>Apply</button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getTicketAssets, buyTickets, grantTicket, getAdminUsers, getActivePlayers } from '../api';
 
 export default function TicketAssets() {
@@ -192,8 +192,8 @@ export default function TicketAssets() {
                 {assets.map(asset => {
                   const isGrantOpen = grantState?.assetId === asset.id;
                   return (
-                    <>
-                      <tr key={asset.id}>
+                    <React.Fragment key={asset.id}>
+                      <tr>
                         <td style={{ color: '#e2e8f0' }}>{asset.buyerAdminUsername}</td>
                         <td style={{ color: '#f59e0b' }}>{fmt(asset.costPerTicket)}</td>
                         <td style={{ color: '#4ade80' }}>{fmt(asset.faceValuePerTicket)}</td>
@@ -235,7 +235,7 @@ export default function TicketAssets() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   );
                 })}
               </tbody>
