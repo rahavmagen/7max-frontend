@@ -248,7 +248,7 @@ export default function AdminExpenses() {
                                     </select>
                                   </div>
                                 )}
-                                <button onClick={handleConfirmPay} disabled={paying || (payForm.source === 'admin' && !payForm.adminUsername) || (payForm.source === 'bank' && !payForm.bankAccountId)}
+                                <button onClick={handleConfirmPay} disabled={paying || (payForm.source === 'admin' && !payForm.adminUsername)}
                                   style={{ padding: '5px 14px', borderRadius: '5px', background: '#166534', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
                                   {paying ? '...' : 'Confirm Pay'}
                                 </button>
