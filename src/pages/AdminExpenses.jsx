@@ -118,7 +118,7 @@ export default function AdminExpenses() {
   const writeOffTotal = Number(promotions?.writeOffTotal || 0);
   const wheelPromoTotal = wheelTotal + chipPromoTotal;
 
-  const adminExpensesTotal = Number(grandTotal) - wheelTotal;
+  const adminExpensesTotal = clubAdmins.reduce((s, a) => s + Number(a.total || 0), 0);
   const totalWithPaid = adminExpensesTotal + paidTotal;
 
   const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 9px', borderRadius: '5px', fontSize: '0.82rem' };
@@ -269,7 +269,7 @@ export default function AdminExpenses() {
 
       {/* Unified Paid section */}
       {paid.length > 0 && (
-        <div className="card" style={{ marginBottom: '1rem', borderColor: '#4ade80' }}>
+        <div className="card" style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__paid')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
