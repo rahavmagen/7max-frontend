@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { getTransactionLabel } from '../utils/transactionLabel';
 
@@ -377,6 +377,43 @@ export default function PlayerDetail() {
               <div style={{ fontWeight: 600, color: player.creditTotal > 0 ? '#f59e0b' : '#94a3b8' }}>{fmt(player.creditTotal)}</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <h2 style={{ marginBottom: '1rem', fontSize: '0.95rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Payment Methods</h2>
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+          {[
+            { key: 'bit',          label: 'Bit',           field: 'bitEnabled',           color: '#3b82f6' },
+            { key: 'paybox',       label: 'Paybox',        field: 'payboxEnabled',        color: '#a855f7' },
+            { key: 'kashcash',     label: 'Kashcash',      field: 'kashcashEnabled',      color: '#06b6d4' },
+            { key: 'cash',         label: 'Cash',          field: 'cashEnabled',          color: '#22c55e' },
+            { key: 'bankTransfer', label: 'Bank Transfer', field: 'bankTransferEnabled',  color: '#f59e0b' },
+          ].map(({ key, label, field, color }) => {
+            const enabled = player[field] !== false;
+            return (
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={async () => {
+                    const updated = { ...player, [field]: !enabled };
+                    setPlayer(updated);
+                    try {
+                      await updatePaymentMethods(id, { [key]: !enabled });
+                    } catch {
+                      setPlayer(p => ({ ...p, [field]: enabled }));
+                      setMsg({ type: 'error', text: 'Failed to update payment method' });
+                    }
+                  }}
+                  style={{ width: '16px', height: '16px', accentColor: color, cursor: 'pointer' }}
+                />
+                <span style={{ color: enabled ? color : '#475569', fontWeight: enabled ? 600 : 400, fontSize: '0.9rem', transition: 'color 0.15s' }}>
+                  {label}
+                </span>
+              </label>
+            );
+          })}
         </div>
       </div>
 

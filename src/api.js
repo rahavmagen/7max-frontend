@@ -23,6 +23,7 @@ export const deletePlayer = (id) => api.delete(`/players/${id}`);
 export const updateCredit = (id, delta, notes, noChipChange = false) => api.patch(`/players/${id}/credit`, { delta, notes, noChipChange });
 export const setPlayerBalance = (id, balance, notes) => api.patch(`/players/${id}/balance`, { balance, notes });
 export const renamePlayerUsername = (id, username) => api.patch(`/players/${id}/username`, { username });
+export const updatePaymentMethods = (id, data) => api.patch(`/players/${id}/payment-methods`, data);
 export const addDeposit = (id, amount, notes) => api.post(`/players/${id}/deposit`, { amount, notes });
 export const getPlayerTransactions = (id) => api.get(`/players/${id}/transactions`);
 export const getPlayerResults = (id) => api.get(`/reports/player/${id}/results`);
