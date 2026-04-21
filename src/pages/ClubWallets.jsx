@@ -84,7 +84,8 @@ export default function ClubWallets() {
 
   // Synthetic starting-balance rows from the wallet summary
   const startingRows = (() => {
-    const walletsToShow = filterHolder && !filterHolder.startsWith('BANK_')
+    if (filterHolder && filterHolder.startsWith('BANK_')) return [];
+    const walletsToShow = filterHolder
       ? adminWallets.filter(w => w.adminUsername === filterHolder)
       : adminWallets;
     const rows = [];
