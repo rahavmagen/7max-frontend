@@ -384,15 +384,15 @@ export default function PlayerDetail() {
         <h2 style={{ marginBottom: '1rem', fontSize: '0.95rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Payment Methods</h2>
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
           {[
-            { key: 'bit',          label: 'Bit',           field: 'bitEnabled'          },
-            { key: 'paybox',       label: 'Paybox',        field: 'payboxEnabled'       },
-            { key: 'kashcash',     label: 'Kashcash',      field: 'kashcashEnabled'     },
-            { key: 'cash',         label: 'Ask on pay day', field: 'cashEnabled'         },
-            { key: 'bankTransfer', label: 'Bank Transfer', field: 'bankTransferEnabled' },
-          ].map(({ key, label, field }) => {
+            { key: 'bit',          label: 'Bit',            field: 'bitEnabled'          },
+            { key: 'paybox',       label: 'Paybox',         field: 'payboxEnabled'       },
+            { key: 'kashcash',     label: 'Kashcash',       field: 'kashcashEnabled'     },
+            { key: 'bankTransfer', label: 'Bank Transfer',  field: 'bankTransferEnabled' },
+            { key: 'cash',         label: 'Ask on pay day', field: 'cashEnabled', indent: true },
+          ].map(({ key, label, field, indent }) => {
             const enabled = player[field] === true;
             return (
-              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none', ...(indent ? { marginLeft: '1.5rem', borderLeft: '2px solid #334155', paddingLeft: '1rem' } : {}) }}>
                 <input
                   type="checkbox"
                   checked={enabled}
