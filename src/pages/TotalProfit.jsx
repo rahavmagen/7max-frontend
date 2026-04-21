@@ -42,10 +42,14 @@ export default function TotalProfit() {
       setPlayers(playersRes.data);
       setSummary(summaryRes.data);
       const paid = expRes.data?.paid || [];
+      const admins = expRes.data?.admins || [];
+      const adminExpensesTotal = admins.filter(a => a.adminUsername !== 'Wheel').reduce((s, a) => s + Number(a.total || 0), 0);
+      const paidTotal = paid.reduce((s, e) => s + Number(e.amount || 0), 0);
       // Compute paid totals from unified paid list
       setPaidTotals({
         noVatTotal: paid.filter(e => e.vatType !== 'WITH_VAT').reduce((s, e) => s + Number(e.amount || 0), 0),
         withVatTotal: paid.filter(e => e.vatType === 'WITH_VAT').reduce((s, e) => s + Number(e.amount || 0), 0),
+        grandTotal: adminExpensesTotal + paidTotal,
       });
       setTicketAssetsFaceValue(Number(ticketRes.data?.totalFaceValue || 0));
       if (walletRes.data?.clubTotal != null) setClubWalletTotal(Number(walletRes.data.clubTotal));
@@ -81,7 +85,7 @@ export default function TotalProfit() {
   const totalChips = players.filter(p => !p.chipsStale).reduce((s, p) => s + Number(p.currentChips || 0), 0);
   const willExpense = Number(summary?.willExpense || 0);
   const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
-  const generalExpenses = Number(summary?.generalExpenses || 0);
+  const generalExpenses = Number(paidTotals?.grandTotal || summary?.generalExpenses || 0);
   const bankDeposits = clubWalletTotal !== null ? clubWalletTotal : Number(summary?.bankDeposits || 0);
   const paidNoVatTotal = Number(paidTotals?.noVatTotal || 0);
   const paidWithVatTotal = Number(paidTotals?.withVatTotal || 0);
