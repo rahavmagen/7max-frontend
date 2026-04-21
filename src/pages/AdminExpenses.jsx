@@ -382,6 +382,7 @@ export default function AdminExpenses() {
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Type</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -392,6 +393,11 @@ export default function AdminExpenses() {
                       <td><span style={{ fontSize: '0.75rem', background: '#431407', color: '#fb923c', borderRadius: '4px', padding: '2px 6px' }}>Wheel</span></td>
                       <td style={{ color: '#fb923c', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn-secondary"
+                          style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444' }}
+                          onClick={() => handleDeleteEntry(entry)}>Delete</button>
+                      </td>
                     </tr>
                   ))}
                   {chipPromoEntries.map(entry => (
@@ -401,6 +407,7 @@ export default function AdminExpenses() {
                       <td><span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Chip Promo</span></td>
                       <td style={{ color: '#fbbf24', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                      <td></td>
                     </tr>
                   ))}
                 </tbody>
