@@ -8,7 +8,6 @@ export default function ClubWallets() {
   const [bankTxns, setBankTxns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
-  const [expandedAdmins, setExpandedAdmins] = useState(new Set());
   const [startingBalanceForms, setStartingBalanceForms] = useState({});
   const [startingBalanceSaving, setStartingBalanceSaving] = useState(null);
 
@@ -204,15 +203,7 @@ export default function ClubWallets() {
     setStartingBalanceSaving(null);
   };
 
-  const toggleAdmin = (username) => {
-    setExpandedAdmins(prev => {
-      const next = new Set(prev);
-      next.has(username) ? next.delete(username) : next.add(username);
-      return next;
-    });
-  };
-
-  const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH: 'Cash', OTHER: 'Other', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses', EXPENSE_PAID: 'Expense', STARTING: 'Opening' };
+const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH: 'Cash', OTHER: 'Other', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses', EXPENSE_PAID: 'Expense', STARTING: 'Opening' };
   const METHOD_COLOR = { BIT: '#3b82f6', PAYBOX: '#a855f7', KASHCASH: '#06b6d4', CASH: '#22c55e', OTHER: '#475569', TRANSFER: '#64748b', ADJUSTMENT: '#f59e0b', EXPENSES: '#ef4444', STARTING: '#475569' };
 
   const MethodPill = ({ method }) => {
@@ -250,22 +241,14 @@ export default function ClubWallets() {
           </thead>
           <tbody>
             {adminWallets.map(w => {
-              const isOpen = expandedAdmins.has(w.adminUsername);
-              const breakdown = w.breakdown || {};
-              const hasBreakdown = Object.keys(breakdown).length > 0;
               const alreadySet = w.startingBalance != null;
               const form = startingBalanceForms[w.adminUsername] || null;
               const isSaving = startingBalanceSaving === w.adminUsername;
               return (
                 <>
                   <tr key={w.adminUsername}>
-                    <td style={{ color: '#e2e8f0', padding: '0.4rem 0', userSelect: 'none' }}>
-                      <span onClick={() => hasBreakdown && toggleAdmin(w.adminUsername)} style={{ cursor: hasBreakdown ? 'pointer' : 'default' }}>
-                        {hasBreakdown && (
-                          <span style={{ marginRight: '6px', fontSize: '0.7rem', color: '#64748b', display: 'inline-block', transition: 'transform 0.15s', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
-                        )}
-                        {w.adminUsername}
-                      </span>
+                    <td style={{ color: '#e2e8f0', padding: '0.4rem 0' }}>
+                      <span>{w.adminUsername}</span>
                       {' '}
                       {alreadySet ? (
                         <span style={{ fontSize: '0.7rem', color: '#475569', marginLeft: '6px' }}>
@@ -308,14 +291,6 @@ export default function ClubWallets() {
                       </td>
                     </tr>
                   )}
-                  {isOpen && Object.entries(breakdown).map(([method, amount]) => (
-                    <tr key={`${w.adminUsername}-${method}`}>
-                      <td style={{ paddingLeft: '2.5rem', paddingTop: '2px', paddingBottom: '2px', borderLeft: '2px solid #1e293b' }}>
-                        <MethodPill method={method} />
-                      </td>
-                      <td style={{ textAlign: 'right', fontSize: '0.85rem', color: Number(amount) >= 0 ? '#4ade80' : '#ef4444', paddingRight: '6rem' }}>{fmt(amount)}</td>
-                    </tr>
-                  ))}
                 </>
               );
             })}
