@@ -90,7 +90,7 @@ export default function TotalProfit() {
   const bankDeposits = clubWalletTotal !== null ? clubWalletTotal : Number(summary?.bankDeposits || 0);
 
   // XLS-style P&L: Banks + Credit + Tickets + Debts-to-admin − Raw chips = Club Earning − Paid = Net
-  const clubEarning = bankDeposits + totalCredit + ticketAssetsFaceValue + unpaidExpenses - totalChips;
+  const clubEarning = bankDeposits + totalCredit + ticketAssetsFaceValue - unpaidExpenses - totalChips;
   const netProfit = clubEarning - paidExpenses;
 
   // Expense breakdown data
@@ -318,8 +318,8 @@ export default function TotalProfit() {
               </tr>
             )}
             <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/admin-expenses')}>
-              <td style={{ color: '#94a3b8' }}>+ לויים (Debts to Admin) <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
-              <td className="positive"><strong>{fmt(unpaidExpenses)}</strong></td>
+              <td style={{ color: '#94a3b8' }}>− לויים (Debts to Admin) <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
+              <td className="negative"><strong>({fmt(unpaidExpenses)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Unpaid admin expenses — club owes admins</td>
             </tr>
             <tr>
