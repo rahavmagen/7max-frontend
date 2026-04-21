@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { uploadReport, getReports, deleteReport, getStalePlayers } from '../api';
+import { uploadReport, getReports, deleteReport } from '../api';
 import api from '../api';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -8,7 +8,6 @@ export default function Upload() {
   const [reports, setReports] = useState([]);
   const [queue, setQueue] = useState([]); // { file, status, msg }
   const [processing, setProcessing] = useState(false);
-  const [leftClub, setLeftClub] = useState([]);
   const [chipWarning, setChipWarning] = useState(null); // { mismatch, expected, actual }
   const [wheelWarnings, setWheelWarnings] = useState([]); // unmatched wheel expense rows
   const fileRef = useRef();
@@ -16,7 +15,6 @@ export default function Upload() {
 
   useEffect(() => {
     getReports().then(r => setReports(r.data));
-    getStalePlayers().then(r => setLeftClub(r.data));
   }, []);
 
   const processFiles = async (files) => {
@@ -50,21 +48,6 @@ export default function Upload() {
           if (res.data.wheelExpenseWarnings?.length) {
             setWheelWarnings(prev => [...prev, ...res.data.wheelExpenseWarnings]);
           }
-          if (res.data.leftClub?.length || res.data.recovered?.length) {
-            setLeftClub(prev => {
-              let next = [...prev];
-              if (res.data.leftClub?.length) {
-                for (const p of res.data.leftClub) {
-                  if (!next.some(x => x.id === p.id)) next.push(p);
-                }
-              }
-              if (res.data.recovered?.length) {
-                const recoveredIds = new Set(res.data.recovered.map(r => r.clubPlayerId).filter(Boolean));
-                next = next.filter(x => !x.clubPlayerId || !recoveredIds.has(x.clubPlayerId));
-              }
-              return next;
-            });
-          }
         }
       } catch (e) {
         updated[i] = { ...updated[i], status: 'error', msg: e.response?.data?.error || 'Upload failed.' };
@@ -74,7 +57,6 @@ export default function Upload() {
 
     setProcessing(false);
     getReports().then(r => setReports(r.data));
-    getStalePlayers().then(r => setLeftClub(r.data));
   };
 
   const handleDrop = (e) => {
@@ -203,30 +185,6 @@ export default function Upload() {
         </div>
       )}
 
-      {leftClub.length > 0 && (
-        <div className="card" style={{ marginTop: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-            <h2 style={{ margin: 0 }}>Left Club ({leftClub.length})</h2>
-            <button className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '4px 12px' }} onClick={() => setLeftClub([])}>Dismiss</button>
-          </div>
-          <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
-            These players were in the management system but are no longer in the Club Member Balance:
-          </p>
-          <div className="table-wrap"><table>
-            <thead><tr><th>Username</th><th>Full Name</th><th>Club ID</th><th></th></tr></thead>
-            <tbody>
-              {leftClub.map((p, i) => (
-                <tr key={i}>
-                  <td><strong>{p.username}</strong></td>
-                  <td>{p.fullName || '—'}</td>
-                  <td style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#64748b' }}>{p.clubPlayerId || '—'}</td>
-                  <td><button onClick={() => navigate(`/player/${p.id}`)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: '0.8rem' }}>View</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        </div>
-      )}
 
       <div className="card">
         <h2>Upload History ({reports.length})</h2>
