@@ -91,7 +91,7 @@ export default function TotalProfit() {
 
   // XLS-style P&L: Banks + Credit + Tickets + Debts-to-admin − Raw chips = Club Earning − Paid = Net
   const clubEarning = bankDeposits + totalCredit + ticketAssetsFaceValue - unpaidExpenses - totalChips;
-  const netProfit = clubEarning - paidExpenses;
+  const netProfit = clubEarning;
 
   // Expense breakdown data
   const admins = expenseData?.admins || [];
@@ -334,16 +334,6 @@ export default function TotalProfit() {
               <td style={{ padding: '0.6rem 0.4rem' }}>
                 <strong className={cls(clubEarning)} style={{ fontSize: '1.25rem' }}>{fmt(clubEarning)}</strong>
               </td>
-              <td></td>
-            </tr>
-            <tr>
-              <td style={{ color: '#94a3b8' }}>− General Expenses (Paid)</td>
-              <td className="negative"><strong>({fmt(paidExpenses)})</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin &amp; club expenses already settled</td>
-            </tr>
-            <tr style={{ borderTop: '2px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Net Profit</strong></td>
-              <td><strong className={cls(netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
           </tbody>
