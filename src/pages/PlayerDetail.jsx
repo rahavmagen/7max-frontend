@@ -387,7 +387,7 @@ export default function PlayerDetail() {
             { key: 'bit',          label: 'Bit',           field: 'bitEnabled'          },
             { key: 'paybox',       label: 'Paybox',        field: 'payboxEnabled'       },
             { key: 'kashcash',     label: 'Kashcash',      field: 'kashcashEnabled'     },
-            { key: 'cash',         label: 'Cash',          field: 'cashEnabled'         },
+            { key: 'cash',         label: 'Ask on pay day', field: 'cashEnabled'         },
             { key: 'bankTransfer', label: 'Bank Transfer', field: 'bankTransferEnabled' },
           ].map(({ key, label, field }) => {
             const enabled = player[field] === true;
