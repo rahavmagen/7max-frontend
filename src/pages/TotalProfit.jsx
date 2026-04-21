@@ -327,9 +327,13 @@ export default function TotalProfit() {
               <td className="negative"><strong>({fmt(totalChips)})</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>All chips held by players</td>
             </tr>
-            <tr style={{ borderTop: '2px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Club Earning</strong></td>
-              <td><strong className={cls(clubEarning)} style={{ fontSize: '1.1rem' }}>{fmt(clubEarning)}</strong></td>
+            <tr style={{ borderTop: '2px solid #334155', background: 'rgba(59,130,246,0.07)' }}>
+              <td style={{ padding: '0.6rem 0.4rem' }}>
+                <strong style={{ color: '#93c5fd', fontSize: '1.05rem' }}>= Club Earning</strong>
+              </td>
+              <td style={{ padding: '0.6rem 0.4rem' }}>
+                <strong className={cls(clubEarning)} style={{ fontSize: '1.25rem' }}>{fmt(clubEarning)}</strong>
+              </td>
               <td></td>
             </tr>
             <tr>
