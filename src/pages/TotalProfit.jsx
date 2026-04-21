@@ -342,11 +342,6 @@ export default function TotalProfit() {
               <td><strong className={cls(netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
-            <tr>
-              <td style={{ color: '#64748b', paddingTop: '1rem', fontSize: '0.85rem' }}>🎡 Wheel &amp; Chip Promo</td>
-              <td style={{ color: '#f59e0b', paddingTop: '1rem' }}><strong>{fmt(wheelPromoTotal)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>chips only — Wheel ({fmt(willExpense)}) + Chip Promo ({fmt(chipPromoTotal)})</td>
-            </tr>
           </tbody>
         </table></div>
       </div>
