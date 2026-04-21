@@ -262,12 +262,10 @@ export default function ClubWallets() {
                       {alreadySet ? (
                         <span style={{ fontSize: '0.7rem', color: '#475569', marginLeft: '6px' }}>
                           🔒 Starting: {fmt(w.startingBalance)}
-                          {import.meta.env.VITE_ALLOW_STARTING_BALANCE_RESET === 'true' && (
-                            <button onClick={() => setStartingBalanceForms(f => form ? (({ [w.adminUsername]: _, ...rest }) => rest)(f) : { ...f, [w.adminUsername]: { cash: '', bit: '', paybox: '', kashcash: '', other: '', notes: '' } })}
-                              style={{ fontSize: '0.65rem', background: 'none', border: '1px solid #7c3aed55', color: '#7c3aed', borderRadius: '4px', padding: '1px 5px', cursor: 'pointer', marginLeft: '6px' }}>
-                              {form ? '✕' : '✏️'}
-                            </button>
-                          )}
+                          <button onClick={() => setStartingBalanceForms(f => form ? (({ [w.adminUsername]: _, ...rest }) => rest)(f) : { ...f, [w.adminUsername]: { cash: '', bit: '', paybox: '', kashcash: '', other: '', notes: '' } })}
+                            style={{ fontSize: '0.65rem', background: 'none', border: '1px solid #7c3aed55', color: '#7c3aed', borderRadius: '4px', padding: '1px 5px', cursor: 'pointer', marginLeft: '6px' }}>
+                            {form ? '✕' : '✏️'}
+                          </button>
                         </span>
                       ) : (
                         <button onClick={() => setStartingBalanceForms(f => form ? (({ [w.adminUsername]: _, ...rest }) => rest)(f) : { ...f, [w.adminUsername]: { cash: '', bit: '', paybox: '', kashcash: '', other: '', notes: '' } })}
