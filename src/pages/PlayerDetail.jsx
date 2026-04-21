@@ -392,7 +392,7 @@ export default function PlayerDetail() {
           ].map(({ key, label, field, indent }) => {
             const enabled = player[field] === true;
             return (
-              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none', ...(indent ? { marginLeft: '1.5rem', borderLeft: '2px solid #334155', paddingLeft: '1rem' } : {}) }}>
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none', ...(indent ? { marginLeft: '2.5rem' } : {}) }}>
                 <input
                   type="checkbox"
                   checked={enabled}
