@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminExpenses, getBalanceSheet, getPlayers, getProfitSummary, getTransactionRange, getTicketAssetsSummary, getWalletSummary } from '../api';
+import { getAdminExpenses, getBalanceSheet, getPlayers, getPromotions, getProfitSummary, getTransactionRange, getTicketAssetsSummary, getWalletSummary } from '../api';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -19,9 +19,13 @@ export default function TotalProfit() {
   const [txRows, setTxRows] = useState([]);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [showTx, setShowTx] = useState(true);
-  const [paidTotals, setPaidTotals] = useState(null);
+  const [unpaidExpenses, setUnpaidExpenses] = useState(0);
+  const [paidExpenses, setPaidExpenses] = useState(0);
   const [ticketAssetsFaceValue, setTicketAssetsFaceValue] = useState(0);
   const [clubWalletTotal, setClubWalletTotal] = useState(null);
+  const [expenseData, setExpenseData] = useState(null);
+  const [promotionsData, setPromotionsData] = useState(null);
+  const [expandedSections, setExpandedSections] = useState({});
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -30,6 +34,7 @@ export default function TotalProfit() {
   };
 
   const cls = (n) => Number(n) > 0 ? 'positive' : Number(n) < 0 ? 'negative' : '';
+  const toggle = (key) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   useEffect(() => {
     Promise.all([
@@ -38,19 +43,16 @@ export default function TotalProfit() {
       getAdminExpenses().catch(() => ({ data: null })),
       getTicketAssetsSummary().catch(() => ({ data: { totalFaceValue: 0 } })),
       getWalletSummary().catch(() => ({ data: null })),
-    ]).then(([playersRes, summaryRes, expRes, ticketRes, walletRes]) => {
+      getPromotions().catch(() => ({ data: null })),
+    ]).then(([playersRes, summaryRes, expRes, ticketRes, walletRes, promoRes]) => {
       setPlayers(playersRes.data);
       setSummary(summaryRes.data);
-      const paid = expRes.data?.paid || [];
+      setExpenseData(expRes.data);
+      setPromotionsData(promoRes.data);
       const admins = expRes.data?.admins || [];
-      const adminExpensesTotal = admins.filter(a => a.adminUsername !== 'Wheel').reduce((s, a) => s + Number(a.total || 0), 0);
-      const paidTotal = paid.reduce((s, e) => s + Number(e.amount || 0), 0);
-      // Compute paid totals from unified paid list
-      setPaidTotals({
-        noVatTotal: paid.filter(e => e.vatType !== 'WITH_VAT').reduce((s, e) => s + Number(e.amount || 0), 0),
-        withVatTotal: paid.filter(e => e.vatType === 'WITH_VAT').reduce((s, e) => s + Number(e.amount || 0), 0),
-        grandTotal: adminExpensesTotal + paidTotal,
-      });
+      const paid = expRes.data?.paid || [];
+      setUnpaidExpenses(admins.filter(a => a.adminUsername !== 'Wheel').reduce((s, a) => s + Number(a.total || 0), 0));
+      setPaidExpenses(paid.reduce((s, e) => s + Number(e.amount || 0), 0));
       setTicketAssetsFaceValue(Number(ticketRes.data?.totalFaceValue || 0));
       if (walletRes.data?.clubTotal != null) setClubWalletTotal(Number(walletRes.data.clubTotal));
       setLoading(false);
@@ -80,21 +82,30 @@ export default function TotalProfit() {
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
-  // All-time calculation (from XLS ImportSummary — credit snapshotted at last upload)
+  // All-time calculation
   const totalCredit = Number(summary?.snapshotCreditTotal || 0);
   const totalChips = players.filter(p => !p.chipsStale).reduce((s, p) => s + Number(p.currentChips || 0), 0);
   const willExpense = Number(summary?.willExpense || 0);
   const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
-  const generalExpenses = Number(paidTotals?.grandTotal || summary?.generalExpenses || 0);
   const bankDeposits = clubWalletTotal !== null ? clubWalletTotal : Number(summary?.bankDeposits || 0);
-  const paidNoVatTotal = Number(paidTotals?.noVatTotal || 0);
-  const paidWithVatTotal = Number(paidTotals?.withVatTotal || 0);
-  const chipsPlayersPaidFor = totalChips - willExpense - chipPromoTotal;
-  const clubEarning = bankDeposits + totalCredit - chipsPlayersPaidFor;
-  const afterNoVat = clubEarning - generalExpenses - paidNoVatTotal;
-  const netProfit = afterNoVat - paidWithVatTotal;
 
-  // Group transactions by player for summary
+  // XLS-style P&L: Banks + Credit + Tickets + Debts-to-admin − Raw chips = Club Earning − Paid = Net
+  const clubEarning = bankDeposits + totalCredit + ticketAssetsFaceValue + unpaidExpenses - totalChips;
+  const netProfit = clubEarning - paidExpenses;
+
+  // Expense breakdown data
+  const admins = expenseData?.admins || [];
+  const paid = expenseData?.paid || [];
+  const paidTotal = paidExpenses;
+  const clubAdmins = admins.filter(a => a.adminUsername !== 'Wheel');
+  const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
+  const wheelTotal = Number(wheelAdmin?.total || 0);
+  const chipPromoEntries = promotionsData?.entries?.filter(e => e.type === 'CHIP_PROMO') || [];
+  const writeOffEntries = promotionsData?.entries?.filter(e => e.type === 'PROMOTION') || [];
+  const writeOffTotal = Number(promotionsData?.writeOffTotal || 0);
+  const wheelPromoTotal = willExpense + chipPromoTotal;
+
+  // Group transactions by player for period drill-down
   const txByPlayer = {};
   txRows.forEach(tx => {
     const key = tx.playerId;
@@ -156,7 +167,7 @@ export default function TotalProfit() {
         </div>
       </div>
 
-      {/* Period P&L — shown only when dates are selected */}
+      {/* Period P&L */}
       {period && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <h2 style={{ marginBottom: '1rem' }}>Period P&L: {period.from} → {period.to}</h2>
@@ -165,7 +176,7 @@ export default function TotalProfit() {
               <tr>
                 <td style={{ color: '#94a3b8' }}>Bank Deposits</td>
                 <td className="positive"><strong>{fmt(period.deposits)}</strong></td>
-                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Cash received in period (transaction records only)</td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Cash received in period</td>
               </tr>
               <tr>
                 <td style={{ color: '#94a3b8' }}>+ Net Credit Change</td>
@@ -200,7 +211,7 @@ export default function TotalProfit() {
         </div>
       )}
 
-      {/* Transaction drill-down */}
+      {/* Period transaction drill-down */}
       {txRows.length > 0 && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -210,10 +221,8 @@ export default function TotalProfit() {
               {showTx ? 'Hide' : 'Show'}
             </button>
           </div>
-
           {showTx && (
             <>
-              {/* Per-player summary */}
               <h3 style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'normal' }}>BY PLAYER</h3>
               <div className="table-wrap"><table style={{ marginBottom: '1.5rem' }}>
                 <thead>
@@ -247,8 +256,6 @@ export default function TotalProfit() {
                   </tr>
                 </tbody>
               </table></div>
-
-              {/* Raw transaction list */}
               <h3 style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.5rem', fontWeight: 'normal' }}>ALL TRANSACTIONS</h3>
               <div className="table-wrap"><table>
                 <thead>
@@ -288,76 +295,301 @@ export default function TotalProfit() {
         </div>
       )}
 
-      {/* All-time Calculation */}
-      <div className="card">
+      {/* ── All-Time P&L ── */}
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h2>All-Time P&L</h2>
         <div className="table-wrap"><table>
           <tbody>
             <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/club-wallets')}>
-              <td style={{ color: '#94a3b8' }}>Bank Balance <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
+              <td style={{ color: '#94a3b8' }}>בנקים + שחקנים (Banks &amp; Players) <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
               <td className="positive"><strong>{fmt(bankDeposits)}</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Club wallets total — click to view breakdown</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Club wallets total</td>
             </tr>
             <tr>
-              <td style={{ color: '#94a3b8' }}>+ Total Credit Given</td>
+              <td style={{ color: '#94a3b8' }}>+ קרדיטים (Total Credit Given)</td>
               <td className="positive"><strong>{fmt(totalCredit)}</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Sum of all player credits</td>
             </tr>
+            {ticketAssetsFaceValue > 0 && (
+              <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/ticket-assets')}>
+                <td style={{ color: '#94a3b8' }}>+ 🎟 Ticket Assets <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
+                <td className="positive"><strong>{fmt(ticketAssetsFaceValue)}</strong></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Remaining ticket inventory at face value</td>
+              </tr>
+            )}
+            <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/admin-expenses')}>
+              <td style={{ color: '#94a3b8' }}>+ לויים (Debts to Admin) <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
+              <td className="positive"><strong>{fmt(unpaidExpenses)}</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Unpaid admin expenses — club owes admins</td>
+            </tr>
             <tr>
-              <td style={{ color: '#94a3b8' }}>− Chips Players Paid For</td>
-              <td className="negative"><strong>({fmt(chipsPlayersPaidFor)})</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                Chips ({fmt(totalChips)}) − Wheel ({fmt(willExpense)}) − Chip Promo ({fmt(chipPromoTotal)})
-              </td>
+              <td style={{ color: '#94a3b8' }}>− ציפים (Total Chips)</td>
+              <td className="negative"><strong>({fmt(totalChips)})</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>All chips held by players</td>
             </tr>
             <tr style={{ borderTop: '2px solid #334155' }}>
               <td><strong style={{ color: '#e2e8f0' }}>= Club Earning</strong></td>
               <td><strong className={cls(clubEarning)} style={{ fontSize: '1.1rem' }}>{fmt(clubEarning)}</strong></td>
               <td></td>
             </tr>
-            <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/admin-expenses')}>
-              <td style={{ color: '#94a3b8' }}>− General Expenses <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
-              <td className="negative"><strong>({fmt(generalExpenses)})</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>XLS expenses + write-offs</td>
+            <tr>
+              <td style={{ color: '#94a3b8' }}>− General Expenses (Paid)</td>
+              <td className="negative"><strong>({fmt(paidExpenses)})</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin &amp; club expenses already settled</td>
             </tr>
-            {paidNoVatTotal > 0 && (
-              <tr>
-                <td style={{ color: '#94a3b8' }}>− Paid Expenses (No VAT)</td>
-                <td className="negative"><strong>({fmt(paidNoVatTotal)})</strong></td>
-                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin expenses paid without VAT</td>
-              </tr>
-            )}
-            <tr style={{ borderTop: '1px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Profit before VAT expenses</strong></td>
-              <td><strong className={cls(afterNoVat)} style={{ fontSize: '1.05rem' }}>{fmt(afterNoVat)}</strong></td>
-              <td></td>
-            </tr>
-            {paidWithVatTotal > 0 && (
-              <tr>
-                <td style={{ color: '#94a3b8' }}>− Paid Expenses (VAT)</td>
-                <td className="negative"><strong>({fmt(paidWithVatTotal)})</strong></td>
-                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Admin expenses paid with VAT</td>
-              </tr>
-            )}
             <tr style={{ borderTop: '2px solid #334155' }}>
-              <td><strong style={{ color: '#e2e8f0' }}>= Profit after VAT expenses</strong></td>
+              <td><strong style={{ color: '#e2e8f0' }}>= Net Profit</strong></td>
               <td><strong className={cls(netProfit)} style={{ fontSize: '1.2rem' }}>{fmt(netProfit)}</strong></td>
               <td></td>
             </tr>
-            {ticketAssetsFaceValue > 0 && (
-              <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/ticket-assets')}>
-                <td style={{ color: '#94a3b8' }}>🎟 Ticket Assets <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
-                <td className="positive"><strong>{fmt(ticketAssetsFaceValue)}</strong></td>
-                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Remaining ticket inventory at face value</td>
-              </tr>
-            )}
             <tr>
-              <td style={{ color: '#64748b', paddingTop: '1rem', fontSize: '0.85rem' }}>🎡 Wheel & Chip Promo</td>
-              <td style={{ color: '#f59e0b', paddingTop: '1rem' }}><strong>{fmt(willExpense + chipPromoTotal)}</strong></td>
+              <td style={{ color: '#64748b', paddingTop: '1rem', fontSize: '0.85rem' }}>🎡 Wheel &amp; Chip Promo</td>
+              <td style={{ color: '#f59e0b', paddingTop: '1rem' }}><strong>{fmt(wheelPromoTotal)}</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem', paddingTop: '1rem' }}>chips only — Wheel ({fmt(willExpense)}) + Chip Promo ({fmt(chipPromoTotal)})</td>
             </tr>
           </tbody>
         </table></div>
+      </div>
+
+      {/* ── Expenses Breakdown ── */}
+      <div style={{ borderTop: '2px solid #334155', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
+        <h2 style={{ color: '#94a3b8', fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Expenses Breakdown
+        </h2>
+
+        {/* Per-admin unpaid groups */}
+        {clubAdmins.map(admin => (
+          <div key={admin.adminUsername} className="card" style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => toggle(admin.adminUsername)}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>{admin.adminUsername}</strong>
+                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{admin.entries.length} {admin.entries.length === 1 ? 'entry' : 'entries'}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(admin.total)}</strong>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedSections[admin.adminUsername] ? '▲' : '▼'}</span>
+              </div>
+            </div>
+            {expandedSections[admin.adminUsername] && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+                <table style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Source</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {admin.entries.map(entry => (
+                      <tr key={`${entry.type || 'ADMIN_EXPENSE'}-${entry.id}`}>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.expenseDate || '—'}</td>
+                        <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                        <td>
+                          {entry.sourceRef === 'CLUB_EXPENSE' ? (
+                            <span style={{ fontSize: '0.75rem', background: '#3b1f00', color: '#f59e0b', borderRadius: '4px', padding: '2px 6px' }}>Club Expense</span>
+                          ) : (entry.sourceRef === 'XLS' || entry.sourceRef?.startsWith('XLS:')) ? (
+                            <span style={{ fontSize: '0.75rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>XLS</span>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>Manual</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Paid */}
+        {paid.length > 0 && (
+          <div className="card" style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => toggle('__paid')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✓ Paid</strong>
+                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paid.length} entries</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(paidTotal)}</strong>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedSections['__paid'] ? '▲' : '▼'}</span>
+              </div>
+            </div>
+            {expandedSections['__paid'] && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+                <table style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Who</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Description</th>
+                      <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid On</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid From</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paid.map(e => (
+                      <tr key={`${e.entityType}-${e.id}`}>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{e.expenseDate || '—'}</td>
+                        <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{e.who || '—'}</td>
+                        <td style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{e.notes || '—'}</td>
+                        <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(e.amount)}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.settledAt || '—'}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.paidFromAdminUsername || '—'}</td>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{e.settledBy || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Grand Total Expenses */}
+        {(clubAdmins.length > 0 || paid.length > 0) && (
+          <div className="card" style={{ borderTopColor: '#ef4444', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => toggle('__grandtotal')}>
+              <strong style={{ color: '#e2e8f0' }}>Grand Total Expenses</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <strong style={{ color: '#ef4444', fontSize: '1.2rem' }}>{fmt(unpaidExpenses + paidTotal)}</strong>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedSections['__grandtotal'] ? '▲' : '▼'}</span>
+              </div>
+            </div>
+            {expandedSections['__grandtotal'] && (
+              <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+                <table style={{ width: '100%' }}>
+                  <tbody>
+                    {clubAdmins.map(a => (
+                      <tr key={a.adminUsername}>
+                        <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>{a.adminUsername}</td>
+                        <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(a.total)}</td>
+                      </tr>
+                    ))}
+                    {paidTotal > 0 && (
+                      <tr>
+                        <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>✓ Paid</td>
+                        <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(paidTotal)}</td>
+                      </tr>
+                    )}
+                    <tr style={{ borderTop: '1px solid #334155' }}>
+                      <td style={{ color: '#e2e8f0', fontWeight: 700, paddingTop: '0.4rem' }}>Total</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 700, fontSize: '1.05rem', paddingTop: '0.4rem' }}>{fmt(unpaidExpenses + paidTotal)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Wheel & Chip Promo */}
+        {(wheelAdmin?.entries?.length > 0 || chipPromoEntries.length > 0) && (
+          <div className="card" style={{ marginBottom: '1rem', borderColor: '#d97706', opacity: 0.85 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => toggle('__wheelpromo')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <strong style={{ color: '#fbbf24', fontSize: '1.05rem' }}>🎡 Wheel &amp; Chip Promo</strong>
+                <span style={{ fontSize: '0.72rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{(wheelAdmin?.entries?.length || 0) + chipPromoEntries.length} entries</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                  Wheel: <span style={{ color: '#fb923c' }}>{fmt(wheelTotal)}</span>
+                  {' · '}
+                  Chip Promo: <span style={{ color: '#fbbf24' }}>{fmt(chipPromoTotal)}</span>
+                </span>
+                <strong style={{ color: '#f59e0b', fontSize: '1.1rem' }}>{fmt(wheelPromoTotal)}</strong>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedSections['__wheelpromo'] ? '▲' : '▼'}</span>
+              </div>
+            </div>
+            {expandedSections['__wheelpromo'] && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+                <table style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player / Source</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Type</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(wheelAdmin?.entries || []).map(entry => (
+                      <tr key={`wheel-${entry.id}`}>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.expenseDate || '—'}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>—</td>
+                        <td><span style={{ fontSize: '0.75rem', background: '#431407', color: '#fb923c', borderRadius: '4px', padding: '2px 6px' }}>Wheel</span></td>
+                        <td style={{ color: '#fb923c', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                      </tr>
+                    ))}
+                    {chipPromoEntries.map(entry => (
+                      <tr key={`chip-${entry.id}`}>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                        <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
+                        <td><span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Chip Promo</span></td>
+                        <td style={{ color: '#fbbf24', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Write-offs */}
+        {writeOffEntries.length > 0 && (
+          <div className="card" style={{ marginBottom: '1rem', borderColor: '#0891b2', opacity: 0.85 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => toggle('__writeoffs')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <strong style={{ color: '#22d3ee', fontSize: '1.05rem' }}>✏️ Write-offs</strong>
+                <span style={{ fontSize: '0.72rem', background: '#0c2232', color: '#22d3ee', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{writeOffEntries.length} entries</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <strong style={{ color: '#22d3ee', fontSize: '1.1rem' }}>{fmt(writeOffTotal)}</strong>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedSections['__writeoffs'] ? '▲' : '▼'}</span>
+              </div>
+            </div>
+            {expandedSections['__writeoffs'] && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+                <table style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player</th>
+                      <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {writeOffEntries.map(entry => (
+                      <tr key={entry.id}>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                        <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
+                        <td style={{ textAlign: 'right', color: '#22d3ee', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
