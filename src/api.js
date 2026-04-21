@@ -122,6 +122,9 @@ export const payClubExpense = (id, data) => api.patch(`/club-expenses/${id}/pay`
 export const getWalletSummary = () => api.get('/wallets/summary');
 export const getWalletHistory = (params) => api.get('/wallets/history', { params });
 export const setBankBalance = (bankBalance) => api.patch('/import-summary/bank-balance', { bankBalance });
+export const getBankTransactions = () => api.get('/bank-transactions');
+export const addBankTransaction = (data) => api.post('/bank-transactions', data);
+export const deleteBankTransaction = (id) => api.delete(`/bank-transactions/${id}`);
 export const setAdminStartingBalance = (adminUsername, { cashAmount, bitAmount, payboxAmount, kashcashAmount, otherAmount, notes }) =>
   api.post('/wallets/starting-balance', { adminUsername, cashAmount, bitAmount, payboxAmount, kashcashAmount, otherAmount, notes });
 

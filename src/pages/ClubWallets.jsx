@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { getWalletSummary, getWalletHistory, getBankAccounts, setBankBalance, setAdminStartingBalance } from '../api';
+import { getWalletSummary, getWalletHistory, getBankAccounts, setAdminStartingBalance, getBankTransactions, addBankTransaction, deleteBankTransaction } from '../api';
 
 export default function ClubWallets() {
   const [summary, setSummary] = useState(null);
   const [history, setHistory] = useState([]);
   const [bankAccounts, setBankAccountsState] = useState([]);
+  const [bankTxns, setBankTxns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState(null);
   const [expandedAdmins, setExpandedAdmins] = useState(new Set());
-  const [startingBalanceForms, setStartingBalanceForms] = useState({}); // { adminUsername: { amount, notes } }
+  const [startingBalanceForms, setStartingBalanceForms] = useState({});
   const [startingBalanceSaving, setStartingBalanceSaving] = useState(null);
 
   // Filters
@@ -17,10 +18,9 @@ export default function ClubWallets() {
   const [filterHolder, setFilterHolder] = useState('');
   const [filterMethod, setFilterMethod] = useState('');
 
-  // Bank balance correction
-  const [bbInput, setBbInput] = useState('');
+  // Bank add-entry form
+  const [bbForm, setBbForm] = useState(null); // null = hidden, {} = open
   const [bbSaving, setBbSaving] = useState(false);
-  const [bbEditing, setBbEditing] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -28,10 +28,12 @@ export default function ClubWallets() {
       getWalletSummary(),
       getWalletHistory({ from: filterFrom || undefined, to: filterTo || undefined, holder: (filterHolder && !filterHolder.startsWith('BANK_')) ? filterHolder : undefined }),
       getBankAccounts(),
-    ]).then(([sumRes, histRes, bankRes]) => {
+      getBankTransactions(),
+    ]).then(([sumRes, histRes, bankRes, btRes]) => {
       setSummary(sumRes.data);
       setHistory(histRes.data);
       setBankAccountsState(bankRes.data);
+      setBankTxns(btRes.data);
       setLoading(false);
     });
   };
@@ -40,21 +42,29 @@ export default function ClubWallets() {
 
   const applyFilters = () => load();
 
-  const handleSetBankBalance = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    const val = parseFloat(bbInput);
-    if (isNaN(val)) { setMsg({ type: 'error', text: 'Enter a valid number' }); return; }
+  const handleAddBankTransaction = async () => {
+    const val = parseFloat(bbForm?.amount);
+    if (isNaN(val)) { setMsg({ type: 'error', text: 'Enter a valid amount' }); return; }
     setBbSaving(true);
     try {
-      await setBankBalance(val);
-      setMsg({ type: 'success', text: 'Bank balance updated' });
-      setBbInput('');
-      setBbEditing(false);
+      await addBankTransaction({ amount: val, transactionDate: bbForm?.date || null, notes: bbForm?.notes || null });
+      setMsg({ type: 'success', text: 'Bank entry added' });
+      setBbForm(null);
       load();
     } catch {
-      setMsg({ type: 'error', text: 'Failed to update bank balance' });
+      setMsg({ type: 'error', text: 'Failed to add bank entry' });
     }
     setBbSaving(false);
+  };
+
+  const handleDeleteBankTransaction = async (id) => {
+    if (!window.confirm('Delete this bank entry?')) return;
+    try {
+      await deleteBankTransaction(id);
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to delete entry' });
+    }
   };
 
   const fmt = (n) => {
@@ -130,7 +140,30 @@ export default function ClubWallets() {
     return true;
   });
 
-  const assignedHistory = [...startingRows, ...transferHistory];
+  const isBankFilter = filterHolder && filterHolder.startsWith('BANK_');
+
+  // When Bank is selected, show bank transactions instead of admin transfers
+  const bankTxnRows = isBankFilter ? bankTxns
+    .filter(t => {
+      if (filterFrom && t.transactionDate && t.transactionDate < filterFrom) return false;
+      if (filterTo && t.transactionDate && t.transactionDate > filterTo) return false;
+      return true;
+    })
+    .map(t => ({
+      id: `bt_${t.id}`,
+      _bankTxn: true,
+      _bankTxnId: t.id,
+      type: 'BANK',
+      transferDate: t.transactionDate,
+      createdAt: t.createdAt,
+      amount: Number(t.amount),
+      notes: t.notes,
+      createdByUsername: t.createdBy,
+    })) : [];
+
+  const assignedHistory = isBankFilter
+    ? bankTxnRows
+    : [...startingRows, ...transferHistory];
 
 
   const SUB_BALANCES = ['BIT', 'PAYBOX', 'KASHCASH', 'CASH', 'OTHER'];
@@ -323,27 +356,41 @@ export default function ClubWallets() {
             })}
             {bankWallets.map(b => (
               <>
-                <tr key={b.id}>
+                <tr key={b.id ?? 'bank'}>
                   <td style={{ color: '#34d399', padding: '0.4rem 0' }}>
                     🏦 {b.name}
-                    <button onClick={() => { setBbEditing(e => { if (!e) setBbInput(String(b.balance ?? '')); else setBbInput(''); return !e; }); }}
+                    <button onClick={() => setBbForm(f => f ? null : { amount: '', date: '', notes: '' })}
                       style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #334155', color: '#64748b', borderRadius: '4px', padding: '1px 6px', cursor: 'pointer', marginLeft: '8px' }}>
-                      {bbEditing ? '✕' : '✏️ Edit'}
+                      {bbForm ? '✕' : '+ Add Entry'}
                     </button>
                   </td>
                   <td style={{ textAlign: 'right', fontWeight: 600, color: '#34d399' }}>{fmt(b.balance)}</td>
                 </tr>
-                {bbEditing && (
-                  <tr key={`${b.id}-edit`}>
+                {bbForm && (
+                  <tr key="bank-add-form">
                     <td colSpan={2} style={{ background: '#12151f', padding: '0.6rem 1rem' }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <input type="number" step="0.01" placeholder="New balance (₪)" value={bbInput}
-                          onChange={e => setBbInput(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && handleSetBankBalance()}
-                          style={{ background: '#1a1d2e', border: '1px solid #34d39955', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '160px' }} />
-                        <button onClick={handleSetBankBalance} disabled={bbSaving}
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Amount (₪) *</label>
+                          <input type="number" step="0.01" placeholder="e.g. 5000 or -1000" value={bbForm.amount}
+                            onChange={e => setBbForm(f => ({ ...f, amount: e.target.value }))}
+                            style={{ background: '#1a1d2e', border: '1px solid #34d39955', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '140px' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Date</label>
+                          <input type="date" value={bbForm.date}
+                            onChange={e => setBbForm(f => ({ ...f, date: e.target.value }))}
+                            style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Notes</label>
+                          <input type="text" placeholder="e.g. April deposit" value={bbForm.notes}
+                            onChange={e => setBbForm(f => ({ ...f, notes: e.target.value }))}
+                            style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '200px' }} />
+                        </div>
+                        <button onClick={handleAddBankTransaction} disabled={bbSaving}
                           style={{ padding: '5px 12px', borderRadius: '5px', background: '#064e3b', border: 'none', color: '#34d399', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
-                          {bbSaving ? '...' : 'Save'}
+                          {bbSaving ? '...' : 'Add'}
                         </button>
                       </div>
                     </td>
@@ -415,27 +462,40 @@ export default function ClubWallets() {
               </thead>
               <tbody>
                 {assignedHistory.map(h => {
-                  const { signedAmount, color } = h._synthetic
+                  const isBankRow = h._bankTxn;
+                  const { signedAmount, color } = (h._synthetic || isBankRow)
                     ? { signedAmount: h.amount, color: h.amount >= 0 ? '#4ade80' : '#ef4444' }
                     : getAmountDisplay(h);
                   return (
-                    <tr key={h.id} style={h._synthetic ? { opacity: 0.8, fontStyle: 'italic' } : undefined}>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{h._synthetic ? '—' : fmtDate(h.createdAt || h.transferDate)}</td>
-                      <td><span style={{ fontSize: '0.78rem', background: h._synthetic ? '#1a3a1a' : '#1e3a5f', color: h._synthetic ? '#4ade80' : '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>{h._synthetic ? 'OPENING' : (h.type || 'Transfer')}</span></td>
-                      <td style={{ color: '#64748b' }}>{h._synthetic ? '—' : (h.fromAdminUsername ? <span style={{ color: '#e2e8f0' }}>{h.fromAdminUsername}</span> : h.fromBankAccount ? <span style={{ color: '#34d399' }}>🏦 {h.fromBankAccount}</span> : <span style={{ color: '#f59e0b' }}>{h.fromPlayer || 'CLUB'}</span>)}</td>
-                      <td style={{ color: h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
-                        {h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB'))}
+                    <tr key={h.id} style={(h._synthetic || isBankRow) ? { opacity: 0.9, fontStyle: isBankRow ? 'normal' : 'italic' } : undefined}>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{(h._synthetic && !isBankRow) ? '—' : fmtDate(h.transferDate || h.createdAt)}</td>
+                      <td>
+                        <span style={{ fontSize: '0.78rem', background: h._synthetic ? '#1a3a1a' : isBankRow ? '#0f2a1a' : '#1e3a5f', color: h._synthetic ? '#4ade80' : isBankRow ? '#34d399' : '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>
+                          {h._synthetic ? 'OPENING' : isBankRow ? 'BANK' : (h.type || 'Transfer')}
+                        </span>
+                      </td>
+                      <td style={{ color: '#64748b' }}>{(h._synthetic || isBankRow) ? '—' : (h.fromAdminUsername ? <span style={{ color: '#e2e8f0' }}>{h.fromAdminUsername}</span> : h.fromBankAccount ? <span style={{ color: '#34d399' }}>🏦 {h.fromBankAccount}</span> : <span style={{ color: '#f59e0b' }}>{h.fromPlayer || 'CLUB'}</span>)}</td>
+                      <td style={{ color: isBankRow ? '#34d399' : h.toAdminUsername ? '#e2e8f0' : h.toBankAccount ? '#34d399' : '#f59e0b' }}>
+                        {isBankRow ? '🏦 Bank' : (h.toAdminUsername || (h.toBankAccount ? `🏦 ${h.toBankAccount}` : (h.toPlayer || 'CLUB')))}
                       </td>
                       <td><MethodPill method={h.method} /></td>
                       <td style={{ textAlign: 'right', fontWeight: 600, color }}>{fmt(signedAmount)}</td>
                       <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.notes || '—'}</td>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{h.createdByUsername || '—'}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        {h.createdByUsername || '—'}
+                        {isBankRow && (
+                          <button onClick={() => handleDeleteBankTransaction(h._bankTxnId)}
+                            style={{ marginLeft: '6px', fontSize: '0.65rem', background: 'none', border: '1px solid #ef444455', color: '#ef4444', borderRadius: '4px', padding: '1px 5px', cursor: 'pointer' }}>
+                            🗑
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
               {(() => {
-                const total = assignedHistory.reduce((sum, h) => sum + (h._synthetic ? h.amount : getAmountDisplay(h).signedAmount), 0);
+                const total = assignedHistory.reduce((sum, h) => sum + ((h._synthetic || h._bankTxn) ? h.amount : getAmountDisplay(h).signedAmount), 0);
                 const totalColor = total > 0 ? '#4ade80' : total < 0 ? '#ef4444' : '#94a3b8';
                 return (
                   <tfoot>
