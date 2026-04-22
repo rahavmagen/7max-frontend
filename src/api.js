@@ -133,4 +133,7 @@ export const getTicketAssetsSummary = () => api.get('/ticket-assets/summary');
 export const buyTickets = (data) => api.post('/ticket-assets', data);
 export const grantTicket = (id, playerUsername) => api.post(`/ticket-assets/${id}/grant`, { playerUsername });
 
+export const sendWhatsAppMessage = (phoneNumbers, message) =>
+  api.post('/whatsapp/send', { phoneNumbers, message });
+
 export default api;
