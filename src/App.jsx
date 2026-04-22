@@ -27,6 +27,7 @@ import CreditCompare from './pages/CreditCompare';
 import BankBalance from './pages/BankBalance';
 import ClubWallets from './pages/ClubWallets';
 import TicketAssets from './pages/TicketAssets';
+import WhatsAppMessages from './pages/WhatsAppMessages';
 import './App.css';
 
 const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/credit-compare'];
@@ -114,6 +115,7 @@ function AppRoutes() {
               <AccountingDropdown />
               <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
+              <NavLink to="/messages">💬 WhatsApp</NavLink>
             </>
           )}
           {isPlayer && (
@@ -158,6 +160,7 @@ function AppRoutes() {
               <Route path="/bank-balance" element={<BankBalance />} />
               <Route path="/club-wallets" element={<ClubWallets />} />
               <Route path="/ticket-assets" element={<TicketAssets />} />
+              <Route path="/messages" element={<WhatsAppMessages />} />
               <Route path="/games" element={<Games />} />
               <Route path="/game-results/:id" element={<GameResults />} />
               <Route path="/chip-balance" element={<ChipBalance />} />
