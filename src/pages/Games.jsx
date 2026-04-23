@@ -35,7 +35,7 @@ export default function Games() {
       if (gameTypeFilter && s.gameType !== gameTypeFilter) return false;
       return true;
     });
-  }, [sessions, dateFrom, dateTo, costMin, costMax]);
+  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter]);
 
   const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter;
 
