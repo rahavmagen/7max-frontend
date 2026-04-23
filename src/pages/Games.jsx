@@ -10,6 +10,7 @@ export default function Games() {
   const [dateTo, setDateTo] = useState('');
   const [costMin, setCostMin] = useState('');
   const [costMax, setCostMax] = useState('');
+  const [gameTypeFilter, setGameTypeFilter] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,11 +32,12 @@ export default function Games() {
       if (dateTo && date > dateTo) return false;
       if (costMin !== '' && cost < Number(costMin)) return false;
       if (costMax !== '' && cost > Number(costMax)) return false;
+      if (gameTypeFilter && s.gameType !== gameTypeFilter) return false;
       return true;
     });
   }, [sessions, dateFrom, dateTo, costMin, costMax]);
 
-  const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '';
+  const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter;
 
   const fmtDate = (dt) => {
     if (!dt) return '—';
@@ -48,7 +50,7 @@ export default function Games() {
     <div>
       <h1>Games</h1>
       <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
-        All MTT & SNG tournaments. Click a game to see results.
+        All game sessions. Click a game to see results.
       </p>
 
       {shabbatRake > 0 && (
@@ -61,6 +63,21 @@ export default function Games() {
 
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Game type</label>
+          <select value={gameTypeFilter} onChange={e => setGameTypeFilter(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}>
+            <option value="">All</option>
+            <option value="MTT">MTT</option>
+            <option value="SNG">SNG</option>
+            <option value="NLH">NLH</option>
+            <option value="PLO">PLO</option>
+            <option value="PLO5">PLO5</option>
+            <option value="PLO6">PLO6</option>
+            <option value="AoF">AoF</option>
+            <option value="SPIN_GOLD">SPIN_GOLD</option>
+          </select>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date from</label>
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
@@ -82,7 +99,7 @@ export default function Games() {
             style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
         </div>
         {hasFilter && (
-          <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); }}
+          <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); setGameTypeFilter(''); }}
             style={{ background: '#374151', color: '#94a3b8', border: 'none', borderRadius: '6px', padding: '0.35rem 0.8rem', fontSize: '0.8rem', cursor: 'pointer' }}>
             Clear
           </button>
@@ -96,7 +113,7 @@ export default function Games() {
 
       {sessions.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
-          No tournament data yet — upload a ClubGG report first.
+          No game data yet — upload a ClubGG report first.
         </div>
       ) : (
         <div className="card">
@@ -124,8 +141,8 @@ export default function Games() {
                   <td dir="rtl" style={{ textAlign: 'right' }}><strong style={{ color: '#e2e8f0' }}>{s.tableName || '—'}</strong></td>
                   <td>
                     <span style={{
-                      background: s.gameType === 'MTT' ? '#1e3a5f' : '#1e3a2f',
-                      color: s.gameType === 'MTT' ? '#60a5fa' : '#4ade80',
+                      background: s.gameType === 'MTT' ? '#1e3a5f' : s.gameType === 'SNG' ? '#1e3a2f' : s.gameType === 'NLH' ? '#3a1e1e' : '#2a1e3a',
+                      color: s.gameType === 'MTT' ? '#60a5fa' : s.gameType === 'SNG' ? '#4ade80' : s.gameType === 'NLH' ? '#f87171' : '#c084fc',
                       padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem'
                     }}>
                       {s.gameType}
