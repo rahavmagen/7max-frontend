@@ -18,6 +18,7 @@ import ActivePlayers from './pages/ActivePlayers';
 import Login from './pages/Login';
 import ChangePassword from './pages/ChangePassword';
 import Lesson from './pages/Lesson';
+import League from './pages/League';
 import ChipBalance from './pages/ChipBalance';
 import PlayerValidation from './pages/PlayerValidation';
 import AdminExpenses from './pages/AdminExpenses';
@@ -114,6 +115,7 @@ function AppRoutes() {
               <NavLink to="/ticket-assets">Tickets</NavLink>
               <AccountingDropdown />
               <NavLink to="/lesson">אימון קאש</NavLink>
+              <NavLink to="/league">League</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
             </>
@@ -124,6 +126,7 @@ function AppRoutes() {
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/active-players">Players</NavLink>
               <NavLink to="/lesson">אימון קאש</NavLink>
+              <NavLink to="/league">League</NavLink>
             </>
           )}
         </div>
@@ -169,6 +172,7 @@ function AppRoutes() {
               <Route path="/credit-compare" element={<CreditCompare />} />
               <Route path="/bring-a-friend" element={<BringAFriend />} />
               <Route path="/lesson" element={<Lesson />} />
+              <Route path="/league" element={<League />} />
               <Route path="/wheel" element={<Wheel />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
@@ -180,6 +184,7 @@ function AppRoutes() {
               <Route path="/game-results/:id" element={<GameResults />} />
               <Route path="/active-players" element={<ActivePlayers />} />
               <Route path="/lesson" element={<Lesson />} />
+              <Route path="/league" element={<League />} />
               <Route path="*" element={<PlayerDefaultRedirect auth={auth} />} />
             </>
           )}
