@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getGameSessions, getFridayRakeReport } from '../api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
 
 export default function Games() {
+  const { auth } = useAuth();
+  const isAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [shabbatRake, setShabbatRake] = useState(0);
@@ -128,6 +131,7 @@ export default function Games() {
                 <th>Players</th>
                 <th>Entries</th>
                 <th>Re-entries</th>
+                {isAdmin && <th>Rake</th>}
                 <th>Hands</th>
               </tr>
             </thead>
@@ -159,6 +163,11 @@ export default function Games() {
                   <td style={{ color: s.reEntryCount > 0 ? '#f59e0b' : '#64748b' }}>
                     {s.reEntryCount > 0 ? s.reEntryCount : '—'}
                   </td>
+                  {isAdmin && (
+                    <td style={{ color: s.rakeTotal > 0 ? '#34d399' : '#64748b' }}>
+                      {s.rakeTotal > 0 ? `₪${Number(s.rakeTotal).toLocaleString()}` : '—'}
+                    </td>
+                  )}
                   <td style={{ color: s.handsPlayed > 0 ? '#94a3b8' : '#64748b' }}>
                     {s.handsPlayed > 0 ? s.handsPlayed : '—'}
                   </td>
