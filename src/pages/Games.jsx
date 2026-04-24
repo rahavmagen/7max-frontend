@@ -128,7 +128,6 @@ export default function Games() {
                 <th>Players</th>
                 <th>Entries</th>
                 <th>Re-entries</th>
-                <th>Rake</th>
                 <th>Hands</th>
               </tr>
             </thead>
@@ -159,9 +158,6 @@ export default function Games() {
                   <td>{s.entryCount}</td>
                   <td style={{ color: s.reEntryCount > 0 ? '#f59e0b' : '#64748b' }}>
                     {s.reEntryCount > 0 ? s.reEntryCount : '—'}
-                  </td>
-                  <td style={{ color: s.rakeTotal > 0 ? '#34d399' : '#64748b' }}>
-                    {s.rakeTotal > 0 ? `₪${Number(s.rakeTotal).toLocaleString()}` : '—'}
                   </td>
                   <td style={{ color: s.handsPlayed > 0 ? '#94a3b8' : '#64748b' }}>
                     {s.handsPlayed > 0 ? s.handsPlayed : '—'}
