@@ -136,4 +136,9 @@ export const grantTicket = (id, playerUsername) => api.post(`/ticket-assets/${id
 export const sendWhatsAppMessage = (phoneNumbers, message) =>
   api.post('/whatsapp/send', { phoneNumbers, message });
 
+// League
+export const getLeagueSessions = (params) => api.get('/league/sessions', { params });
+export const saveLeagueConfig = (data) => api.post('/league/config', data);
+export const getLeagueStandings = () => api.get('/league/standings');
+
 export default api;
