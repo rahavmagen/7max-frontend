@@ -285,7 +285,7 @@ export default function League() {
                   </tr>
                 </thead>
                 <tbody>
-                  {standings.standings.map((row, i) => {
+                  {standings.standings.map((row) => {
                     const medals = ['🥇', '🥈', '🥉'];
                     const rankLabel = row.rank != null ? (medals[row.rank - 1] || row.rank) : '—';
                     const qualified = row.qualified;
