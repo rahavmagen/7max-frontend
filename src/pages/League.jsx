@@ -49,6 +49,7 @@ export default function League() {
   const [gameTypeFilter, setGameTypeFilter] = useState(() => localStorage.getItem('leagueGameTypeFilter') || '');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const standingsRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
@@ -272,6 +273,10 @@ export default function League() {
                 Clear
               </button>
             )}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.82rem', cursor: 'pointer', marginLeft: '0.5rem' }}>
+              <input type="checkbox" checked={showSelectedOnly} onChange={e => setShowSelectedOnly(e.target.checked)} />
+              Selected only
+            </label>
           </div>
 
           {/* Session table */}
@@ -296,7 +301,7 @@ export default function League() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map(s => {
+                  {sessions.filter(s => !showSelectedOnly || (sessionState[s.sessionId]?.included ?? s.included)).map(s => {
                     const st = sessionState[s.sessionId] || {};
                     const included = st.included ?? s.included;
                     const hm = st.handsMultiplier ?? s.handsMultiplier;
