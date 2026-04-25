@@ -18,6 +18,10 @@ const multiplierStyle = {
   ...inputStyle, width: '56px', textAlign: 'center',
 };
 
+const fixedPtsStyle = {
+  ...inputStyle, width: '76px', textAlign: 'center',
+};
+
 function fmtDate(dt) {
   if (!dt) return '—';
   return dt.replace('T', ' ').substring(0, 10);
@@ -339,7 +343,7 @@ export default function League() {
                           {included ? (
                             <input type="number" value={fp} min="0"
                               onChange={e => setSessionField(s.sessionId, 'fixedPoints', e.target.value)}
-                              style={multiplierStyle} />
+                              style={fixedPtsStyle} />
                           ) : <span style={{ color: '#374151' }}>—</span>}
                         </td>
                       </tr>
