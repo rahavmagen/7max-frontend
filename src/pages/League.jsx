@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getLeagueSessions, saveLeagueConfig, getLeagueStandings } from '../api';
 
@@ -46,9 +46,10 @@ export default function League() {
   const [sessions, setSessions] = useState([]);
   const [sessionState, setSessionState] = useState({}); // { [sessionId]: { included, handsMultiplier, profitMultiplier } }
   const [minHands, setMinHands] = useState(100);
-  const [gameTypeFilter, setGameTypeFilter] = useState('');
+  const [gameTypeFilter, setGameTypeFilter] = useState(() => localStorage.getItem('leagueGameTypeFilter') || '');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const standingsRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
 
@@ -60,6 +61,10 @@ export default function League() {
     if (isAdmin) loadSessions();
     loadStandings();
   }, [isAdmin]);
+
+  useEffect(() => {
+    localStorage.setItem('leagueGameTypeFilter', gameTypeFilter);
+  }, [gameTypeFilter]);
 
   async function loadSessions() {
     setAdminLoading(true);
@@ -126,6 +131,7 @@ export default function League() {
       // Reload sessions to reflect new server state
       setSessionState({});
       await loadSessions();
+      standingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } finally { setSaving(false); }
   }
 
@@ -143,6 +149,72 @@ export default function League() {
       <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
         Cash game league standings.
       </p>
+
+      {/* ── STANDINGS ── */}
+      <div className="card" ref={standingsRef} style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ marginTop: 0, marginBottom: '0.25rem', fontSize: '1.1rem', color: '#e2e8f0' }}>League Standings</h2>
+        {standingsLoading ? (
+          <div style={{ color: '#64748b', padding: '1rem' }}>Loading...</div>
+        ) : !standings || standings.standings.length === 0 ? (
+          <div style={{ color: '#64748b', padding: '1rem' }}>No data yet — admin needs to select sessions.</div>
+        ) : (
+          <>
+            <div style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+              {standings.sessionCount} session{standings.sessionCount !== 1 ? 's' : ''} · min {standings.minHands} hands · computed live
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'center' }}>#</th>
+                    <th style={{ textAlign: 'left' }}>Player</th>
+                    <th style={{ textAlign: 'right' }}>Hands</th>
+                    <th style={{ textAlign: 'right' }}>Hands Pts</th>
+                    <th style={{ textAlign: 'right' }}>Profit (₪)</th>
+                    <th style={{ textAlign: 'right' }}>Profit Pts</th>
+                    <th style={{ textAlign: 'right' }}>Fixed Pts</th>
+                    <th style={{ textAlign: 'right', color: '#a5b4fc' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {standings.standings.map((row) => {
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const rankLabel = row.rank != null ? (medals[row.rank - 1] || row.rank) : '—';
+                    const qualified = row.qualified;
+                    const profitColor = Number(row.profitILS) >= 0 ? '#34d399' : '#ef4444';
+                    const profitPtsColor = row.profitPoints >= 0 ? '#34d399' : '#ef4444';
+                    return (
+                      <tr key={row.playerId} style={{ opacity: qualified ? 1 : 0.4 }}>
+                        <td style={{ textAlign: 'center', color: qualified ? '#f59e0b' : '#64748b', fontWeight: 600 }}>
+                          {rankLabel}
+                        </td>
+                        <td style={{ color: qualified ? '#e2e8f0' : '#64748b' }}>
+                          {row.username}
+                          {!qualified && <span style={{ fontSize: '0.75rem', color: '#475569', marginLeft: '0.5rem' }}>({row.totalHands} hands)</span>}
+                        </td>
+                        {qualified ? (
+                          <>
+                            <td style={{ textAlign: 'right', color: '#64748b' }}>{row.totalHands}</td>
+                            <td style={{ textAlign: 'right', color: '#94a3b8' }}>{row.handsPoints.toLocaleString()}</td>
+                            <td style={{ textAlign: 'right', color: profitColor }}>{fmtILS(row.profitILS)}</td>
+                            <td style={{ textAlign: 'right', color: profitPtsColor }}>{fmtPts(row.profitPoints)}</td>
+                            <td style={{ textAlign: 'right', color: '#a5b4fc' }}>{row.fixedPoints > 0 ? `+${row.fixedPoints.toLocaleString()}` : '—'}</td>
+                            <td style={{ textAlign: 'right', color: '#a5b4fc', fontWeight: 700 }}>{row.totalPoints.toLocaleString()}</td>
+                          </>
+                        ) : (
+                          <td colSpan={6} style={{ textAlign: 'center', color: '#374151', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                            below minimum — not ranked
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* ── ADMIN CONFIG ── */}
       {isAdmin && (
@@ -275,71 +347,6 @@ export default function League() {
         </div>
       )}
 
-      {/* ── STANDINGS ── */}
-      <div className="card">
-        <h2 style={{ marginTop: 0, marginBottom: '0.25rem', fontSize: '1.1rem', color: '#e2e8f0' }}>League Standings</h2>
-        {standingsLoading ? (
-          <div style={{ color: '#64748b', padding: '1rem' }}>Loading...</div>
-        ) : !standings || standings.standings.length === 0 ? (
-          <div style={{ color: '#64748b', padding: '1rem' }}>No data yet — admin needs to select sessions.</div>
-        ) : (
-          <>
-            <div style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-              {standings.sessionCount} session{standings.sessionCount !== 1 ? 's' : ''} · min {standings.minHands} hands · computed live
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'center' }}>#</th>
-                    <th style={{ textAlign: 'left' }}>Player</th>
-                    <th style={{ textAlign: 'right' }}>Hands</th>
-                    <th style={{ textAlign: 'right' }}>Hands Pts</th>
-                    <th style={{ textAlign: 'right' }}>Profit (₪)</th>
-                    <th style={{ textAlign: 'right' }}>Profit Pts</th>
-                    <th style={{ textAlign: 'right' }}>Fixed Pts</th>
-                    <th style={{ textAlign: 'right', color: '#a5b4fc' }}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {standings.standings.map((row) => {
-                    const medals = ['🥇', '🥈', '🥉'];
-                    const rankLabel = row.rank != null ? (medals[row.rank - 1] || row.rank) : '—';
-                    const qualified = row.qualified;
-                    const profitColor = Number(row.profitILS) >= 0 ? '#34d399' : '#ef4444';
-                    const profitPtsColor = row.profitPoints >= 0 ? '#34d399' : '#ef4444';
-                    return (
-                      <tr key={row.playerId} style={{ opacity: qualified ? 1 : 0.4 }}>
-                        <td style={{ textAlign: 'center', color: qualified ? '#f59e0b' : '#64748b', fontWeight: 600 }}>
-                          {rankLabel}
-                        </td>
-                        <td style={{ color: qualified ? '#e2e8f0' : '#64748b' }}>
-                          {row.username}
-                          {!qualified && <span style={{ fontSize: '0.75rem', color: '#475569', marginLeft: '0.5rem' }}>({row.totalHands} hands)</span>}
-                        </td>
-                        {qualified ? (
-                          <>
-                            <td style={{ textAlign: 'right', color: '#64748b' }}>{row.totalHands}</td>
-                            <td style={{ textAlign: 'right', color: '#94a3b8' }}>{row.handsPoints.toLocaleString()}</td>
-                            <td style={{ textAlign: 'right', color: profitColor }}>{fmtILS(row.profitILS)}</td>
-                            <td style={{ textAlign: 'right', color: profitPtsColor }}>{fmtPts(row.profitPoints)}</td>
-                            <td style={{ textAlign: 'right', color: '#a5b4fc' }}>{row.fixedPoints > 0 ? `+${row.fixedPoints.toLocaleString()}` : '—'}</td>
-                            <td style={{ textAlign: 'right', color: '#a5b4fc', fontWeight: 700 }}>{row.totalPoints.toLocaleString()}</td>
-                          </>
-                        ) : (
-                          <td colSpan={6} style={{ textAlign: 'center', color: '#374151', fontStyle: 'italic', fontSize: '0.85rem' }}>
-                            below minimum — not ranked
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 }
