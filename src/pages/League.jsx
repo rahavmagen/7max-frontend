@@ -215,6 +215,8 @@ export default function League() {
                     <th>Session</th>
                     <th>Type</th>
                     <th>Date</th>
+                    <th style={{ textAlign: 'right' }}>Hands</th>
+                    <th style={{ textAlign: 'right' }}>Rake (₪)</th>
                     <th>Hands ×</th>
                     <th>Profit ×</th>
                   </tr>
@@ -235,6 +237,10 @@ export default function League() {
                         <td dir="rtl" style={{ textAlign: 'right', color: '#e2e8f0' }}>{s.tableName}</td>
                         <td>{gameTypeBadge(s.gameType)}</td>
                         <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{fmtDate(s.startTime)}</td>
+                        <td style={{ textAlign: 'right', color: '#94a3b8' }}>{s.totalHands ?? '—'}</td>
+                        <td style={{ textAlign: 'right', color: '#34d399', fontSize: '0.85rem' }}>
+                          {s.rake != null && Number(s.rake) !== 0 ? `₪${Number(s.rake).toLocaleString()}` : '—'}
+                        </td>
                         <td>
                           {included ? (
                             <input type="number" value={hm} min="1"
