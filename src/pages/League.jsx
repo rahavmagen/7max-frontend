@@ -118,6 +118,7 @@ export default function League() {
           included: st.included ?? s.included,
           handsMultiplier: parseInt(st.handsMultiplier ?? s.handsMultiplier, 10) || 1,
           profitMultiplier: parseInt(st.profitMultiplier ?? s.profitMultiplier, 10) || 1,
+          fixedPoints: parseInt(st.fixedPoints ?? s.fixedPoints ?? 0, 10) || 0,
         };
       });
       await saveLeagueConfig({ minHands: parseInt(minHands, 10) || 100, sessions: sessionPayload });
@@ -219,6 +220,7 @@ export default function League() {
                     <th style={{ textAlign: 'right' }}>Rake (₪)</th>
                     <th>Hands ×</th>
                     <th>Profit ×</th>
+                    <th>Fixed Pts</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -227,6 +229,7 @@ export default function League() {
                     const included = st.included ?? s.included;
                     const hm = st.handsMultiplier ?? s.handsMultiplier;
                     const pm = st.profitMultiplier ?? s.profitMultiplier;
+                    const fp = st.fixedPoints ?? s.fixedPoints ?? 0;
                     return (
                       <tr key={s.sessionId} className="hoverable-row"
                         style={{ opacity: included ? 1 : 0.45 }}>
@@ -252,6 +255,13 @@ export default function League() {
                           {included ? (
                             <input type="number" value={pm} min="1"
                               onChange={e => setSessionField(s.sessionId, 'profitMultiplier', e.target.value)}
+                              style={multiplierStyle} />
+                          ) : <span style={{ color: '#374151' }}>—</span>}
+                        </td>
+                        <td>
+                          {included ? (
+                            <input type="number" value={fp} min="0"
+                              onChange={e => setSessionField(s.sessionId, 'fixedPoints', e.target.value)}
                               style={multiplierStyle} />
                           ) : <span style={{ color: '#374151' }}>—</span>}
                         </td>
@@ -287,6 +297,7 @@ export default function League() {
                     <th style={{ textAlign: 'right' }}>Hands Pts</th>
                     <th style={{ textAlign: 'right' }}>Profit (₪)</th>
                     <th style={{ textAlign: 'right' }}>Profit Pts</th>
+                    <th style={{ textAlign: 'right' }}>Fixed Pts</th>
                     <th style={{ textAlign: 'right', color: '#a5b4fc' }}>Total</th>
                   </tr>
                 </thead>
@@ -312,10 +323,11 @@ export default function League() {
                             <td style={{ textAlign: 'right', color: '#94a3b8' }}>{row.handsPoints.toLocaleString()}</td>
                             <td style={{ textAlign: 'right', color: profitColor }}>{fmtILS(row.profitILS)}</td>
                             <td style={{ textAlign: 'right', color: profitPtsColor }}>{fmtPts(row.profitPoints)}</td>
+                            <td style={{ textAlign: 'right', color: '#a5b4fc' }}>{row.fixedPoints > 0 ? `+${row.fixedPoints.toLocaleString()}` : '—'}</td>
                             <td style={{ textAlign: 'right', color: '#a5b4fc', fontWeight: 700 }}>{row.totalPoints.toLocaleString()}</td>
                           </>
                         ) : (
-                          <td colSpan={5} style={{ textAlign: 'center', color: '#374151', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                          <td colSpan={6} style={{ textAlign: 'center', color: '#374151', fontStyle: 'italic', fontSize: '0.85rem' }}>
                             below minimum — not ranked
                           </td>
                         )}
