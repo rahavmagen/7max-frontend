@@ -1,5 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getTicketAssets, buyTickets, grantTicket, getAdminUsers, getActivePlayers } from '../api';
+
+function PlayerSearchSelect({ players, value, onChange }) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selected = players.find(p => p.username === value);
+  const displayText = selected
+    ? selected.username + (selected.fullName ? ` — ${selected.fullName}` : '')
+    : '';
+
+  const filtered = players.filter(p =>
+    search === '' ||
+    p.username.toLowerCase().includes(search.toLowerCase()) ||
+    (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
+    (p.phone && p.phone.includes(search))
+  );
+
+  return (
+    <div ref={ref} style={{ position: 'relative', minWidth: '240px' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: value ? '#e2e8f0' : '#64748b', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', minHeight: '34px', fontSize: '0.875rem' }}
+      >
+        {value ? displayText : 'Select player...'}
+      </div>
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a1d2e', border: '1px solid #2d3148', borderRadius: '6px', zIndex: 100, maxHeight: '240px', overflowY: 'auto' }}>
+          <input
+            autoFocus
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name or phone..."
+            style={{ width: '100%', background: '#0f1117', border: 'none', borderBottom: '1px solid #2d3148', color: '#e2e8f0', padding: '7px 10px', boxSizing: 'border-box', fontSize: '0.875rem' }}
+            onClick={e => e.stopPropagation()}
+          />
+          {filtered.length === 0
+            ? <div style={{ padding: '8px 12px', color: '#64748b', fontSize: '0.85rem' }}>No players found</div>
+            : filtered.map(p => (
+              <div key={p.id}
+                onClick={() => { onChange(p.username); setOpen(false); setSearch(''); }}
+                style={{ padding: '7px 10px', cursor: 'pointer', color: '#e2e8f0', fontSize: '0.875rem', borderBottom: '1px solid #1a1d2e' }}
+                onMouseEnter={e => e.currentTarget.style.background = '#2d3148'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                <strong>{p.username}</strong>
+                {p.fullName && <span style={{ color: '#64748b', marginLeft: '0.5rem' }}>{p.fullName}</span>}
+                {p.phone && <span style={{ color: '#475569', marginLeft: '0.5rem', fontSize: '0.8rem' }}>{p.phone}</span>}
+              </div>
+            ))
+          }
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TicketAssets() {
   const [assets, setAssets] = useState([]);
@@ -220,12 +282,11 @@ export default function TicketAssets() {
                             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                               <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Player</label>
-                                <select value={grantState.playerUsername}
-                                  onChange={e => setGrantState(s => ({ ...s, playerUsername: e.target.value }))}
-                                  style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.875rem', minWidth: '200px' }}>
-                                  <option value="">Select player...</option>
-                                  {players.map(p => <option key={p.id} value={p.username}>{p.username}{p.fullName ? ` — ${p.fullName}` : ''}</option>)}
-                                </select>
+                                <PlayerSearchSelect
+                                  players={players}
+                                  value={grantState.playerUsername}
+                                  onChange={v => setGrantState(s => ({ ...s, playerUsername: v }))}
+                                />
                               </div>
                               <button onClick={() => handleGrant(asset.id)} disabled={submitting || !grantState.playerUsername}
                                 style={{ padding: '6px 14px', borderRadius: '5px', background: '#166534', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
