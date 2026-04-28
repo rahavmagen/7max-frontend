@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getTicketAssets, buyTickets, grantTicket, getAdminUsers, getActivePlayers } from '../api';
+import { getTicketAssets, buyTickets, grantTicket, getAdminUsers, getActivePlayers, markTicketGrantUsed } from '../api';
 
 function PlayerSearchSelect({ players, value, onChange }) {
   const [search, setSearch] = useState('');
@@ -82,7 +82,7 @@ export default function TicketAssets() {
   });
   const [showBuyForm, setShowBuyForm] = useState(false);
 
-  // Grant state: { assetId, playerSearch, playerUsername }
+  // Grant state: { assetId, playerUsername, grantType: '' | 'CHIPS' | 'LIVE' }
   const [grantState, setGrantState] = useState(null);
 
   const load = () => {
@@ -128,14 +128,14 @@ export default function TicketAssets() {
   };
 
   const handleGrant = async (assetId) => {
-    if (!grantState?.playerUsername) {
-      setMsg({ type: 'error', text: 'Select a player' });
+    if (!grantState?.playerUsername || !grantState?.grantType) {
+      setMsg({ type: 'error', text: 'Select a player and grant type' });
       return;
     }
     setSubmitting(true);
     try {
-      await grantTicket(assetId, grantState.playerUsername);
-      setMsg({ type: 'success', text: 'Ticket granted' });
+      await grantTicket(assetId, grantState.playerUsername, grantState.grantType);
+      setMsg({ type: 'success', text: `Ticket granted (${grantState.grantType === 'CHIPS' ? 'chips added to player' : 'live – not yet used'})` });
       setGrantState(null);
       load();
     } catch {
@@ -144,9 +144,25 @@ export default function TicketAssets() {
     setSubmitting(false);
   };
 
+  const handleMarkUsed = async (grantId) => {
+    setSubmitting(true);
+    try {
+      await markTicketGrantUsed(grantId);
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to mark as used' });
+    }
+    setSubmitting(false);
+  };
+
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
     return '₪' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const fmtDate = (dt) => {
+    if (!dt) return '—';
+    return dt.substring(0, 10).split('-').reverse().join('-');
   };
 
   const totalFaceValue = assets.reduce((s, a) => s + Number(a.quantityRemaining) * Number(a.faceValuePerTicket), 0);
@@ -270,16 +286,18 @@ export default function TicketAssets() {
                         <td>
                           {asset.quantityRemaining > 0 && (
                             <button className="btn btn-secondary" style={{ padding: '3px 10px', fontSize: '0.78rem' }}
-                              onClick={() => setGrantState(isGrantOpen ? null : { assetId: asset.id, playerUsername: '' })}>
+                              onClick={() => setGrantState(isGrantOpen ? null : { assetId: asset.id, playerUsername: '', grantType: '' })}>
                               {isGrantOpen ? 'Cancel' : 'Grant'}
                             </button>
                           )}
                         </td>
                       </tr>
+
+                      {/* Grant form row */}
                       {isGrantOpen && (
                         <tr key={`grant-${asset.id}`}>
                           <td colSpan={8} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
-                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                               <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Player</label>
                                 <PlayerSearchSelect
@@ -288,10 +306,81 @@ export default function TicketAssets() {
                                   onChange={v => setGrantState(s => ({ ...s, playerUsername: v }))}
                                 />
                               </div>
-                              <button onClick={() => handleGrant(asset.id)} disabled={submitting || !grantState.playerUsername}
-                                style={{ padding: '6px 14px', borderRadius: '5px', background: '#166534', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+                              {grantState.playerUsername && (
+                                <div className="form-group" style={{ marginBottom: 0 }}>
+                                  <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Grant Type</label>
+                                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {[
+                                      { key: 'CHIPS', label: '🎰 Chips', desc: 'Add face value as chips', activeBg: '#14532d', activeColor: '#4ade80', activeBorder: '#22c55e' },
+                                      { key: 'LIVE', label: '🎫 Live', desc: 'Will use ticket at event', activeBg: '#1e3a5f', activeColor: '#60a5fa', activeBorder: '#3b82f6' },
+                                    ].map(({ key, label, activeBg, activeColor, activeBorder }) => (
+                                      <button key={key} type="button"
+                                        onClick={() => setGrantState(s => ({ ...s, grantType: key }))}
+                                        style={{
+                                          padding: '6px 14px', borderRadius: '6px', border: '1px solid', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                                          background: grantState.grantType === key ? activeBg : 'transparent',
+                                          borderColor: grantState.grantType === key ? activeBorder : '#2d3148',
+                                          color: grantState.grantType === key ? activeColor : '#64748b',
+                                        }}>
+                                        {label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {grantState.grantType === 'CHIPS' && (
+                                    <div style={{ fontSize: '0.75rem', color: '#4ade80', marginTop: '4px' }}>
+                                      +{fmt(asset.faceValuePerTicket)} chips will be added to player
+                                    </div>
+                                  )}
+                                  {grantState.grantType === 'LIVE' && (
+                                    <div style={{ fontSize: '0.75rem', color: '#60a5fa', marginTop: '4px' }}>
+                                      Ticket documented, no chips — mark as used when player attends
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              <button onClick={() => handleGrant(asset.id)}
+                                disabled={submitting || !grantState.playerUsername || !grantState.grantType}
+                                style={{ padding: '6px 14px', borderRadius: '5px', background: '#166534', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, opacity: (!grantState.playerUsername || !grantState.grantType) ? 0.4 : 1 }}>
                                 {submitting ? '...' : 'Confirm Grant'}
                               </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                      {/* Grants history for this asset */}
+                      {asset.grants && asset.grants.length > 0 && (
+                        <tr key={`grants-list-${asset.id}`}>
+                          <td colSpan={8} style={{ background: '#0d1018', padding: '0 0 0.5rem 1.5rem' }}>
+                            <div style={{ fontSize: '0.75rem', color: '#475569', marginBottom: '4px', paddingTop: '6px' }}>
+                              Granted tickets:
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {asset.grants.map(g => (
+                                <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.82rem' }}>
+                                  <span style={{ color: '#94a3b8' }}>{fmtDate(g.grantedAt)}</span>
+                                  <strong style={{ color: '#e2e8f0' }}>{g.playerUsername}</strong>
+                                  {g.playerFullName && <span style={{ color: '#64748b' }}>{g.playerFullName}</span>}
+                                  <span style={{
+                                    padding: '1px 7px', borderRadius: '4px', fontWeight: 600,
+                                    background: g.grantType === 'CHIPS' ? '#14532d' : '#1e3a5f',
+                                    color: g.grantType === 'CHIPS' ? '#4ade80' : '#60a5fa',
+                                  }}>
+                                    {g.grantType === 'CHIPS' ? '🎰 Chips' : '🎫 Live'}
+                                  </span>
+                                  {g.status === 'USED' ? (
+                                    <span style={{ color: '#22c55e', fontSize: '0.75rem' }}>✓ Used{g.usedAt && g.grantType === 'LIVE' ? ` ${fmtDate(g.usedAt)}` : ''}</span>
+                                  ) : (
+                                    <>
+                                      <span style={{ color: '#f59e0b', fontSize: '0.75rem' }}>⏳ Not used yet</span>
+                                      <button onClick={() => handleMarkUsed(g.id)} disabled={submitting}
+                                        style={{ padding: '2px 8px', borderRadius: '4px', background: '#1e3a5f', border: '1px solid #3b82f6', color: '#60a5fa', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+                                        Mark as Used
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
                             </div>
                           </td>
                         </tr>

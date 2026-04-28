@@ -131,7 +131,8 @@ export const setAdminStartingBalance = (adminUsername, { amount, notes }) =>
 export const getTicketAssets = () => api.get('/ticket-assets');
 export const getTicketAssetsSummary = () => api.get('/ticket-assets/summary');
 export const buyTickets = (data) => api.post('/ticket-assets', data);
-export const grantTicket = (id, playerUsername) => api.post(`/ticket-assets/${id}/grant`, { playerUsername });
+export const grantTicket = (id, playerUsername, grantType) => api.post(`/ticket-assets/${id}/grant`, { playerUsername, grantType });
+export const markTicketGrantUsed = (grantId) => api.post(`/ticket-assets/grants/${grantId}/use`);
 
 export const sendWhatsAppMessage = (phoneNumbers, message) =>
   api.post('/whatsapp/send', { phoneNumbers, message });
