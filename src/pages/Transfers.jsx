@@ -148,7 +148,7 @@ export default function Transfers() {
   const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
 
   // Transfer form
-  const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '' });
+  const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '', fromBankId: '', toBankId: '' });
 
   const load = () => {
     getPlayers().then(r => setPlayers(r.data));
@@ -312,23 +312,44 @@ export default function Transfers() {
       setMsg({ type: 'error', text: 'From and To cannot be the same' });
       return;
     }
+    if (transferForm.fromId === 'CLUB' && !transferForm.fromClubType) {
+      setMsg({ type: 'error', text: 'Select the club funds source (Admin Wallet or Bank Transfer)' });
+      return;
+    }
+    if (transferForm.toId === 'CLUB' && !transferForm.toClubType) {
+      setMsg({ type: 'error', text: 'Select the club funds destination (Admin Wallet or Bank Transfer)' });
+      return;
+    }
+    if (transferForm.fromId === 'CLUB' && transferForm.fromClubType === 'admin' && !transferForm.fromAdminUsername) {
+      setMsg({ type: 'error', text: 'Select which admin wallet the funds come from' });
+      return;
+    }
+    if (transferForm.toId === 'CLUB' && transferForm.toClubType === 'admin' && !transferForm.toAdminUsername) {
+      setMsg({ type: 'error', text: 'Select which admin wallet the funds go to' });
+      return;
+    }
     setSubmitting(true);
     const from = resolveParty(transferForm.fromId);
     const to = resolveParty(transferForm.toId);
+    // If CLUB + bank transfer selected, override bankAccountId with chosen bank
+    const fromBankAccountId = (transferForm.fromId === 'CLUB' && transferForm.fromClubType === 'bank' && transferForm.fromBankId)
+      ? parseInt(transferForm.fromBankId) : from.bankAccountId;
+    const toBankAccountId = (transferForm.toId === 'CLUB' && transferForm.toClubType === 'bank' && transferForm.toBankId)
+      ? parseInt(transferForm.toBankId) : to.bankAccountId;
     try {
       await createTransfer({
         fromPlayerId: from.playerId,
-        fromBankAccountId: from.bankAccountId,
+        fromBankAccountId,
         toPlayerId: to.playerId,
-        toBankAccountId: to.bankAccountId,
+        toBankAccountId,
         method: transferForm.method,
         amount: parseFloat(transferForm.amount),
         notes: transferForm.notes || null,
-        fromAdminUsername: transferForm.fromId === 'CLUB' ? (transferForm.fromAdminUsername || null) : null,
-        toAdminUsername: transferForm.toId === 'CLUB' ? (transferForm.toAdminUsername || null) : null,
+        fromAdminUsername: transferForm.fromId === 'CLUB' && transferForm.fromClubType === 'admin' ? (transferForm.fromAdminUsername || null) : null,
+        toAdminUsername: transferForm.toId === 'CLUB' && transferForm.toClubType === 'admin' ? (transferForm.toAdminUsername || null) : null,
       });
       setMsg({ type: 'success', text: 'Transfer recorded successfully' });
-      setTransferForm({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '' });
+      setTransferForm({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '', fromBankId: '', toBankId: '' });
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record transfer' });
@@ -578,28 +599,70 @@ export default function Transfers() {
           <form onSubmit={handleTransferSubmit}>
             <div className="form-row">
               <div>
-                <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v, fromAdminUsername: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.toId} includeClub />
+                <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v, fromAdminUsername: '', fromClubType: '', fromBankId: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.toId} includeClub />
                 {transferForm.fromId === 'CLUB' && (
-                  <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                    <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Handled by admin (optional)</label>
-                    <select value={transferForm.fromAdminUsername} onChange={e => setTransferForm(f => ({ ...f, fromAdminUsername: e.target.value }))}
-                      style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
-                      <option value="">— Unassigned —</option>
-                      {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
-                    </select>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Club funds source *</label>
+                    <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                      {[{ key: 'admin', label: '👤 Admin Wallet' }, { key: 'bank', label: '🏦 Bank Transfer' }].map(({ key, label }) => (
+                        <button key={key} type="button"
+                          onClick={() => setTransferForm(f => ({ ...f, fromClubType: key, fromAdminUsername: '', fromBankId: '' }))}
+                          style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                            background: transferForm.fromClubType === key ? '#2d3148' : 'transparent',
+                            borderColor: transferForm.fromClubType === key ? '#6366f1' : '#2d3148',
+                            color: transferForm.fromClubType === key ? '#e2e8f0' : '#64748b' }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {transferForm.fromClubType === 'admin' && (
+                      <select value={transferForm.fromAdminUsername} onChange={e => setTransferForm(f => ({ ...f, fromAdminUsername: e.target.value }))}
+                        style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
+                        <option value="">Select admin...</option>
+                        {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
+                      </select>
+                    )}
+                    {transferForm.fromClubType === 'bank' && (
+                      <select value={transferForm.fromBankId} onChange={e => setTransferForm(f => ({ ...f, fromBankId: e.target.value }))}
+                        style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
+                        <option value="">Select bank account...</option>
+                        {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}{b.accountNumber ? ` (${b.accountNumber})` : ''}</option>)}
+                      </select>
+                    )}
                   </div>
                 )}
               </div>
               <div>
-                <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v, toAdminUsername: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.fromId} includeClub />
+                <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v, toAdminUsername: '', toClubType: '', toBankId: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.fromId} includeClub />
                 {transferForm.toId === 'CLUB' && (
-                  <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                    <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Handled by admin (optional)</label>
-                    <select value={transferForm.toAdminUsername} onChange={e => setTransferForm(f => ({ ...f, toAdminUsername: e.target.value }))}
-                      style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
-                      <option value="">— Unassigned —</option>
-                      {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
-                    </select>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Club funds destination *</label>
+                    <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                      {[{ key: 'admin', label: '👤 Admin Wallet' }, { key: 'bank', label: '🏦 Bank Transfer' }].map(({ key, label }) => (
+                        <button key={key} type="button"
+                          onClick={() => setTransferForm(f => ({ ...f, toClubType: key, toAdminUsername: '', toBankId: '' }))}
+                          style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                            background: transferForm.toClubType === key ? '#2d3148' : 'transparent',
+                            borderColor: transferForm.toClubType === key ? '#6366f1' : '#2d3148',
+                            color: transferForm.toClubType === key ? '#e2e8f0' : '#64748b' }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {transferForm.toClubType === 'admin' && (
+                      <select value={transferForm.toAdminUsername} onChange={e => setTransferForm(f => ({ ...f, toAdminUsername: e.target.value }))}
+                        style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
+                        <option value="">Select admin...</option>
+                        {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
+                      </select>
+                    )}
+                    {transferForm.toClubType === 'bank' && (
+                      <select value={transferForm.toBankId} onChange={e => setTransferForm(f => ({ ...f, toBankId: e.target.value }))}
+                        style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', width: '100%', fontSize: '0.875rem' }}>
+                        <option value="">Select bank account...</option>
+                        {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.name}{b.accountNumber ? ` (${b.accountNumber})` : ''}</option>)}
+                      </select>
+                    )}
                   </div>
                 )}
               </div>
