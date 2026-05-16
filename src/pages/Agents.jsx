@@ -18,7 +18,9 @@ export default function Agents() {
 
   const load = () => {
     setLoading(true);
-    getAgents().then(r => { setAgents(r.data); setLoading(false); });
+    getAgents()
+      .then(r => { setAgents(r.data); setLoading(false); })
+      .catch(() => { setMsg({ type: 'error', text: 'Failed to load agents' }); setLoading(false); });
   };
 
   useEffect(() => { load(); }, []);
@@ -26,7 +28,9 @@ export default function Agents() {
   const openBreakdown = (agent) => {
     setSelected(agent);
     setBdLoading(true);
-    getAgentBreakdown(agent.id).then(r => { setBreakdown(r.data); setBdLoading(false); });
+    getAgentBreakdown(agent.id)
+      .then(r => { setBreakdown(r.data); setBdLoading(false); })
+      .catch(() => { setBreakdown([]); setBdLoading(false); });
   };
 
   const handleSettle = async (agentId) => {
@@ -155,7 +159,7 @@ export default function Agents() {
                   </span>
                   <button
                     onClick={() => handleSettle(selected.id)}
-                    disabled={settling}
+                    disabled={settling || Number(agents.find(a => a.id === selected.id)?.pendingBalance || 0) <= 0}
                     style={{ padding: '6px 16px', borderRadius: '6px', border: 'none', background: '#1d4ed8', color: '#fff', cursor: 'pointer' }}
                   >
                     Settle & Pay

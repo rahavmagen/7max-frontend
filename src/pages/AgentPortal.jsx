@@ -60,7 +60,7 @@ export default function AgentPortal() {
           </tr>
         </thead>
         <tbody>
-          {summary.settlementHistory.map(s => (
+          {(summary.settlementHistory ?? []).map(s => (
             <tr key={s.id} style={{ borderBottom: '1px solid #1e2235' }}>
               <td style={{ padding: '8px' }}>{s.fromDate} – {s.toDate}</td>
               <td style={{ padding: '8px', color: '#94a3b8' }}>{fmt(s.totalRake)}</td>
@@ -68,7 +68,7 @@ export default function AgentPortal() {
               <td style={{ padding: '8px', color: '#64748b', fontSize: '0.8rem' }}>{s.status}</td>
             </tr>
           ))}
-          {summary.settlementHistory.length === 0 && (
+          {(summary.settlementHistory ?? []).length === 0 && (
             <tr>
               <td colSpan={4} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>
                 No settlements yet
