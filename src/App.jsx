@@ -22,6 +22,8 @@ import League from './pages/League';
 import ChipBalance from './pages/ChipBalance';
 import PlayerValidation from './pages/PlayerValidation';
 import AdminExpenses from './pages/AdminExpenses';
+import Agents from './pages/Agents';
+import AgentPortal from './pages/AgentPortal';
 import BringAFriend from './pages/BringAFriend';
 import Wheel from './pages/Wheel';
 import CreditCompare from './pages/CreditCompare';
@@ -90,6 +92,7 @@ function AppRoutes() {
 
   const isAdmin = auth.role === 'ADMIN' || auth.role === 'MANAGER';
   const isPlayer = auth.role === 'PLAYER';
+  const isAgent = isPlayer && auth.isAgent;
 
   return (
     <div className="app">
@@ -114,6 +117,7 @@ function AppRoutes() {
               <NavLink to="/club-wallets">Club Wallets</NavLink>
               <NavLink to="/ticket-assets">Tickets</NavLink>
               <AccountingDropdown />
+              <NavLink to="/agents">Agents</NavLink>
               <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/league">League</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
@@ -127,6 +131,7 @@ function AppRoutes() {
               <NavLink to="/active-players">Players</NavLink>
               <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/league">League</NavLink>
+              {isAgent && <NavLink to="/agent-portal">Agent Portal</NavLink>}
             </>
           )}
         </div>
@@ -170,6 +175,8 @@ function AppRoutes() {
               <Route path="/player-validation" element={<PlayerValidation />} />
               <Route path="/admin-expenses" element={<AdminExpenses />} />
               <Route path="/credit-compare" element={<CreditCompare />} />
+              <Route path="/agents" element={<Agents />} />
+              <Route path="/agent-portal" element={<AgentPortal />} />
               <Route path="/bring-a-friend" element={<BringAFriend />} />
               <Route path="/lesson" element={<Lesson />} />
               <Route path="/league" element={<League />} />
@@ -185,6 +192,7 @@ function AppRoutes() {
               <Route path="/active-players" element={<ActivePlayers />} />
               <Route path="/lesson" element={<Lesson />} />
               <Route path="/league" element={<League />} />
+              <Route path="/agent-portal" element={<AgentPortal />} />
               <Route path="*" element={<PlayerDefaultRedirect auth={auth} />} />
             </>
           )}
