@@ -5,6 +5,7 @@ import { getAgentSummary, getAgentBreakdown } from '../api';
 export default function AgentPortal() {
   const { auth } = useAuth();
   const agentId = auth?.playerId;
+  const isAgent = auth?.isAgent === true;
   const [summary, setSummary] = useState(null);
   const [breakdown, setBreakdown] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,11 @@ export default function AgentPortal() {
   useEffect(() => {
     if (!agentId) {
       setError('No player account linked to your user.');
+      setLoading(false);
+      return;
+    }
+    if (!isAgent) {
+      setError('Access denied. This page is for agents only.');
       setLoading(false);
       return;
     }
