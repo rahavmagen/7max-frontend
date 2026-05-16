@@ -146,6 +146,7 @@ export const getLeagueStandings = () => api.get('/league/standings');
 export const getAgents = () => api.get('/agents');
 export const getAgentSummary = (id) => api.get(`/agents/${id}/summary`);
 export const getAgentBreakdown = (id, params) => api.get(`/agents/${id}/breakdown`, { params });
+export const getAgentPlayerStats = (id, params) => api.get(`/agents/${id}/player-stats`, { params });
 export const settleAgent = (id) => api.post(`/agents/${id}/settle`);
 export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playerId}/agent`, { agentId: agentId || null });
 

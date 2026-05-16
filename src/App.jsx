@@ -131,7 +131,7 @@ function AppRoutes() {
               <NavLink to="/active-players">Players</NavLink>
               <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/league">League</NavLink>
-              {isAgent && <NavLink to="/agent-portal">Agent Portal</NavLink>}
+              {isAgent && <NavLink to="/agent-portal">Agents</NavLink>}
             </>
           )}
         </div>
