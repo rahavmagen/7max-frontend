@@ -86,7 +86,7 @@ export default function PlayerDetail() {
         phone: editPhone,
         isAgent: editData.isAgent,
         agentRakePercentage: editData.isAgent && editData.agentRakePercentage !== ''
-          ? (Number(editData.agentRakePercentage) / 100).toFixed(4)
+          ? parseFloat((Number(editData.agentRakePercentage) / 100).toFixed(4))
           : null,
       });
       const originalAgentId = player.agent?.id || '';
