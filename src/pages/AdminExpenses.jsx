@@ -106,6 +106,7 @@ export default function AdminExpenses() {
   const grandTotal = data?.grandTotal || 0;
   const paid = data?.paid || [];
   const paidTotal = paid.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const agentFees = (data?.paid || []).filter(e => e.expenseType === 'AGENT');
 
   const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
   const clubAdmins = admins.filter(a => a.adminUsername !== 'Wheel');
@@ -315,38 +316,33 @@ export default function AdminExpenses() {
       )}
 
       {/* Agent Fees Section */}
-      {(() => {
-        const agentFees = (data?.paid || []).filter(e => e.expenseType === 'AGENT');
-        return (
-          <div style={{ marginTop: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem', color: '#e2e8f0' }}>Agent Fees</h3>
-            {agentFees.length === 0 ? (
-              <p style={{ color: '#64748b' }}>No agent fee payments yet</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #2d3148', color: '#94a3b8', textAlign: 'left', fontSize: '0.85rem' }}>
-                    <th style={{ padding: '8px' }}>Agent</th>
-                    <th style={{ padding: '8px' }}>Amount</th>
-                    <th style={{ padding: '8px' }}>Notes</th>
-                    <th style={{ padding: '8px' }}>Settled</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {agentFees.map(e => (
-                    <tr key={e.id} style={{ borderBottom: '1px solid #1e2235' }}>
-                      <td style={{ padding: '8px' }}>{e.who}</td>
-                      <td style={{ padding: '8px', color: '#4ade80' }}>{fmt(e.amount)}</td>
-                      <td style={{ padding: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>{e.notes}</td>
-                      <td style={{ padding: '8px', color: '#64748b', fontSize: '0.8rem' }}>{e.settledAt || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        );
-      })()}
+      <div style={{ marginTop: '2rem' }}>
+        <h3 style={{ marginBottom: '1rem', color: '#e2e8f0' }}>Agent Fees</h3>
+        {agentFees.length === 0 ? (
+          <p style={{ color: '#64748b' }}>No agent fee payments yet</p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #2d3148', color: '#94a3b8', textAlign: 'left', fontSize: '0.85rem' }}>
+                <th style={{ padding: '8px' }}>Agent</th>
+                <th style={{ padding: '8px' }}>Amount</th>
+                <th style={{ padding: '8px' }}>Notes</th>
+                <th style={{ padding: '8px' }}>Settled</th>
+              </tr>
+            </thead>
+            <tbody>
+              {agentFees.map(e => (
+                <tr key={`${e.entityType}-${e.id}`} style={{ borderBottom: '1px solid #1e2235' }}>
+                  <td style={{ padding: '8px' }}>{e.who}</td>
+                  <td style={{ padding: '8px', color: '#4ade80' }}>{fmt(e.amount)}</td>
+                  <td style={{ padding: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>{e.notes || '—'}</td>
+                  <td style={{ padding: '8px', color: '#64748b', fontSize: '0.8rem' }}>{e.settledAt || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {/* Grand Total */}
       {(clubAdmins.length > 0 || paid.length > 0) && (
