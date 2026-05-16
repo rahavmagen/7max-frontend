@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods } from '../api';
+import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { getTransactionLabel } from '../utils/transactionLabel';
 
@@ -24,6 +24,8 @@ export default function PlayerDetail() {
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editUsername, setEditUsername] = useState('');
+  const [editData, setEditData] = useState({});
+  const [agents, setAgents] = useState([]);
   const [showSetBalance, setShowSetBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
   const [balanceNotes, setBalanceNotes] = useState('');
@@ -42,6 +44,7 @@ export default function PlayerDetail() {
     getPlayerTransactions(id).then(r => setTransactions(r.data)).catch(() => {});
     getPlayerResults(id).then(r => setResults(r.data)).catch(() => {});
     if (isAdmin) getLoginStats(id).then(r => setLoginStats(r.data)).catch(() => {});
+    if (isAdmin) getAgents().then(r => setAgents(r.data || [])).catch(() => {});
   };
 
   useEffect(() => { load(); }, [id]);
@@ -77,7 +80,19 @@ export default function PlayerDetail() {
         const renamed = await renamePlayerUsername(id, editUsername.trim());
         setPlayer(p => ({ ...p, username: renamed.data.username }));
       }
-      await updatePlayer(id, { ...player, fullName: editName, phone: editPhone });
+      await updatePlayer(id, {
+        ...player,
+        fullName: editName,
+        phone: editPhone,
+        isAgent: editData.isAgent,
+        agentRakePercentage: editData.isAgent && editData.agentRakePercentage !== ''
+          ? (Number(editData.agentRakePercentage) / 100).toFixed(4)
+          : null,
+      });
+      const originalAgentId = player.agent?.id || '';
+      if (String(editData.agentId) !== String(originalAgentId)) {
+        await setPlayerAgent(id, editData.agentId || null);
+      }
       setPlayer(p => ({ ...p, fullName: editName, phone: editPhone }));
       setMsg({ type: 'success', text: 'פרטי השחקן עודכנו' });
       setShowEditInfo(false);
@@ -189,7 +204,7 @@ export default function PlayerDetail() {
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
-              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); }}>
+              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agent?.id || '' }); }}>
                 ✏️ Edit Info
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
@@ -287,7 +302,53 @@ export default function PlayerDetail() {
                 <input type="text" value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="מספר טלפון" />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {isAdmin && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '1rem' }}>
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={editData.isAgent || false}
+                      onChange={e => setEditData(d => ({ ...d, isAgent: e.target.checked }))}
+                    />
+                    <span>This player is an agent</span>
+                  </label>
+                </div>
+                {editData.isAgent && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
+                      Agent rake %
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      value={editData.agentRakePercentage}
+                      onChange={e => setEditData(d => ({ ...d, agentRakePercentage: e.target.value }))}
+                      style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}
+                    />
+                    <span style={{ marginLeft: '4px', color: '#94a3b8' }}>%</span>
+                  </div>
+                )}
+                <div>
+                  <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
+                    Assigned agent
+                  </label>
+                  <select
+                    value={editData.agentId || ''}
+                    onChange={e => setEditData(d => ({ ...d, agentId: e.target.value }))}
+                    style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}
+                  >
+                    <option value="">None</option>
+                    {agents.map(a => (
+                      <option key={a.id} value={a.id}>{a.username}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
               <button type="submit" className="btn btn-success">שמור</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowEditInfo(false)}>ביטול</button>
             </div>
