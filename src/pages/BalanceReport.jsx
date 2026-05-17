@@ -50,8 +50,8 @@ function calculateSettlements(players, minPayment) {
 
 export default function BalanceReport() {
   const [players, setPlayers] = useState([]);
-  const [threshold, setThreshold] = useState('');
-  const [minPayment, setMinPayment] = useState('');
+  const [threshold, setThreshold] = useState(() => localStorage.getItem('brThreshold') || '');
+  const [minPayment, setMinPayment] = useState(() => localStorage.getItem('brMinPayment') || '');
   const [sortCol, setSortCol] = useState('balance');
   const [sortDir, setSortDir] = useState(1);
   const [settlements, setSettlements] = useState(() => {
@@ -64,8 +64,13 @@ export default function BalanceReport() {
   const [recorded, setRecorded] = useState(() => {
     try { return JSON.parse(localStorage.getItem('settlementRecorded') || '{}'); } catch { return {}; }
   });
-  const [defaultMethod, setDefaultMethod] = useState('CASH');
-  const [noTransfer, setNoTransfer] = useState(new Set());
+  const [defaultMethod, setDefaultMethod] = useState(() => {
+    const saved = localStorage.getItem('brDefaultMethod');
+    return saved && METHODS.includes(saved) ? saved : METHODS[0];
+  });
+  const [noTransfer, setNoTransfer] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('brNoTransfer') || '[]')); } catch { return new Set(); }
+  });
   const navigate = useNavigate();
 
   useEffect(() => { getPlayers().then(r => setPlayers(r.data)); }, []);
@@ -73,6 +78,10 @@ export default function BalanceReport() {
   useEffect(() => { localStorage.setItem('settlementStatuses', JSON.stringify(statuses)); }, [statuses]);
   useEffect(() => { localStorage.setItem('settlementsList', JSON.stringify(settlements)); }, [settlements]);
   useEffect(() => { localStorage.setItem('settlementRecorded', JSON.stringify(recorded)); }, [recorded]);
+  useEffect(() => { localStorage.setItem('brThreshold', threshold); }, [threshold]);
+  useEffect(() => { localStorage.setItem('brMinPayment', minPayment); }, [minPayment]);
+  useEffect(() => { localStorage.setItem('brDefaultMethod', defaultMethod); }, [defaultMethod]);
+  useEffect(() => { localStorage.setItem('brNoTransfer', JSON.stringify([...noTransfer])); }, [noTransfer]);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '0';
