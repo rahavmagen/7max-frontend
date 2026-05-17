@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlayers, createSettlement } from '../api';
 
-const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER'];
-const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer' };
+const METHODS = ['IGNORE', 'BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER'];
+const METHOD_LABELS = { IGNORE: 'Ignore', BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer' };
 const METHOD_FIELDS = { BIT: 'bitEnabled', PAYBOX: 'payboxEnabled', KASHCASH: 'kashcashEnabled', BANK_TRANSFER: 'bankTransferEnabled' };
 
 const STATUS_ORDER = ['pending', 'notify', 'waiting', 'complete', 'clean'];
@@ -114,7 +114,7 @@ export default function BalanceReport() {
     localStorage.removeItem('settlementStatuses');
     localStorage.removeItem('settlementRecorded');
     const methodField = METHOD_FIELDS[defaultMethod];
-    const result = calculateSettlements(filtered.filter(p => !noTransfer.has(p.id) && p[methodField] === true), minPayment);
+    const result = calculateSettlements(filtered.filter(p => !noTransfer.has(p.id) && (defaultMethod === 'IGNORE' || p[methodField] === true)), minPayment);
     setSettlements(result);
   };
 
@@ -269,7 +269,7 @@ export default function BalanceReport() {
             </thead>
             <tbody>
               {sorted.map(p => {
-                const acceptsMethod = p[METHOD_FIELDS[defaultMethod]] === true;
+                const acceptsMethod = defaultMethod === 'IGNORE' || p[METHOD_FIELDS[defaultMethod]] === true;
                 return (
                 <tr key={p.id} style={{ cursor: 'pointer', opacity: noTransfer.has(p.id) || !acceptsMethod ? 0.45 : 1 }} onClick={() => navigate(`/player/${p.id}`)}>
                   <td style={{ fontWeight: 600 }}>{p.username}</td>
@@ -277,7 +277,7 @@ export default function BalanceReport() {
                   <td>{fmt(p.currentChips)}</td>
                   <td style={{ color: p.creditTotal > 0 ? '#f59e0b' : '#64748b' }}>{fmt(p.creditTotal)}</td>
                   <td><strong className={balanceClass(p.balance)}>{fmt(p.balance)}</strong></td>
-                  <td style={{ textAlign: 'center' }}>{acceptsMethod ? '✓' : <span style={{ color: '#ef4444' }}>✗</span>}</td>
+                  <td style={{ textAlign: 'center' }}>{defaultMethod === 'IGNORE' ? '' : acceptsMethod ? '✓' : <span style={{ color: '#ef4444' }}>✗</span>}</td>
                   <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={noTransfer.has(p.id)}
                       onChange={e => setNoTransfer(prev => {
