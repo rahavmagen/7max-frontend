@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlayers, createSettlement } from '../api';
 
-const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
-const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
+const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER'];
+const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer' };
 
 const STATUS_ORDER = ['pending', 'notify', 'waiting', 'complete', 'clean'];
 const STATUS_LABELS = { pending: 'Pending', notify: 'Notified', waiting: 'Waiting', complete: 'Complete', clean: 'Clean' };
