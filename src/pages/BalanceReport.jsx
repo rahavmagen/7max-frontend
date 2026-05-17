@@ -4,6 +4,7 @@ import { getPlayers, createSettlement } from '../api';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer' };
+const METHOD_FIELDS = { BIT: 'bitEnabled', PAYBOX: 'payboxEnabled', KASHCASH: 'kashcashEnabled', BANK_TRANSFER: 'bankTransferEnabled' };
 
 const STATUS_ORDER = ['pending', 'notify', 'waiting', 'complete', 'clean'];
 const STATUS_LABELS = { pending: 'Pending', notify: 'Notified', waiting: 'Waiting', complete: 'Complete', clean: 'Clean' };
@@ -112,7 +113,8 @@ export default function BalanceReport() {
     setRecorded({});
     localStorage.removeItem('settlementStatuses');
     localStorage.removeItem('settlementRecorded');
-    const result = calculateSettlements(filtered.filter(p => !noTransfer.has(p.id)), minPayment);
+    const methodField = METHOD_FIELDS[defaultMethod];
+    const result = calculateSettlements(filtered.filter(p => !noTransfer.has(p.id) && p[methodField] === true), minPayment);
     setSettlements(result);
   };
 
@@ -261,17 +263,21 @@ export default function BalanceReport() {
                 <th style={thStyle} onClick={() => handleSort('currentChips')}>Current Chips{arrow('currentChips')}</th>
                 <th style={thStyle} onClick={() => handleSort('creditTotal')}>Credit{arrow('creditTotal')}</th>
                 <th style={thStyle} onClick={() => handleSort('balance')}>Balance{arrow('balance')}</th>
+                <th style={{ textAlign: 'center' }}>{METHOD_LABELS[defaultMethod]}</th>
                 <th style={{ textAlign: 'center' }}>No Transfer</th>
               </tr>
             </thead>
             <tbody>
-              {sorted.map(p => (
-                <tr key={p.id} style={{ cursor: 'pointer', opacity: noTransfer.has(p.id) ? 0.45 : 1 }} onClick={() => navigate(`/player/${p.id}`)}>
+              {sorted.map(p => {
+                const acceptsMethod = p[METHOD_FIELDS[defaultMethod]] === true;
+                return (
+                <tr key={p.id} style={{ cursor: 'pointer', opacity: noTransfer.has(p.id) || !acceptsMethod ? 0.45 : 1 }} onClick={() => navigate(`/player/${p.id}`)}>
                   <td style={{ fontWeight: 600 }}>{p.username}</td>
                   <td style={{ color: '#94a3b8' }}>{p.fullName || '—'}</td>
                   <td>{fmt(p.currentChips)}</td>
                   <td style={{ color: p.creditTotal > 0 ? '#f59e0b' : '#64748b' }}>{fmt(p.creditTotal)}</td>
                   <td><strong className={balanceClass(p.balance)}>{fmt(p.balance)}</strong></td>
+                  <td style={{ textAlign: 'center' }}>{acceptsMethod ? '✓' : <span style={{ color: '#ef4444' }}>✗</span>}</td>
                   <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={noTransfer.has(p.id)}
                       onChange={e => setNoTransfer(prev => {
@@ -282,7 +288,8 @@ export default function BalanceReport() {
                       style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }} />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table></div>
         )}
