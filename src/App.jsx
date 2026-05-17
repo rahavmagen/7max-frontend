@@ -111,7 +111,7 @@ function AppRoutes() {
               <NavLink to="/add-player">Add Player</NavLink>
               <NavLink to="/bring-a-friend">Bring a Friend</NavLink>
               <NavLink to="/transfers">Transfers</NavLink>
-              <NavLink to="/balance-report">Balance Report</NavLink>
+              <NavLink to="/balance-report">התחשבנות</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
               <NavLink to="/bank-balance">Bank Balance</NavLink>
               <NavLink to="/club-wallets">Club Wallets</NavLink>
