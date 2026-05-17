@@ -7,7 +7,7 @@ const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK
 const METHOD_FIELDS = { BIT: 'bitEnabled', PAYBOX: 'payboxEnabled', KASHCASH: 'kashcashEnabled', BANK_TRANSFER: 'bankTransferEnabled' };
 
 const STATUS_ORDER = ['pending', 'notify', 'waiting', 'complete', 'clean'];
-const STATUS_LABELS = { pending: 'Pending', notify: 'Notified', waiting: 'Waiting', complete: 'Complete', clean: 'Clean' };
+const STATUS_LABELS = { pending: 'Pending', notify: 'Notify', waiting: 'Waiting', complete: 'Complete', clean: 'Clean' };
 const STATUS_COLORS = { pending: '#64748b', notify: '#f59e0b', waiting: '#3b82f6', complete: '#22c55e', clean: '#475569' };
 
 function calculateSettlements(players, minPayment) {
