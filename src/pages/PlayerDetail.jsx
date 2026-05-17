@@ -449,11 +449,10 @@ export default function PlayerDetail() {
             { key: 'paybox',       label: 'Paybox',         field: 'payboxEnabled'       },
             { key: 'kashcash',     label: 'Kashcash',       field: 'kashcashEnabled'     },
             { key: 'bankTransfer', label: 'Bank Transfer',  field: 'bankTransferEnabled' },
-            { key: 'cash',         label: 'Ask on pay day', field: 'cashEnabled', indent: true },
-          ].map(({ key, label, field, indent }) => {
+          ].map(({ key, label, field }) => {
             const enabled = player[field] === true;
             return (
-              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none', ...(indent ? { marginLeft: '2.5rem' } : {}) }}>
+              <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
                 <input
                   type="checkbox"
                   checked={enabled}
