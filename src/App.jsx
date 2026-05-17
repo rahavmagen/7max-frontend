@@ -1,6 +1,16 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+
+function useTheme() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  const toggle = useCallback(() => setTheme(t => t === 'dark' ? 'light' : 'dark'), []);
+  return [theme, toggle];
+}
 import Dashboard from './pages/Dashboard';
 import PlayerDetail from './pages/PlayerDetail';
 import Upload from './pages/Upload';
@@ -80,6 +90,7 @@ function PlayerDefaultRedirect({ auth }) {
 
 function AppRoutes() {
   const { auth, logout } = useAuth();
+  const [theme, toggleTheme] = useTheme();
 
   if (!auth) {
     const path = window.location.pathname;
@@ -135,20 +146,25 @@ function AppRoutes() {
             </>
           )}
         </div>
-        <button
-          onClick={logout}
-          style={{
-            background: 'none',
-            border: '1px solid #2d3148',
-            color: '#94a3b8',
-            padding: '4px 12px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-          }}
-        >
-          יציאה
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button className="theme-toggle" onClick={toggleTheme}>
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button
+            onClick={logout}
+            style={{
+              background: 'none',
+              border: '1px solid #334155',
+              color: '#94a3b8',
+              padding: '4px 12px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+            }}
+          >
+            יציאה
+          </button>
+        </div>
       </nav>
       <main className="main-content">
         <Routes>
