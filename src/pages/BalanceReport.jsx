@@ -28,8 +28,12 @@ function calculateSettlements(players, minPayment) {
       const winner = winners[wi];
       if (winner.rem < 0.01) { wi++; continue; }
       // amount = full settlement between this pair (no cap)
-      const amount = Math.min(Math.abs(loser.rem), winner.rem);
-      if (amount < mp - 0.01) { wi++; continue; } // below minimum, skip
+      const loserRem = Math.abs(loser.rem);
+      const amount = Math.min(loserRem, winner.rem);
+      if (amount < mp - 0.01) {
+        if (loserRem < mp - 0.01) break; // loser's remaining debt too small — move to next loser, keep winner
+        wi++; continue;                  // winner's remaining too small — try next winner
+      }
       settlements.push({
         id: `${loser.id}-${winner.id}-${settlements.length}`,
         fromId: loser.id,
