@@ -14,13 +14,16 @@ export default function Deposit() {
 
   useEffect(() => {
     const handler = (e) => {
+      // TODO: restrict to KashCash origin once confirmed, e.g.: if (e.origin !== 'https://checkout.kashcash.co.il') return;
       const data = e.data || {};
       if (data.status === 1) {
         setPaymentStatus('success');
+        setIframeUrl(null);
         // Reload history after successful payment
         getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
       } else if (data.status === 2 || data.status === 3) {
         setPaymentStatus('error');
+        setIframeUrl(null);
       }
     };
     window.addEventListener('message', handler);
@@ -36,10 +39,10 @@ export default function Deposit() {
     try {
       const res = await initiateKashcashDeposit(num);
       const { iframeUrl: url, appPaymentIntentUrl } = res.data;
-      setIframeUrl(url);
-      // On mobile, open the payment intent URL
       if (appPaymentIntentUrl && /Mobi|Android/i.test(navigator.userAgent)) {
         window.location.href = appPaymentIntentUrl;
+      } else {
+        setIframeUrl(url);
       }
     } catch {
       setPaymentStatus('error');

@@ -154,7 +154,11 @@ export default function KashcashDeposits() {
           </button>
           {(from || to) && (
             <button
-              onClick={() => { setFrom(''); setTo(''); setTimeout(loadHistory, 0); }}
+              onClick={() => {
+                setFrom('');
+                setTo('');
+                getKashcashHistory(null, null).then(r => setHistory(r.data)).catch(() => {});
+              }}
               style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '7px 14px', cursor: 'pointer', fontSize: '0.85rem' }}
             >
               Clear
