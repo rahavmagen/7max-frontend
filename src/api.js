@@ -150,4 +150,16 @@ export const getAgentPlayerStats = (id, params) => api.get(`/agents/${id}/player
 export const settleAgent = (id) => api.post(`/agents/${id}/settle`);
 export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playerId}/agent`, { agentId: agentId || null });
 
+// KashCash deposits
+export const initiateKashcashDeposit = (amount) => api.post('/kashcash/initiate', { amount });
+export const getPendingKashcashDeposits = () => api.get('/kashcash/pending');
+export const getKashcashHistory = (from, to) => {
+  const params = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+  return api.get('/kashcash/history', { params });
+};
+export const confirmKashcashDeposit = (id) => api.post(`/kashcash/confirm/${id}`);
+export const getMyKashcashDeposits = () => api.get('/kashcash/my');
+
 export default api;
