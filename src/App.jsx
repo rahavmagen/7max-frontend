@@ -41,6 +41,8 @@ import BankBalance from './pages/BankBalance';
 import ClubWallets from './pages/ClubWallets';
 import TicketAssets from './pages/TicketAssets';
 import WhatsAppMessages from './pages/WhatsAppMessages';
+import Deposit from './pages/Deposit';
+import KashcashDeposits from './pages/KashcashDeposits';
 import './App.css';
 
 const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/credit-compare'];
@@ -133,6 +135,7 @@ function AppRoutes() {
               <NavLink to="/league">League</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
+              <NavLink to="/kashcash-deposits">KashCash Deposits</NavLink>
             </>
           )}
           {isPlayer && (
@@ -142,6 +145,7 @@ function AppRoutes() {
               <NavLink to="/active-players">Players</NavLink>
               <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/league">League</NavLink>
+              <NavLink to="/deposit">Deposit</NavLink>
               {isAgent && <NavLink to="/agent-portal">Agents</NavLink>}
             </>
           )}
@@ -197,6 +201,7 @@ function AppRoutes() {
               <Route path="/lesson" element={<Lesson />} />
               <Route path="/league" element={<League />} />
               <Route path="/wheel" element={<Wheel />} />
+              <Route path="/kashcash-deposits" element={<KashcashDeposits />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}
@@ -209,6 +214,7 @@ function AppRoutes() {
               <Route path="/lesson" element={<Lesson />} />
               <Route path="/league" element={<League />} />
               <Route path="/agent-portal" element={<AgentPortal />} />
+              <Route path="/deposit" element={<Deposit />} />
               <Route path="*" element={<PlayerDefaultRedirect auth={auth} />} />
             </>
           )}
