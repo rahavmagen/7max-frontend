@@ -135,6 +135,7 @@ function AppRoutes() {
               <NavLink to="/league">League</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
+              <NavLink to="/deposit">Deposit KashCash</NavLink>
               <NavLink to="/kashcash-deposits">KashCash Deposits</NavLink>
             </>
           )}
@@ -145,7 +146,7 @@ function AppRoutes() {
               <NavLink to="/active-players">Players</NavLink>
               <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/league">League</NavLink>
-              <NavLink to="/deposit">Deposit</NavLink>
+              <NavLink to="/deposit">Deposit KashCash</NavLink>
               {isAgent && <NavLink to="/agent-portal">Agents</NavLink>}
             </>
           )}
@@ -202,6 +203,7 @@ function AppRoutes() {
               <Route path="/league" element={<League />} />
               <Route path="/wheel" element={<Wheel />} />
               <Route path="/kashcash-deposits" element={<KashcashDeposits />} />
+              <Route path="/deposit" element={<Deposit />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}

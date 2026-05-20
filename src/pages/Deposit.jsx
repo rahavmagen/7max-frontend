@@ -19,7 +19,6 @@ export default function Deposit() {
       if (data.status === 1) {
         setPaymentStatus('success');
         setIframeUrl(null);
-        // Reload history after successful payment
         getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
       } else if (data.status === 2 || data.status === 3) {
         setPaymentStatus('error');
@@ -50,74 +49,147 @@ export default function Deposit() {
     setLoading(false);
   };
 
+  const quickAmounts = [300, 500, 1000, 2000];
+
   return (
     <div style={{ maxWidth: 700, margin: '0 auto', padding: '1.5rem' }}>
-      <h2 style={{ color: 'var(--text-primary)', marginBottom: '1.5rem' }}>Deposit via KashCash</h2>
 
-      {!iframeUrl && (
-        <div style={{
+      <div style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
-          borderRadius: 8,
-          padding: '1.5rem',
-          maxWidth: 400,
+          borderRadius: 12,
+          overflow: 'hidden',
+          maxWidth: 420,
         }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', color: 'var(--text-label)', fontSize: '0.85rem', marginBottom: 6 }}>
+          {/* Header */}
+          <div style={{
+            background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2240 100%)',
+            padding: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            borderBottom: '1px solid var(--border)',
+          }}>
+            <img
+              src="/kashcashLogo.png"
+              alt="KashCash"
+              style={{ height: 48, width: 48, borderRadius: 10, objectFit: 'contain', background: '#fff', padding: 4 }}
+              onError={e => { e.target.style.display = 'none'; }}
+            />
+            <div>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>KashCash Deposit</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: 2 }}>Secure payment via KashCash</div>
+            </div>
+          </div>
+
+          {/* Form */}
+          <div style={{ padding: '1.5rem' }}>
+            <label style={{ display: 'block', color: 'var(--text-label)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Amount (&#8362;)
             </label>
+
+            {/* Quick amount buttons */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {quickAmounts.map(q => (
+                <button
+                  key={q}
+                  onClick={() => setAmount(String(q))}
+                  style={{
+                    flex: 1,
+                    padding: '6px 0',
+                    background: amount === String(q) ? 'var(--accent)' : 'var(--bg-input)',
+                    color: amount === String(q) ? '#0f172a' : 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 6,
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  &#8362;{q}
+                </button>
+              ))}
+            </div>
+
             <input
               type="number"
               min="1"
               step="1"
               value={amount}
               onChange={e => setAmount(e.target.value)}
-              placeholder="Enter amount"
+              placeholder="Or enter custom amount"
               style={{
                 width: '100%',
-                padding: '8px 12px',
+                padding: '10px 14px',
                 background: 'var(--bg-input)',
                 border: '1px solid var(--border)',
-                borderRadius: 6,
+                borderRadius: 8,
                 color: 'var(--text-primary)',
                 fontSize: '1rem',
                 boxSizing: 'border-box',
+                marginBottom: '1.25rem',
+                outline: 'none',
               }}
             />
+
+            <button
+              onClick={handlePay}
+              disabled={loading || !amount || parseFloat(amount) < 1}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                background: loading || !amount || parseFloat(amount) < 1 ? '#334155' : 'var(--accent)',
+                color: loading || !amount || parseFloat(amount) < 1 ? '#64748b' : '#0f172a',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: '1rem',
+                cursor: loading || !amount || parseFloat(amount) < 1 ? 'not-allowed' : 'pointer',
+                transition: 'background 0.15s',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {loading ? 'Processing...' : `Deposit KashCash${amount && parseFloat(amount) >= 1 ? ` · ₪${parseFloat(amount).toLocaleString()}` : ''}`}
+            </button>
+
+            <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+              <span>🔒</span>
+              <span>Payments are processed securely by KashCash</span>
+            </div>
           </div>
-          <button
-            onClick={handlePay}
-            disabled={loading || !amount || parseFloat(amount) < 1}
-            style={{
-              background: loading || !amount ? '#334155' : 'var(--accent)',
-              color: '#0f172a',
-              border: 'none',
-              borderRadius: 6,
-              padding: '10px 24px',
-              fontWeight: 600,
-              fontSize: '0.95rem',
-              cursor: loading || !amount ? 'not-allowed' : 'pointer',
-              width: '100%',
-            }}
-          >
-            {loading ? 'Processing...' : 'Pay with KashCash'}
-          </button>
-        </div>
-      )}
+      </div>
 
       {iframeUrl && (
-        <div style={{ margin: '1rem 0' }}>
-          <iframe
-            src={iframeUrl}
-            title="KashCash Payment"
-            style={{
-              width: '100%',
-              height: 520,
-              border: 'none',
-              borderRadius: 8,
-              background: '#fff',
-            }}
-          />
+        <div style={{ margin: '0 0 1rem 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Complete your payment</span>
+            <button
+              onClick={() => { setIframeUrl(null); setPaymentStatus(null); }}
+              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Cancel
+            </button>
+          </div>
+          {iframeUrl.trimStart().startsWith('<svg') ? (
+            <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+              <p style={{ color: '#334155', marginBottom: '1rem', fontWeight: 500 }}>Scan the QR code to complete your payment</p>
+              <div dangerouslySetInnerHTML={{ __html: iframeUrl }} style={{ display: 'inline-block', maxWidth: 260 }} />
+            </div>
+          ) : (
+            <iframe
+              src={iframeUrl}
+              title="KashCash Payment"
+              style={{
+                width: '100%',
+                height: 540,
+                border: 'none',
+                borderRadius: 12,
+                background: '#fff',
+                boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -126,11 +198,15 @@ export default function Deposit() {
           background: '#14532d',
           color: '#86efac',
           border: '1px solid #16a34a',
-          borderRadius: 8,
+          borderRadius: 10,
           padding: '1rem 1.5rem',
           marginTop: '1rem',
           fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
         }}>
+          <span style={{ fontSize: '1.2rem' }}>✓</span>
           Payment confirmed! Chips will be added to your account shortly.
         </div>
       )}
@@ -140,50 +216,58 @@ export default function Deposit() {
           background: '#450a0a',
           color: '#fca5a5',
           border: '1px solid #dc2626',
-          borderRadius: 8,
+          borderRadius: 10,
           padding: '1rem 1.5rem',
           marginTop: '1rem',
           fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
         }}>
+          <span style={{ fontSize: '1.2rem' }}>✕</span>
           Payment was cancelled or rejected. Please try again.
         </div>
       )}
 
       {history.length > 0 && (
-        <div style={{ marginTop: '2rem' }}>
-          <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>My Deposit History</h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  {['Date', 'Amount', 'KashCash TxID', 'Chips Status'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600 }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {history.map(row => (
-                  <tr key={row.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                      {row.date ? new Date(row.date).toLocaleString('he-IL') : '—'}
-                    </td>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-primary)', fontWeight: 500 }}>
-                      &#8362;{Number(row.amount).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: '0.78rem', fontFamily: 'monospace' }}>
-                      {row.kashcashTxId}
-                    </td>
-                    <td style={{ padding: '8px 12px' }}>
-                      {row.chipsConfirmed
-                        ? <span style={{ color: '#86efac' }}>Added</span>
-                        : <span style={{ color: '#fbbf24' }}>Pending</span>}
-                    </td>
+        <div style={{ marginTop: '2.5rem' }}>
+          <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Deposit History
+          </h3>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(0,0,0,0.15)' }}>
+                    {['Date', 'Amount', 'KashCash TxID', 'Status'].map(h => (
+                      <th key={h} style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {history.map((row, i) => (
+                    <tr key={row.id} style={{ borderTop: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                        {row.date ? new Date(row.date).toLocaleString('he-IL') : '—'}
+                      </td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                        &#8362;{Number(row.amount).toLocaleString()}
+                      </td>
+                      <td style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                        {row.kashcashTxId || '—'}
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {row.chipsConfirmed
+                          ? <span style={{ color: '#86efac', fontWeight: 600, fontSize: '0.8rem' }}>Added</span>
+                          : <span style={{ color: '#fbbf24', fontWeight: 600, fontSize: '0.8rem' }}>Pending</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
