@@ -10,6 +10,7 @@ export default function PlayerStats() {
   const [gameType, setGameType] = useState('');
   const [minGames, setMinGames] = useState('');
   const [minAbsPnl, setMinAbsPnl] = useState('');
+  const [maxAbsPnl, setMaxAbsPnl] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sortCol, setSortCol] = useState('sessionCount');
@@ -33,18 +34,20 @@ export default function PlayerStats() {
 
   const minG = parseInt(minGames) || 0;
   const minAbs = parseInt(minAbsPnl) || 0;
+  const maxAbs = parseInt(maxAbsPnl) || 0;
 
   const sorted = useMemo(() => {
     if (!data) return [];
     let filtered = minG > 0 ? data.filter(p => p.sessionCount >= minG) : data;
     if (minAbs > 0) filtered = filtered.filter(p => Math.abs(Number(p.totalPnl)) >= minAbs);
+    if (maxAbs > 0) filtered = filtered.filter(p => Math.abs(Number(p.totalPnl)) <= maxAbs);
     return [...filtered].sort((a, b) => {
       const av = sortCol === 'username' ? (a.username || '') : Number(a[sortCol] || 0);
       const bv = sortCol === 'username' ? (b.username || '') : Number(b[sortCol] || 0);
       if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
       return (av - bv) * sortDir;
     });
-  }, [data, sortCol, sortDir, minG, minAbs]);
+  }, [data, sortCol, sortDir, minG, minAbs, maxAbs]);
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d * -1);
@@ -100,9 +103,21 @@ export default function PlayerStats() {
             style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '6px 10px', fontSize: '0.9rem', width: 90 }} />
         </div>
         <div>
-          <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase' }}>Min |P&L| (₪)</label>
-          <input type="number" min="0" value={minAbsPnl} onChange={e => setMinAbsPnl(e.target.value)} placeholder="0 = all"
-            style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '6px 10px', fontSize: '0.9rem', width: 110 }} />
+          <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase' }}>|P&L| filter (₪) — pick one</label>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Min</span>
+            <input type="number" min="0" value={minAbsPnl}
+              onChange={e => { setMinAbsPnl(e.target.value); if (e.target.value) setMaxAbsPnl(''); }}
+              placeholder="0"
+              disabled={!!maxAbsPnl}
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: maxAbsPnl ? '#475569' : 'var(--text-primary)', padding: '6px 10px', fontSize: '0.9rem', width: 90, opacity: maxAbsPnl ? 0.4 : 1 }} />
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Max</span>
+            <input type="number" min="0" value={maxAbsPnl}
+              onChange={e => { setMaxAbsPnl(e.target.value); if (e.target.value) setMinAbsPnl(''); }}
+              placeholder="0"
+              disabled={!!minAbsPnl}
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: minAbsPnl ? '#475569' : 'var(--text-primary)', padding: '6px 10px', fontSize: '0.9rem', width: 90, opacity: minAbsPnl ? 0.4 : 1 }} />
+          </div>
         </div>
         {loading && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading...</span>}
         {data && !loading && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{sorted.length}{minG > 0 ? `/${data.length}` : ''} players</span>}
