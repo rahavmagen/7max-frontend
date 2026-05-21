@@ -15,6 +15,7 @@ const BUCKETS = [
 
 export default function PlayerStats() {
   const [gameType, setGameType] = useState('');
+  const [minGames, setMinGames] = useState('');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [sortCol, setSortCol] = useState('sessionCount');
@@ -36,9 +37,12 @@ export default function PlayerStats() {
     load(gt);
   };
 
+  const minG = parseInt(minGames) || 0;
+
   const sorted = useMemo(() => {
     if (!data) return [];
-    return [...data].sort((a, b) => {
+    const filtered = minG > 0 ? data.filter(p => p.sessionCount >= minG) : data;
+    return [...filtered].sort((a, b) => {
       const av = sortCol === 'username' ? (a.username || '') : Number(a[sortCol] || 0);
       const bv = sortCol === 'username' ? (b.username || '') : Number(b[sortCol] || 0);
       if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
@@ -54,8 +58,9 @@ export default function PlayerStats() {
 
   const winRateBuckets = useMemo(() => {
     if (!data) return [];
+    const base = minG > 0 ? data.filter(p => p.sessionCount >= minG) : data;
     return BUCKETS.map(b => {
-      const inBucket = data.filter(p => p.sessionCount >= b.min && p.sessionCount <= b.max);
+      const inBucket = base.filter(p => p.sessionCount >= b.min && p.sessionCount <= b.max);
       const winners = inBucket.filter(p => Number(p.totalPnl) > 0);
       return { ...b, total: inBucket.length, winners: winners.length };
     }).filter(b => b.total > 0);
@@ -83,8 +88,13 @@ export default function PlayerStats() {
             {GAME_TYPES.map(t => <option key={t} value={t}>{GAME_TYPE_LABELS[t]}</option>)}
           </select>
         </div>
+        <div>
+          <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase' }}>Min games</label>
+          <input type="number" min="0" value={minGames} onChange={e => setMinGames(e.target.value)} placeholder="0 = all"
+            style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '6px 10px', fontSize: '0.9rem', width: 90 }} />
+        </div>
         {loading && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading...</span>}
-        {data && !loading && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{data.length} players</span>}
+        {data && !loading && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{sorted.length}{minG > 0 ? `/${data.length}` : ''} players</span>}
       </div>
 
       {/* Win Rate Buckets */}
