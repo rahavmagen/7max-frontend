@@ -12,6 +12,7 @@ export default function Deposit() {
   });
   const [history, setHistory] = useState([]);
   const pendingTxIdRef = useRef(null);
+  const paymentHandledRef = useRef(false); // prevents duplicate/follow-up postMessages overriding result
 
   const updateStatus = (status) => {
     // Only persist success — error/processing should clear on page reload
@@ -28,11 +29,10 @@ export default function Deposit() {
     const handler = (e) => {
       const data = e.data || {};
       if (data.status === 1) {
+        if (paymentHandledRef.current) return;
+        paymentHandledRef.current = true;
         setIframeUrl(null);
         updateStatus('processing');
-        console.log('[KashCash] postMessage status=1, data.transactionId=', data.transactionId, 'pendingTxIdRef=', pendingTxIdRef.current);
-        // Always prefer our stored txId (from initiate response, saved to DB)
-        // data.transactionId from KashCash postMessage may differ from what we saved
         const txId = pendingTxIdRef.current || data.transactionId;
         if (txId) {
           finalizeKashcashDeposit(txId)
@@ -49,6 +49,7 @@ export default function Deposit() {
           updateStatus('error');
         }
       } else if (data.status === 2 || data.status === 3) {
+        if (paymentHandledRef.current) return;
         updateStatus('error');
         setIframeUrl(null);
       }
@@ -63,6 +64,7 @@ export default function Deposit() {
     setLoading(true);
     updateStatus(null);
     setIframeUrl(null);
+    paymentHandledRef.current = false;
     try {
       const res = await initiateKashcashDeposit(num);
       const { iframeUrl: url, appPaymentIntentUrl, transactionId } = res.data;
