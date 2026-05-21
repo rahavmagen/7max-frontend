@@ -5,13 +5,6 @@ import { getPlayerStats } from '../api';
 const GAME_TYPES = ['', 'NLH', 'PLO', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
 const GAME_TYPE_LABELS = { '': 'All Types', NLH: 'NLH (Cash)', PLO: 'PLO', PLO5: 'PLO5', PLO6: 'PLO6', MTT: 'MTT', SNG: 'SNG', AoF: 'AoF', SPIN_GOLD: 'Spin Gold' };
 
-const BUCKETS = [
-  { label: '1–5',    min: 1,   max: 5   },
-  { label: '6–20',   min: 6,   max: 20  },
-  { label: '21–50',  min: 21,  max: 50  },
-  { label: '51–100', min: 51,  max: 100 },
-  { label: '100+',   min: 101, max: Infinity },
-];
 
 export default function PlayerStats() {
   const [gameType, setGameType] = useState('');
@@ -56,16 +49,6 @@ export default function PlayerStats() {
   };
   const arrow = (col) => sortCol === col ? (sortDir === 1 ? ' ↑' : ' ↓') : '';
 
-  const winRateBuckets = useMemo(() => {
-    if (!data) return [];
-    const base = minG > 0 ? data.filter(p => p.sessionCount >= minG) : data;
-    return BUCKETS.map(b => {
-      const inBucket = base.filter(p => p.sessionCount >= b.min && p.sessionCount <= b.max);
-      const winners = inBucket.filter(p => Number(p.totalPnl) > 0);
-      return { ...b, total: inBucket.length, winners: winners.length };
-    }).filter(b => b.total > 0);
-  }, [data, minG]);
-
   const fmt = (n) => {
     const v = Number(n);
     const abs = Math.abs(v).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -97,26 +80,23 @@ export default function PlayerStats() {
         {data && !loading && <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{sorted.length}{minG > 0 ? `/${data.length}` : ''} players</span>}
       </div>
 
-      {/* Win Rate Buckets */}
-      {winRateBuckets.length > 0 && (
-        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '1.25rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ color: 'var(--text-primary)', marginTop: 0, marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Win Rate by Games Played</h3>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            {winRateBuckets.map(b => {
-              const pct = b.total > 0 ? Math.round((b.winners / b.total) * 100) : 0;
-              const color = pct >= 50 ? '#22c55e' : pct >= 30 ? '#f59e0b' : '#ef4444';
-              return (
-                <div key={b.label} style={{ background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.75rem 1.25rem', minWidth: 130, textAlign: 'center' }}>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 6 }}>{b.label} games</div>
-                  <div style={{ color, fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{pct}%</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>winners</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: 2 }}>{b.winners}/{b.total} players</div>
-                </div>
-              );
-            })}
+      {/* Win Rate Summary */}
+      {sorted.length > 0 && (() => {
+        const winners = sorted.filter(p => Number(p.totalPnl) > 0).length;
+        const pct = Math.round((winners / sorted.length) * 100);
+        const color = pct >= 50 ? '#22c55e' : pct >= 30 ? '#f59e0b' : '#ef4444';
+        return (
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ color: 'var(--text-primary)', marginTop: 0, marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Win Rate</h3>
+            <div style={{ display: 'inline-block', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.75rem 1.5rem', textAlign: 'center', minWidth: 150 }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, marginBottom: 6 }}>{minG > 0 ? `${minG}+ games` : 'All games'}</div>
+              <div style={{ color, fontSize: '1.6rem', fontWeight: 800, lineHeight: 1 }}>{pct}%</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>winners</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: 2 }}>{winners}/{sorted.length} players</div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Player Table */}
       {data && (
