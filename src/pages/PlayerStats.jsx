@@ -129,7 +129,7 @@ export default function PlayerStats() {
       {/* P&L Distribution Chart */}
       {pnlChart && (() => {
         const { buckets } = pnlChart;
-        const W = 900, H = 200, PAD = { top: 24, bottom: 44, left: 10, right: 10 };
+        const W = 900, H = 220, PAD = { top: 28, bottom: 56, left: 10, right: 10 };
         const innerW = W - PAD.left - PAD.right;
         const innerH = H - PAD.top - PAD.bottom;
         const maxCount = Math.max(...buckets.map(b => b.count));
@@ -137,8 +137,10 @@ export default function PlayerStats() {
         const fmtAxis = (v) => {
           const abs = Math.abs(v);
           const s = abs >= 1000 ? `${Math.round(abs / 1000)}k` : String(Math.round(abs));
-          return (v < 0 ? '-' : '+') + '₪' + s;
+          return (v < 0 ? '-' : v > 0 ? '+' : '') + '₪' + s;
         };
+        // show label every 2nd bucket to avoid overlap
+        const showLabel = (i) => i % 2 === 0 || i === buckets.length - 1;
         return (
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '1.25rem', marginBottom: '1.5rem' }}>
             <h3 style={{ color: 'var(--text-primary)', marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>P&L Distribution</h3>
@@ -158,21 +160,23 @@ export default function PlayerStats() {
                 const midVal = (b.from + b.to) / 2;
                 const color = midVal < 0 ? '#ef4444' : '#22c55e';
                 const cx = x + (barW - 2) / 2;
+                const labelY = PAD.top + innerH + 14;
                 return (
                   <g key={i}>
                     <rect x={x} y={y} width={barW - 2} height={barH} fill={color} opacity={0.8} rx="2" />
-                    {/* count above bar */}
                     {b.count > 0 && (
-                      <text x={cx} y={y - 4} textAnchor="middle" fill={color} fontSize="11" fontWeight="700">{b.count}</text>
+                      <text x={cx} y={y - 5} textAnchor="middle" fill={color} fontSize="13" fontWeight="800">{b.count}</text>
                     )}
-                    {/* x-axis label — rotated */}
-                    <text
-                      x={cx} y={PAD.top + innerH + 12}
-                      textAnchor="end"
-                      fill="#64748b"
-                      fontSize="10"
-                      transform={`rotate(-40, ${cx}, ${PAD.top + innerH + 12})`}
-                    >{fmtAxis(b.from)}</text>
+                    {showLabel(i) && (
+                      <text
+                        x={cx} y={labelY}
+                        textAnchor="end"
+                        fill="#94a3b8"
+                        fontSize="13"
+                        fontWeight="600"
+                        transform={`rotate(-45, ${cx}, ${labelY})`}
+                      >{fmtAxis(b.from)}</text>
+                    )}
                   </g>
                 );
               })}
