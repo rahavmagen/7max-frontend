@@ -58,6 +58,26 @@ export default function PlayerStats() {
     return (v < 0 ? '-' : v > 0 ? '+' : '') + '₪' + abs;
   };
 
+  const pnlChart = useMemo(() => {
+    if (sorted.length < 2) return null;
+    const pnls = sorted.map(p => Number(p.totalPnl));
+    const minV = Math.min(...pnls);
+    const maxV = Math.max(...pnls);
+    if (minV === maxV) return null;
+    const BUCKETS = 14;
+    const step = (maxV - minV) / BUCKETS;
+    const buckets = Array.from({ length: BUCKETS }, (_, i) => ({
+      from: minV + i * step,
+      to: minV + (i + 1) * step,
+      count: 0,
+    }));
+    pnls.forEach(v => {
+      const idx = Math.min(Math.floor((v - minV) / step), BUCKETS - 1);
+      buckets[idx].count++;
+    });
+    return { buckets, step };
+  }, [sorted]);
+
   const thStyle = { padding: '10px 14px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer', userSelect: 'none' };
   const tdStyle = { padding: '10px 14px', borderTop: '1px solid var(--border)', fontSize: '0.9rem' };
 
@@ -102,6 +122,63 @@ export default function PlayerStats() {
               <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 4 }}>winners</div>
               <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: 2 }}>{winners}/{sorted.length} players</div>
             </div>
+          </div>
+        );
+      })()}
+
+      {/* P&L Distribution Chart */}
+      {pnlChart && (() => {
+        const { buckets } = pnlChart;
+        const W = 900, H = 160, PAD = { top: 10, bottom: 32, left: 36, right: 10 };
+        const innerW = W - PAD.left - PAD.right;
+        const innerH = H - PAD.top - PAD.bottom;
+        const maxCount = Math.max(...buckets.map(b => b.count));
+        const barW = innerW / buckets.length;
+        const fmtAxis = (v) => {
+          const abs = Math.abs(v);
+          const s = abs >= 1000 ? `${Math.round(abs / 1000)}k` : Math.round(abs);
+          return (v < 0 ? '-' : v > 0 ? '+' : '') + '₪' + s;
+        };
+        return (
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ color: 'var(--text-primary)', marginTop: 0, marginBottom: '0.75rem', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>P&L Distribution</h3>
+            <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+              {/* grid lines */}
+              {[0.25, 0.5, 0.75, 1].map(f => {
+                const y = PAD.top + innerH - f * innerH;
+                return <line key={f} x1={PAD.left} x2={W - PAD.right} y1={y} y2={y} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />;
+              })}
+              {/* zero line */}
+              <line x1={PAD.left} x2={W - PAD.right} y1={PAD.top + innerH} y2={PAD.top + innerH} stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+              {/* bars */}
+              {buckets.map((b, i) => {
+                const barH = maxCount > 0 ? (b.count / maxCount) * innerH : 0;
+                const x = PAD.left + i * barW + 1;
+                const y = PAD.top + innerH - barH;
+                const midVal = (b.from + b.to) / 2;
+                const color = midVal < 0 ? '#ef4444' : midVal > 0 ? '#22c55e' : '#94a3b8';
+                return (
+                  <g key={i}>
+                    <rect x={x} y={y} width={barW - 2} height={barH} fill={color} opacity={0.75} rx="2" />
+                    {b.count > 0 && barH > 14 && (
+                      <text x={x + (barW - 2) / 2} y={y + 11} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="700">{b.count}</text>
+                    )}
+                    {b.count > 0 && barH <= 14 && (
+                      <text x={x + (barW - 2) / 2} y={y - 3} textAnchor="middle" fill={color} fontSize="9" fontWeight="700">{b.count}</text>
+                    )}
+                  </g>
+                );
+              })}
+              {/* x-axis labels — show first, middle, last */}
+              {[0, Math.floor(buckets.length / 2), buckets.length - 1].map(i => {
+                const b = buckets[i];
+                const x = PAD.left + i * barW + barW / 2;
+                const v = i === 0 ? b.from : i === buckets.length - 1 ? b.to : (b.from + b.to) / 2;
+                return (
+                  <text key={i} x={x} y={H - 4} textAnchor="middle" fill="#64748b" fontSize="9">{fmtAxis(v)}</text>
+                );
+              })}
+            </svg>
           </div>
         );
       })()}
