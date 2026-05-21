@@ -6,7 +6,10 @@ export default function Deposit() {
   const [loading, setLoading] = useState(false);
   const [iframeUrl, setIframeUrl] = useState(null);
   // Persist status across tab switches so user sees result when returning to this page
-  const [paymentStatus, setPaymentStatus] = useState(() => sessionStorage.getItem('kc_payment_status') || null);
+  const [paymentStatus, setPaymentStatus] = useState(() => {
+    const s = sessionStorage.getItem('kc_payment_status');
+    return s === 'success' ? 'success' : null; // only restore success, never error/processing
+  });
   const [history, setHistory] = useState([]);
   const pendingTxIdRef = useRef(null);
 
