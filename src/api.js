@@ -152,6 +152,7 @@ export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playe
 
 // KashCash deposits
 export const initiateKashcashDeposit = (amount) => api.post('/kashcash/initiate', { amount });
+export const finalizeKashcashDeposit = (transactionId) => api.post('/kashcash/finalize', { transactionId });
 export const getPendingKashcashDeposits = () => api.get('/kashcash/pending');
 export const getKashcashHistory = (from, to) => {
   const params = {};

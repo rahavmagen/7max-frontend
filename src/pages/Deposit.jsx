@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { initiateKashcashDeposit, getMyKashcashDeposits } from '../api';
+import { initiateKashcashDeposit, finalizeKashcashDeposit, getMyKashcashDeposits } from '../api';
 
 export default function Deposit() {
   const [amount, setAmount] = useState('');
@@ -19,6 +19,7 @@ export default function Deposit() {
       if (data.status === 1) {
         setPaymentStatus('success');
         setIframeUrl(null);
+        if (data.transactionId) finalizeKashcashDeposit(data.transactionId).catch(() => {});
         getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
       } else if (data.status === 2 || data.status === 3) {
         setPaymentStatus('error');
