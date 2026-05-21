@@ -11,7 +11,8 @@ export default function Deposit() {
   const pendingTxIdRef = useRef(null);
 
   const updateStatus = (status) => {
-    if (status) sessionStorage.setItem('kc_payment_status', status);
+    // Only persist success — error/processing should clear on page reload
+    if (status === 'success') sessionStorage.setItem('kc_payment_status', status);
     else sessionStorage.removeItem('kc_payment_status');
     setPaymentStatus(status);
   };
