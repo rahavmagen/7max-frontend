@@ -5,9 +5,16 @@ export default function Deposit() {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [iframeUrl, setIframeUrl] = useState(null);
-  const [paymentStatus, setPaymentStatus] = useState(null); // 'success' | 'error' | null
+  // Persist status across tab switches so user sees result when returning to this page
+  const [paymentStatus, setPaymentStatus] = useState(() => sessionStorage.getItem('kc_payment_status') || null);
   const [history, setHistory] = useState([]);
   const pendingTxIdRef = useRef(null);
+
+  const updateStatus = (status) => {
+    if (status) sessionStorage.setItem('kc_payment_status', status);
+    else sessionStorage.removeItem('kc_payment_status');
+    setPaymentStatus(status);
+  };
 
   useEffect(() => {
     getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
@@ -15,16 +22,23 @@ export default function Deposit() {
 
   useEffect(() => {
     const handler = (e) => {
-      // TODO: restrict to KashCash origin once confirmed, e.g.: if (e.origin !== 'https://checkout.kashcash.co.il') return;
       const data = e.data || {};
       if (data.status === 1) {
-        setPaymentStatus('success');
         setIframeUrl(null);
+        updateStatus('processing');
         const txId = data.transactionId || pendingTxIdRef.current;
-        if (txId) finalizeKashcashDeposit(txId).catch(() => {});
-        getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
+        if (txId) {
+          finalizeKashcashDeposit(txId)
+            .then(() => {
+              updateStatus('success');
+              getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
+            })
+            .catch(() => updateStatus('error'));
+        } else {
+          updateStatus('error');
+        }
       } else if (data.status === 2 || data.status === 3) {
-        setPaymentStatus('error');
+        updateStatus('error');
         setIframeUrl(null);
       }
     };
@@ -36,7 +50,7 @@ export default function Deposit() {
     const num = parseFloat(amount);
     if (!num || num < 1) return;
     setLoading(true);
-    setPaymentStatus(null);
+    updateStatus(null);
     setIframeUrl(null);
     try {
       const res = await initiateKashcashDeposit(num);
@@ -48,7 +62,7 @@ export default function Deposit() {
         setIframeUrl(url);
       }
     } catch {
-      setPaymentStatus('error');
+      updateStatus('error');
     }
     setLoading(false);
   };
@@ -169,7 +183,7 @@ export default function Deposit() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
             <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Complete your payment</span>
             <button
-              onClick={() => { setIframeUrl(null); setPaymentStatus(null); }}
+              onClick={() => { setIframeUrl(null); updateStatus(null); }}
               style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
             >
               Cancel
@@ -194,6 +208,24 @@ export default function Deposit() {
               }}
             />
           )}
+        </div>
+      )}
+
+      {paymentStatus === 'processing' && (
+        <div style={{
+          background: '#1e3a5f',
+          color: '#93c5fd',
+          border: '1px solid #3b82f6',
+          borderRadius: 10,
+          padding: '1rem 1.5rem',
+          marginTop: '1rem',
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}>
+          <span style={{ fontSize: '1.2rem' }}>⏳</span>
+          Verifying payment with KashCash...
         </div>
       )}
 
