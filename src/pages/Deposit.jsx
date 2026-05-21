@@ -26,7 +26,10 @@ export default function Deposit() {
       if (data.status === 1) {
         setIframeUrl(null);
         updateStatus('processing');
-        const txId = data.transactionId || pendingTxIdRef.current;
+        console.log('[KashCash] postMessage status=1, data.transactionId=', data.transactionId, 'pendingTxIdRef=', pendingTxIdRef.current);
+        // Always prefer our stored txId (from initiate response, saved to DB)
+        // data.transactionId from KashCash postMessage may differ from what we saved
+        const txId = pendingTxIdRef.current || data.transactionId;
         if (txId) {
           finalizeKashcashDeposit(txId)
             .then((res) => {
