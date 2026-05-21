@@ -122,6 +122,19 @@ export default function BalanceReport() {
     setSettlements(result);
   };
 
+  const excludeAndRecalculate = (playerId) => {
+    const next = new Set(noTransfer);
+    next.add(playerId);
+    setNoTransfer(next);
+    setStatuses({});
+    setRecorded({});
+    localStorage.removeItem('settlementStatuses');
+    localStorage.removeItem('settlementRecorded');
+    const methodField = METHOD_FIELDS[defaultMethod];
+    const result = calculateSettlements(filtered.filter(p => !next.has(p.id) && (defaultMethod === 'IGNORE' || p[methodField] === true)), minPayment);
+    setSettlements(result);
+  };
+
   const setStatus = async (id, status) => {
     setStatuses(prev => ({ ...prev, [id]: status }));
     setSettlements(prev => prev.map(s => s.id === id ? { ...s, status } : s));
@@ -209,14 +222,26 @@ export default function BalanceReport() {
                 <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
                   background: '#0f1117', borderRadius: '8px', padding: '0.65rem 1rem',
                   border: `1px solid ${STATUS_COLORS[status]}44` }}>
-                  <span style={{ color: '#ef4444', fontWeight: 600, minWidth: '130px', cursor: s.fromId ? 'pointer' : 'default' }}
-                    onClick={() => s.fromId && navigate(`/player/${s.fromId}`)}>
-                    {s.fromName}{s.fromFullName ? ` (${s.fromFullName})` : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: '140px' }}>
+                    <span style={{ color: '#ef4444', fontWeight: 600, cursor: s.fromId ? 'pointer' : 'default' }}
+                      onClick={() => s.fromId && navigate(`/player/${s.fromId}`)}>
+                      {s.fromName}{s.fromFullName ? ` (${s.fromFullName})` : ''}
+                    </span>
+                    {s.fromId && !noTransfer.has(s.fromId) && (
+                      <button onClick={() => excludeAndRecalculate(s.fromId)} title="Exclude & recalculate"
+                        style={{ background: 'none', border: '1px solid #ef444466', color: '#ef4444', borderRadius: '4px', padding: '0 5px', cursor: 'pointer', fontSize: '0.7rem', lineHeight: '16px' }}>✕</button>
+                    )}
                   </span>
                   <span style={{ color: '#64748b' }}>→</span>
-                  <span style={{ color: '#22c55e', fontWeight: 600, minWidth: '130px', cursor: s.toId ? 'pointer' : 'default' }}
-                    onClick={() => s.toId && navigate(`/player/${s.toId}`)}>
-                    {s.toName}{s.toFullName ? ` (${s.toFullName})` : ''}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: '140px' }}>
+                    <span style={{ color: '#22c55e', fontWeight: 600, cursor: s.toId ? 'pointer' : 'default' }}
+                      onClick={() => s.toId && navigate(`/player/${s.toId}`)}>
+                      {s.toName}{s.toFullName ? ` (${s.toFullName})` : ''}
+                    </span>
+                    {s.toId && !noTransfer.has(s.toId) && (
+                      <button onClick={() => excludeAndRecalculate(s.toId)} title="Exclude & recalculate"
+                        style={{ background: 'none', border: '1px solid #22c55e66', color: '#22c55e', borderRadius: '4px', padding: '0 5px', cursor: 'pointer', fontSize: '0.7rem', lineHeight: '16px' }}>✕</button>
+                    )}
                   </span>
                   <span style={{ color: '#f59e0b', fontWeight: 700, minWidth: '80px' }}>{fmtAmt(s.amount)}</span>
                   <span style={{ background: STATUS_COLORS[status] + '33', color: STATUS_COLORS[status],
