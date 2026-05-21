@@ -44,6 +44,7 @@ import WhatsAppMessages from './pages/WhatsAppMessages';
 import Deposit from './pages/Deposit';
 import KashcashDeposits from './pages/KashcashDeposits';
 import InactivePlayers from './pages/InactivePlayers';
+import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits } from './api';
 import './App.css';
 
@@ -147,6 +148,7 @@ function AppRoutes() {
               <NavLink to="/league">League</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
+              <NavLink to="/player-stats">Player Stats</NavLink>
               <NavLink to="/inactive-players">Inactive Players</NavLink>
               <NavLink to="/deposit">Deposit KashCash</NavLink>
               <NavLink to="/kashcash-deposits" style={{ position: 'relative' }}>
@@ -227,6 +229,7 @@ function AppRoutes() {
               <Route path="/league" element={<League />} />
               <Route path="/wheel" element={<Wheel />} />
               <Route path="/kashcash-deposits" element={<KashcashDeposits />} />
+              <Route path="/player-stats" element={<PlayerStats />} />
               <Route path="/inactive-players" element={<InactivePlayers />} />
               <Route path="/deposit" element={<Deposit />} />
               <Route path="*" element={<Navigate to="/" />} />

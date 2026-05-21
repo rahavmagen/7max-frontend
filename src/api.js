@@ -164,5 +164,6 @@ export const confirmKashcashDeposit = (id) => api.post(`/kashcash/confirm/${id}`
 export const getMyKashcashDeposits = () => api.get('/kashcash/my');
 
 export const getInactivePlayers = (params) => api.get('/reports/inactive-players', { params });
+export const getPlayerStats = (gameType) => api.get('/reports/player-stats', { params: gameType ? { gameType } : {} });
 
 export default api;
