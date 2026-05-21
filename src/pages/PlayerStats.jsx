@@ -48,7 +48,7 @@ export default function PlayerStats() {
       if (typeof av === 'string') return av.localeCompare(bv) * sortDir;
       return (av - bv) * sortDir;
     });
-  }, [data, sortCol, sortDir]);
+  }, [data, sortCol, sortDir, minG]);
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d * -1);
@@ -64,7 +64,7 @@ export default function PlayerStats() {
       const winners = inBucket.filter(p => Number(p.totalPnl) > 0);
       return { ...b, total: inBucket.length, winners: winners.length };
     }).filter(b => b.total > 0);
-  }, [data]);
+  }, [data, minG]);
 
   const fmt = (n) => {
     const v = Number(n);
