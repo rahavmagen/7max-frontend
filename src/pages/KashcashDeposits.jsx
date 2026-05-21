@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { getPendingKashcashDeposits, getKashcashHistory, confirmKashcashDeposit } from '../api';
 
 const th = { padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, borderBottom: '1px solid var(--border)' };
 const td = { padding: '8px 12px', color: 'var(--text-secondary)', fontSize: '0.9rem', borderBottom: '1px solid var(--border)' };
 
 export default function KashcashDeposits() {
-  const navigate = useNavigate();
   const [pending, setPending] = useState([]);
   const [history, setHistory] = useState(null);
   const [from, setFrom] = useState('');
@@ -86,8 +85,8 @@ export default function KashcashDeposits() {
                 {pending.map(row => (
                   <tr key={row.id}>
                     <td style={td}>{row.date ? new Date(row.date).toLocaleString('he-IL') : '—'}</td>
-                    <td style={{ ...td, fontWeight: 500, color: 'var(--accent)', cursor: 'pointer' }} onClick={() => navigate(`/player/${row.playerId}`)}>{row.username}</td>
-                    <td style={{ ...td, cursor: 'pointer' }} onClick={() => navigate(`/player/${row.playerId}`)}>{row.fullName}</td>
+                    <td style={td}><Link to={`/player/${row.playerId}`} style={{ color: 'var(--accent)', fontWeight: 500, textDecoration: 'none' }}>{row.username}</Link></td>
+                    <td style={td}><Link to={`/player/${row.playerId}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{row.fullName}</Link></td>
                     <td style={{ ...td, fontWeight: 600, color: 'var(--accent)' }}>{fmt(row.amount)}</td>
                     <td style={{ ...td, fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{row.kashcashTxId}</td>
                     <td style={td}>
