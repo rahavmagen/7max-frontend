@@ -34,11 +34,9 @@ export default function Deposit() {
         setIframeUrl(null);
         updateStatus('processing');
         const txId = pendingTxIdRef.current || data.transactionId;
-        console.log('[KC] status=1 txId=', txId, 'pendingRef=', pendingTxIdRef.current, 'data.txId=', data.transactionId);
         if (txId) {
           finalizeKashcashDeposit(txId)
             .then((res) => {
-              console.log('[KC] finalize res=', JSON.stringify(res.data));
               if (res.data && res.data.success === false) {
                 updateStatus('error');
               } else {
