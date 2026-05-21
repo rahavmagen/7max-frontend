@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { initiateKashcashDeposit, finalizeKashcashDeposit, getMyKashcashDeposits } from '../api';
 
 export default function Deposit() {
@@ -7,6 +7,7 @@ export default function Deposit() {
   const [iframeUrl, setIframeUrl] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null); // 'success' | 'error' | null
   const [history, setHistory] = useState([]);
+  const pendingTxIdRef = useRef(null);
 
   useEffect(() => {
     getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
@@ -19,7 +20,8 @@ export default function Deposit() {
       if (data.status === 1) {
         setPaymentStatus('success');
         setIframeUrl(null);
-        if (data.transactionId) finalizeKashcashDeposit(data.transactionId).catch(() => {});
+        const txId = data.transactionId || pendingTxIdRef.current;
+        if (txId) finalizeKashcashDeposit(txId).catch(() => {});
         getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
       } else if (data.status === 2 || data.status === 3) {
         setPaymentStatus('error');
@@ -38,7 +40,8 @@ export default function Deposit() {
     setIframeUrl(null);
     try {
       const res = await initiateKashcashDeposit(num);
-      const { iframeUrl: url, appPaymentIntentUrl } = res.data;
+      const { iframeUrl: url, appPaymentIntentUrl, transactionId } = res.data;
+      pendingTxIdRef.current = transactionId;
       if (appPaymentIntentUrl && /Mobi|Android/i.test(navigator.userAgent)) {
         window.location.href = appPaymentIntentUrl;
       } else {
