@@ -43,6 +43,7 @@ import TicketAssets from './pages/TicketAssets';
 import WhatsAppMessages from './pages/WhatsAppMessages';
 import Deposit from './pages/Deposit';
 import KashcashDeposits from './pages/KashcashDeposits';
+import { getPendingKashcashDeposits } from './api';
 import './App.css';
 
 const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/credit-compare'];
@@ -93,6 +94,16 @@ function PlayerDefaultRedirect({ auth }) {
 function AppRoutes() {
   const { auth, logout } = useAuth();
   const [theme, toggleTheme] = useTheme();
+  const [kashcashPending, setKashcashPending] = useState(0);
+
+  useEffect(() => {
+    if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'MANAGER')) return;
+    const fetchPending = () =>
+      getPendingKashcashDeposits().then(r => setKashcashPending(r.data.length)).catch(() => {});
+    fetchPending();
+    const timer = setInterval(fetchPending, 30000);
+    return () => clearInterval(timer);
+  }, [auth]);
 
   if (!auth) {
     const path = window.location.pathname;
@@ -136,7 +147,18 @@ function AppRoutes() {
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
               <NavLink to="/deposit">Deposit KashCash</NavLink>
-              <NavLink to="/kashcash-deposits">KashCash Deposits</NavLink>
+              <NavLink to="/kashcash-deposits" style={{ position: 'relative' }}>
+                KashCash Deposits
+                {kashcashPending > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -4, right: -10,
+                    background: '#3b82f6', color: '#fff',
+                    borderRadius: '50%', fontSize: '0.65rem', fontWeight: 700,
+                    minWidth: 16, height: 16, display: 'inline-flex',
+                    alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+                  }}>{kashcashPending}</span>
+                )}
+              </NavLink>
             </>
           )}
           {isPlayer && (
