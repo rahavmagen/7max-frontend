@@ -29,9 +29,13 @@ export default function Deposit() {
         const txId = data.transactionId || pendingTxIdRef.current;
         if (txId) {
           finalizeKashcashDeposit(txId)
-            .then(() => {
-              updateStatus('success');
-              getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
+            .then((res) => {
+              if (res.data && res.data.success === false) {
+                updateStatus('error');
+              } else {
+                updateStatus('success');
+                getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
+              }
             })
             .catch(() => updateStatus('error'));
         } else {
