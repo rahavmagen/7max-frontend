@@ -44,8 +44,7 @@ export default function OpenRequests() {
     try {
       await confirmKashcashDeposit(id);
       setMsg({ type: 'success', text: 'Marked as done — chips confirmed.' });
-      loadPending();
-      loadHistory();
+      await Promise.all([loadPending(), loadHistory()]);
     } catch {
       setMsg({ type: 'error', text: 'Failed to confirm. Please try again.' });
     }
@@ -63,8 +62,7 @@ export default function OpenRequests() {
         await rejectJoinRequest(id);
         setMsg({ type: 'success', text: 'Request rejected.' });
       }
-      loadJoinPending();
-      loadJoinHistory();
+      await Promise.all([loadJoinPending(), loadJoinHistory()]);
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.error || 'Action failed. Please try again.' });
     }
