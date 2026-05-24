@@ -166,4 +166,10 @@ export const getMyKashcashDeposits = () => api.get('/kashcash/my');
 export const getInactivePlayers = (params) => api.get('/reports/inactive-players', { params });
 export const getPlayerStats = (gameType) => api.get('/reports/player-stats', { params: gameType ? { gameType } : {} });
 
+export const submitJoinRequest = (data) => api.post('/join', data);
+export const getPendingJoinRequests = () => api.get('/join/pending');
+export const getJoinHistory = () => api.get('/join/history');
+export const approveJoinRequest = (id) => api.post(`/join/${id}/approve`);
+export const rejectJoinRequest = (id) => api.post(`/join/${id}/reject`);
+
 export default api;
