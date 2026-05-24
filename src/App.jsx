@@ -42,10 +42,11 @@ import ClubWallets from './pages/ClubWallets';
 import TicketAssets from './pages/TicketAssets';
 import WhatsAppMessages from './pages/WhatsAppMessages';
 import Deposit from './pages/Deposit';
-import KashcashDeposits from './pages/KashcashDeposits';
+import OpenRequests from './pages/OpenRequests';
+import JoinRequest from './pages/JoinRequest';
 import InactivePlayers from './pages/InactivePlayers';
 import PlayerStats from './pages/PlayerStats';
-import { getPendingKashcashDeposits } from './api';
+import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
 const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/credit-compare'];
@@ -101,13 +102,17 @@ function AppRoutes() {
   useEffect(() => {
     if (!auth || (auth.role !== 'ADMIN' && auth.role !== 'MANAGER')) return;
     const fetchPending = () =>
-      getPendingKashcashDeposits().then(r => setKashcashPending(r.data.length)).catch(() => {});
+      Promise.all([
+        getPendingKashcashDeposits().then(r => r.data.length).catch(() => 0),
+        getPendingJoinRequests().then(r => r.data.length).catch(() => 0),
+      ]).then(([kash, join]) => setKashcashPending(kash + join));
     fetchPending();
     const timer = setInterval(fetchPending, 30000);
     return () => clearInterval(timer);
   }, [auth]);
 
   if (!auth) {
+    if (window.location.pathname === '/join') return <JoinRequest />;
     const path = window.location.pathname;
     if (path && path !== '/' && !sessionStorage.getItem('redirectAfterLogin')) {
       sessionStorage.setItem('redirectAfterLogin', path);
@@ -151,8 +156,8 @@ function AppRoutes() {
               <NavLink to="/player-stats">Player Stats</NavLink>
               <NavLink to="/inactive-players">Inactive Players</NavLink>
               <NavLink to="/deposit">Deposit KashCash</NavLink>
-              <NavLink to="/kashcash-deposits" style={{ position: 'relative' }}>
-                KashCash Deposits
+              <NavLink to="/open-requests" style={{ position: 'relative' }}>
+                Open Requests
                 {kashcashPending > 0 && (
                   <span style={{
                     position: 'absolute', top: -4, right: -10,
@@ -228,7 +233,7 @@ function AppRoutes() {
               <Route path="/lesson" element={<Lesson />} />
               <Route path="/league" element={<League />} />
               <Route path="/wheel" element={<Wheel />} />
-              <Route path="/kashcash-deposits" element={<KashcashDeposits />} />
+              <Route path="/open-requests" element={<OpenRequests />} />
               <Route path="/player-stats" element={<PlayerStats />} />
               <Route path="/inactive-players" element={<InactivePlayers />} />
               <Route path="/deposit" element={<Deposit />} />
