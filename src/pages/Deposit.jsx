@@ -15,6 +15,7 @@ export default function Deposit() {
   const [history, setHistory] = useState([]);
   const pendingTxIdRef = useRef(null);
   const paymentHandledRef = useRef(false); // prevents duplicate/follow-up postMessages overriding result
+  const wasHiddenRef = useRef(false); // true once page went to background (user entered KashCash app)
 
   const updateStatus = (status) => {
     // Only persist success — error/processing should clear on page reload
@@ -83,17 +84,21 @@ export default function Deposit() {
 
     // Handle case where page stays mounted (most common on mobile)
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') tryFinalizeMobile();
+      if (document.visibilityState === 'hidden') {
+        wasHiddenRef.current = true; // user went to KashCash app
+      } else if (document.visibilityState === 'visible') {
+        tryFinalizeMobile();
+      }
     };
     const handlePageShow = () => tryFinalizeMobile(); // iOS Safari bfcache restore
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('focus', handleVisibility);
     window.addEventListener('pageshow', handlePageShow);
 
-    // Polling fallback: visibilitychange/focus are unreliable on some mobile browsers.
-    // Poll every 2s — only fires when page is visible AND there is a pending tx.
+    // Polling fallback: only fires after page was previously hidden (user was in the app).
+    // This prevents premature finalization in the window between sessionStorage.setItem and the app opening.
     const pollId = setInterval(() => {
-      if (!document.hidden && sessionStorage.getItem('kc_mobile_pending_tx')) {
+      if (wasHiddenRef.current && !document.hidden && sessionStorage.getItem('kc_mobile_pending_tx')) {
         tryFinalizeMobile();
       }
     }, 2000);
@@ -116,6 +121,7 @@ export default function Deposit() {
     updateStatus(null);
     setIframeUrl(null);
     paymentHandledRef.current = false;
+    wasHiddenRef.current = false;
     try {
       const res = await initiateKashcashDeposit(num);
       const { iframeUrl: url, appPaymentIntentUrl, transactionId } = res.data;
