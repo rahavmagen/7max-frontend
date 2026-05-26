@@ -60,21 +60,41 @@ export default function Deposit() {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // On mobile: finalize when user returns from KashCash app
+  // On mobile: finalize when user returns from KashCash app.
+  // The page stays loaded (no reload) when returning from a deep-link app,
+  // so we use visibilitychange rather than a mount-only effect.
   useEffect(() => {
-    const pendingTx = sessionStorage.getItem('kc_mobile_pending_tx');
-    if (!pendingTx) return;
-    sessionStorage.removeItem('kc_mobile_pending_tx');
-    paymentHandledRef.current = true;
-    finalizeKashcashDeposit(pendingTx)
-      .then((res) => {
-        if (res.data && res.data.success === false) updateStatus('error');
-        else {
-          updateStatus('success');
-          getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
-        }
-      })
-      .catch(() => updateStatus('error'));
+    const tryFinalizeMobile = () => {
+      const pendingTx = sessionStorage.getItem('kc_mobile_pending_tx');
+      if (!pendingTx || paymentHandledRef.current) return;
+      sessionStorage.removeItem('kc_mobile_pending_tx');
+      paymentHandledRef.current = true;
+      updateStatus('processing');
+      finalizeKashcashDeposit(pendingTx)
+        .then((res) => {
+          if (res.data && res.data.success === false) updateStatus('error');
+          else {
+            updateStatus('success');
+            getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
+          }
+        })
+        .catch(() => updateStatus('error'));
+    };
+
+    // Handle case where page stays mounted (most common on mobile)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') tryFinalizeMobile();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleVisibility);
+
+    // Also handle case where browser reloads the page on return
+    tryFinalizeMobile();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleVisibility);
+    };
   }, []);
 
   const handlePay = async () => {
