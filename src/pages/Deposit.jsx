@@ -85,8 +85,18 @@ export default function Deposit() {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') tryFinalizeMobile();
     };
+    const handlePageShow = () => tryFinalizeMobile(); // iOS Safari bfcache restore
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('focus', handleVisibility);
+    window.addEventListener('pageshow', handlePageShow);
+
+    // Polling fallback: visibilitychange/focus are unreliable on some mobile browsers.
+    // Poll every 2s — only fires when page is visible AND there is a pending tx.
+    const pollId = setInterval(() => {
+      if (!document.hidden && sessionStorage.getItem('kc_mobile_pending_tx')) {
+        tryFinalizeMobile();
+      }
+    }, 2000);
 
     // Also handle case where browser reloads the page on return
     tryFinalizeMobile();
@@ -94,6 +104,8 @@ export default function Deposit() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', handleVisibility);
+      window.removeEventListener('pageshow', handlePageShow);
+      clearInterval(pollId);
     };
   }, []);
 
