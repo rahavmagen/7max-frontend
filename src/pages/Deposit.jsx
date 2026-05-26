@@ -8,6 +8,8 @@ export default function Deposit() {
   // Persist status across tab switches so user sees result when returning to this page
   const [paymentStatus, setPaymentStatus] = useState(() => {
     const s = sessionStorage.getItem('kc_payment_status');
+    // If returning from mobile KashCash app, show processing immediately
+    if (sessionStorage.getItem('kc_mobile_pending_tx')) return 'processing';
     return s === 'success' ? 'success' : null; // only restore success, never error/processing
   });
   const [history, setHistory] = useState([]);
@@ -58,6 +60,23 @@ export default function Deposit() {
     return () => window.removeEventListener('message', handler);
   }, []);
 
+  // On mobile: finalize when user returns from KashCash app
+  useEffect(() => {
+    const pendingTx = sessionStorage.getItem('kc_mobile_pending_tx');
+    if (!pendingTx) return;
+    sessionStorage.removeItem('kc_mobile_pending_tx');
+    paymentHandledRef.current = true;
+    finalizeKashcashDeposit(pendingTx)
+      .then((res) => {
+        if (res.data && res.data.success === false) updateStatus('error');
+        else {
+          updateStatus('success');
+          getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
+        }
+      })
+      .catch(() => updateStatus('error'));
+  }, []);
+
   const handlePay = async () => {
     const num = parseFloat(amount);
     if (!num || num < 1) return;
@@ -70,6 +89,8 @@ export default function Deposit() {
       const { iframeUrl: url, appPaymentIntentUrl, transactionId } = res.data;
       pendingTxIdRef.current = transactionId;
       if (appPaymentIntentUrl && /Mobi|Android/i.test(navigator.userAgent)) {
+        // Store txId before navigating away — page reloads when user returns from app
+        sessionStorage.setItem('kc_mobile_pending_tx', transactionId);
         window.location.href = appPaymentIntentUrl;
       } else {
         setIframeUrl(url);
