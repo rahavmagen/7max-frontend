@@ -8,14 +8,11 @@ export default function Deposit() {
   // Persist status across tab switches so user sees result when returning to this page
   const [paymentStatus, setPaymentStatus] = useState(() => {
     const s = sessionStorage.getItem('kc_payment_status');
-    // If returning from mobile KashCash app, show processing immediately
-    if (sessionStorage.getItem('kc_mobile_pending_tx')) return 'processing';
     return s === 'success' ? 'success' : null; // only restore success, never error/processing
   });
   const [history, setHistory] = useState([]);
   const pendingTxIdRef = useRef(null);
   const paymentHandledRef = useRef(false); // prevents duplicate/follow-up postMessages overriding result
-  const wasHiddenRef = useRef(false); // true once page went to background (user entered KashCash app)
 
   const updateStatus = (status) => {
     // Only persist success — error/processing should clear on page reload
@@ -61,58 +58,6 @@ export default function Deposit() {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  // On mobile: finalize when user returns from KashCash app.
-  // The page stays loaded (no reload) when returning from a deep-link app,
-  // so we use visibilitychange rather than a mount-only effect.
-  useEffect(() => {
-    const tryFinalizeMobile = () => {
-      const pendingTx = sessionStorage.getItem('kc_mobile_pending_tx');
-      if (!pendingTx || paymentHandledRef.current) return;
-      sessionStorage.removeItem('kc_mobile_pending_tx');
-      paymentHandledRef.current = true;
-      updateStatus('processing');
-      finalizeKashcashDeposit(pendingTx)
-        .then((res) => {
-          if (res.data && res.data.success === false) updateStatus('error');
-          else {
-            updateStatus('success');
-            getMyKashcashDeposits().then(r => setHistory(r.data)).catch(() => {});
-          }
-        })
-        .catch(() => updateStatus('error'));
-    };
-
-    // Handle case where page stays mounted (most common on mobile)
-    const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') {
-        wasHiddenRef.current = true; // user went to KashCash app
-      } else if (document.visibilityState === 'visible') {
-        tryFinalizeMobile();
-      }
-    };
-    const handlePageShow = () => tryFinalizeMobile(); // iOS Safari bfcache restore
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('focus', handleVisibility);
-    window.addEventListener('pageshow', handlePageShow);
-
-    // Polling fallback: only fires after page was previously hidden (user was in the app).
-    // This prevents premature finalization in the window between sessionStorage.setItem and the app opening.
-    const pollId = setInterval(() => {
-      if (wasHiddenRef.current && !document.hidden && sessionStorage.getItem('kc_mobile_pending_tx')) {
-        tryFinalizeMobile();
-      }
-    }, 2000);
-
-    // Also handle case where browser reloads the page on return
-    tryFinalizeMobile();
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('focus', handleVisibility);
-      window.removeEventListener('pageshow', handlePageShow);
-      clearInterval(pollId);
-    };
-  }, []);
 
   const handlePay = async () => {
     const num = parseFloat(amount);
@@ -121,18 +66,11 @@ export default function Deposit() {
     updateStatus(null);
     setIframeUrl(null);
     paymentHandledRef.current = false;
-    wasHiddenRef.current = false;
     try {
       const res = await initiateKashcashDeposit(num);
-      const { iframeUrl: url, appPaymentIntentUrl, transactionId } = res.data;
+      const { iframeUrl: url, transactionId } = res.data;
       pendingTxIdRef.current = transactionId;
-      if (appPaymentIntentUrl && /Mobi|Android/i.test(navigator.userAgent)) {
-        // Store txId before navigating away — page reloads when user returns from app
-        sessionStorage.setItem('kc_mobile_pending_tx', transactionId);
-        window.location.href = appPaymentIntentUrl;
-      } else {
-        setIframeUrl(url);
-      }
+      setIframeUrl(url);
     } catch {
       updateStatus('error');
     }
