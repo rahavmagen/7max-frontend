@@ -59,6 +59,34 @@ export default function Deposit() {
   }, []);
 
 
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
+  // On mobile: after opening the KashCash app (bottom sheet overlay), the browser
+  // tab is never hidden so events don't fire. Instead, poll deposit history until
+  // the KashCash webhook fires and the deposit appears, then show success.
+  const pollForDeposit = (txId) => {
+    const startTime = Date.now();
+    const pollId = setInterval(async () => {
+      if (paymentHandledRef.current) { clearInterval(pollId); return; }
+      // Timeout after 10 minutes
+      if (Date.now() - startTime > 10 * 60 * 1000) {
+        clearInterval(pollId);
+        if (!paymentHandledRef.current) updateStatus('error');
+        return;
+      }
+      try {
+        const res = await getMyKashcashDeposits();
+        const found = res.data.find(d => d.kashcashTxId === txId);
+        if (found) {
+          clearInterval(pollId);
+          paymentHandledRef.current = true;
+          updateStatus('success');
+          setHistory(res.data);
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+  };
+
   const handlePay = async () => {
     const num = parseFloat(amount);
     if (!num || num < 1) return;
@@ -68,9 +96,17 @@ export default function Deposit() {
     paymentHandledRef.current = false;
     try {
       const res = await initiateKashcashDeposit(num);
-      const { iframeUrl: url, transactionId } = res.data;
+      const { iframeUrl: url, appPaymentIntentUrl, transactionId } = res.data;
       pendingTxIdRef.current = transactionId;
-      setIframeUrl(url);
+      if (isMobile && appPaymentIntentUrl) {
+        // Open native KashCash app (bottom sheet). Detection via events is impossible
+        // (overlay never hides the tab), so poll deposit history for webhook confirmation.
+        window.location.href = appPaymentIntentUrl;
+        updateStatus('processing');
+        pollForDeposit(transactionId);
+      } else {
+        setIframeUrl(url);
+      }
     } catch {
       updateStatus('error');
     }
