@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage } from '../api';
 
 const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '5px', fontSize: '0.82rem' };
 
@@ -22,6 +22,8 @@ export default function Agents() {
   const [filterTo, setFilterTo] = useState('');
   const [msg, setMsg] = useState(null);
   const [settling, setSettling] = useState(false);
+  const [editingRake, setEditingRake] = useState(null); // agentId being edited
+  const [rakeInput, setRakeInput] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -54,6 +56,19 @@ export default function Agents() {
 
   const handleFilter = () => fetchStats(selected.id, filterFrom, filterTo);
   const handleClearFilter = () => { setFilterFrom(''); setFilterTo(''); fetchStats(selected.id, '', ''); };
+
+  const handleSaveRake = async (agentId) => {
+    const pct = parseFloat(rakeInput);
+    if (isNaN(pct) || pct < 0 || pct > 100) { setMsg({ type: 'error', text: 'Rake must be 0–100%' }); return; }
+    try {
+      await setAgentRakePercentage(agentId, pct / 100);
+      setEditingRake(null);
+      setMsg({ type: 'success', text: `Rake updated to ${pct}%` });
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to update rake' });
+    }
+  };
 
   const handleSettle = async (agentId) => {
     setSettling(true);
@@ -110,6 +125,7 @@ export default function Agents() {
           <thead>
             <tr style={{ borderBottom: '1px solid #2d3148', color: '#94a3b8', textAlign: 'left', fontSize: '0.82rem', background: '#12151f' }}>
               <th style={{ padding: '10px 12px' }}>Agent</th>
+              <th style={{ padding: '10px 12px' }}>Rake %</th>
               <th style={{ padding: '10px 12px' }}>Players</th>
               <th style={{ padding: '10px 12px' }}>Pending Balance</th>
               <th style={{ padding: '10px 12px' }}>Last Settlement</th>
@@ -125,6 +141,31 @@ export default function Agents() {
                     {a.username}
                   </button>
                   {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{a.fullName}</span>}
+                </td>
+                <td style={{ padding: '10px 12px' }}>
+                  {editingRake === a.id ? (
+                    <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                      <input
+                        type="number" min="0" max="100" step="1"
+                        value={rakeInput} onChange={e => setRakeInput(e.target.value)}
+                        style={{ ...inputStyle, width: 52 }}
+                        autoFocus
+                      />
+                      <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>%</span>
+                      <button onClick={() => handleSaveRake(a.id)}
+                        style={{ padding: '2px 8px', borderRadius: 4, border: 'none', background: '#1d4ed8', color: '#fff', cursor: 'pointer', fontSize: '0.78rem' }}>✓</button>
+                      <button onClick={() => setEditingRake(null)}
+                        style={{ padding: '2px 8px', borderRadius: 4, border: 'none', background: '#374151', color: '#fff', cursor: 'pointer', fontSize: '0.78rem' }}>✗</button>
+                    </span>
+                  ) : (
+                    <span
+                      onClick={() => { setEditingRake(a.id); setRakeInput(a.rakePercentage != null ? (Number(a.rakePercentage) * 100).toFixed(0) : ''); }}
+                      style={{ color: a.rakePercentage != null ? '#a78bfa' : '#475569', cursor: 'pointer', fontWeight: 600 }}
+                      title="Click to edit"
+                    >
+                      {a.rakePercentage != null ? `${(Number(a.rakePercentage) * 100).toFixed(0)}%` : '—'}
+                    </span>
+                  )}
                 </td>
                 <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{a.playerCount}</td>
                 <td style={{ padding: '10px 12px', color: Number(a.pendingBalance) > 0 ? '#fbbf24' : '#94a3b8', fontWeight: Number(a.pendingBalance) > 0 ? 600 : 400 }}>
@@ -151,7 +192,14 @@ export default function Agents() {
       {selected && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <h3 style={{ margin: 0, color: '#e2e8f0' }}>{selected.username} — Detail</h3>
+            <h3 style={{ margin: 0, color: '#e2e8f0' }}>
+              {selected.username} — Detail
+              {selected.rakePercentage != null && (
+                <span style={{ marginLeft: '0.75rem', fontSize: '0.85rem', color: '#a78bfa', fontWeight: 400 }}>
+                  {(Number(selected.rakePercentage) * 100).toFixed(0)}% rake
+                </span>
+              )}
+            </h3>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>From</span>
               <input type="date" value={filterFrom} onChange={e => { setFilterFrom(e.target.value); fetchStats(selected.id, e.target.value, filterTo); }} style={inputStyle} />
