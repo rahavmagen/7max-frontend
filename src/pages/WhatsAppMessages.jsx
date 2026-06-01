@@ -103,13 +103,15 @@ export default function WhatsAppMessages() {
     return (n < 0 ? '-' : '') + '₪' + abs;
   };
 
+  const isMobile = window.innerWidth < 768;
+
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '1rem', maxWidth: '1200px', margin: '0 auto' }}>
       <h2 style={{ marginBottom: '1.5rem', color: '#e2e8f0' }}>WhatsApp Messages</h2>
 
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '1.5rem', alignItems: 'flex-start' }}>
 
-        <div style={{ flex: '1', background: '#1e2235', borderRadius: '10px', padding: '1rem', minWidth: 0 }}>
+        <div style={{ flex: '1', background: '#1e2235', borderRadius: '10px', padding: '1rem', minWidth: 0, width: '100%' }}>
           <h3 style={{ color: '#94a3b8', marginBottom: '0.75rem', fontSize: '0.9rem', textTransform: 'uppercase' }}>Recipients</h3>
 
           <input
@@ -207,7 +209,7 @@ export default function WhatsAppMessages() {
           </div>
         </div>
 
-        <div style={{ width: '360px', background: '#1e2235', borderRadius: '10px', padding: '1rem', flexShrink: 0 }}>
+        <div style={{ width: isMobile ? '100%' : '360px', background: '#1e2235', borderRadius: '10px', padding: '1rem', flexShrink: 0 }}>
           <h3 style={{ color: '#94a3b8', marginBottom: '0.75rem', fontSize: '0.9rem', textTransform: 'uppercase' }}>Message</h3>
 
           <label style={labelStyle}>Template</label>
