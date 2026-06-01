@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPlayers, createSettlement } from '../api';
+import { getPlayers, createSettlement, updatePaymentMethods } from '../api';
 
 const METHODS = ['IGNORE', 'BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER'];
 const METHOD_LABELS = { IGNORE: 'Ignore', BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer' };
@@ -182,6 +182,44 @@ export default function BalanceReport() {
     }
   };
 
+  const playerMap = Object.fromEntries(players.map(p => [p.id, p]));
+
+  const togglePayment = async (playerId, field) => {
+    const player = playerMap[playerId];
+    if (!player) return;
+    const newVal = !player[field];
+    setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, [field]: newVal } : p));
+    try {
+      await updatePaymentMethods(playerId, { [field]: newVal });
+    } catch {
+      setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, [field]: !newVal } : p));
+    }
+  };
+
+  const PaymentBadges = ({ playerId }) => {
+    const p = playerMap[playerId];
+    if (!p) return null;
+    const methods = [
+      { key: 'bitEnabled', label: 'Bit' },
+      { key: 'payboxEnabled', label: 'PayBox' },
+      { key: 'kashcashEnabled', label: 'KashCash' },
+      { key: 'bankTransferEnabled', label: 'Bank' },
+    ];
+    return (
+      <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', marginTop: '3px' }} onClick={e => e.stopPropagation()}>
+        {methods.map(({ key, label }) => (
+          <span key={key} onClick={() => togglePayment(playerId, key)}
+            style={{ fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', cursor: 'pointer',
+              background: p[key] ? '#16532d' : '#1e2235',
+              color: p[key] ? '#86efac' : '#475569',
+              border: `1px solid ${p[key] ? '#22c55e44' : '#2d3148'}` }}>
+            {label}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   const visibleSettlements = settlements.filter(s => (statuses[s.id] || s.status) !== 'clean');
 
   return (
@@ -222,27 +260,33 @@ export default function BalanceReport() {
                 <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap',
                   background: '#0f1117', borderRadius: '8px', padding: '0.65rem 1rem',
                   border: `1px solid ${STATUS_COLORS[status]}44` }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: '140px' }}>
-                    <span style={{ color: '#ef4444', fontWeight: 600, cursor: s.fromId ? 'pointer' : 'default' }}
-                      onClick={() => s.fromId && navigate(`/player/${s.fromId}`)}>
-                      {s.fromName}{s.fromFullName ? ` (${s.fromFullName})` : ''}
+                  <div style={{ minWidth: '140px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ color: '#ef4444', fontWeight: 600, cursor: s.fromId ? 'pointer' : 'default' }}
+                        onClick={() => s.fromId && navigate(`/player/${s.fromId}`)}>
+                        {s.fromName}{s.fromFullName ? ` (${s.fromFullName})` : ''}
+                      </span>
+                      {s.fromId && !noTransfer.has(s.fromId) && (
+                        <button onClick={() => excludeAndRecalculate(s.fromId)} title="Exclude & recalculate"
+                          style={{ background: 'none', border: '1px solid #ef444466', color: '#ef4444', borderRadius: '4px', padding: '0 5px', cursor: 'pointer', fontSize: '0.7rem', lineHeight: '16px' }}>✕</button>
+                      )}
                     </span>
-                    {s.fromId && !noTransfer.has(s.fromId) && (
-                      <button onClick={() => excludeAndRecalculate(s.fromId)} title="Exclude & recalculate"
-                        style={{ background: 'none', border: '1px solid #ef444466', color: '#ef4444', borderRadius: '4px', padding: '0 5px', cursor: 'pointer', fontSize: '0.7rem', lineHeight: '16px' }}>✕</button>
-                    )}
-                  </span>
+                    {s.fromId && <PaymentBadges playerId={s.fromId} />}
+                  </div>
                   <span style={{ color: '#64748b' }}>→</span>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: '140px' }}>
-                    <span style={{ color: '#22c55e', fontWeight: 600, cursor: s.toId ? 'pointer' : 'default' }}
-                      onClick={() => s.toId && navigate(`/player/${s.toId}`)}>
-                      {s.toName}{s.toFullName ? ` (${s.toFullName})` : ''}
+                  <div style={{ minWidth: '140px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ color: '#22c55e', fontWeight: 600, cursor: s.toId ? 'pointer' : 'default' }}
+                        onClick={() => s.toId && navigate(`/player/${s.toId}`)}>
+                        {s.toName}{s.toFullName ? ` (${s.toFullName})` : ''}
+                      </span>
+                      {s.toId && !noTransfer.has(s.toId) && (
+                        <button onClick={() => excludeAndRecalculate(s.toId)} title="Exclude & recalculate"
+                          style={{ background: 'none', border: '1px solid #22c55e66', color: '#22c55e', borderRadius: '4px', padding: '0 5px', cursor: 'pointer', fontSize: '0.7rem', lineHeight: '16px' }}>✕</button>
+                      )}
                     </span>
-                    {s.toId && !noTransfer.has(s.toId) && (
-                      <button onClick={() => excludeAndRecalculate(s.toId)} title="Exclude & recalculate"
-                        style={{ background: 'none', border: '1px solid #22c55e66', color: '#22c55e', borderRadius: '4px', padding: '0 5px', cursor: 'pointer', fontSize: '0.7rem', lineHeight: '16px' }}>✕</button>
-                    )}
-                  </span>
+                    {s.toId && <PaymentBadges playerId={s.toId} />}
+                  </div>
                   <span style={{ color: '#f59e0b', fontWeight: 700, minWidth: '80px' }}>{fmtAmt(s.amount)}</span>
                   <span style={{ background: STATUS_COLORS[status] + '33', color: STATUS_COLORS[status],
                     borderRadius: '4px', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 600, minWidth: '70px', textAlign: 'center' }}>
