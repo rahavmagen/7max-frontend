@@ -184,13 +184,15 @@ export default function BalanceReport() {
 
   const playerMap = Object.fromEntries(players.map(p => [p.id, p]));
 
+  const FIELD_TO_API = { bitEnabled: 'bit', payboxEnabled: 'paybox', kashcashEnabled: 'kashcash', bankTransferEnabled: 'bankTransfer' };
+
   const togglePayment = async (playerId, field) => {
     const player = playerMap[playerId];
     if (!player) return;
     const newVal = !player[field];
     setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, [field]: newVal } : p));
     try {
-      await updatePaymentMethods(playerId, { [field]: newVal });
+      await updatePaymentMethods(playerId, { [FIELD_TO_API[field]]: newVal });
     } catch {
       setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, [field]: !newVal } : p));
     }
