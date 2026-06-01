@@ -86,6 +86,10 @@ export default function WhatsAppMessages() {
       const phones = allRecipients.map(r => r.phone).filter(Boolean);
       const res = await sendWhatsAppMessage(phones, message);
       setResult(res.data);
+      if (!res.data?.error) {
+        setSelected(new Set());
+        setAdhocList([]);
+      }
     } catch (e) {
       setResult({ error: e.message });
     } finally {
