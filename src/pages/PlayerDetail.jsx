@@ -88,6 +88,10 @@ export default function PlayerDetail() {
         agentRakePercentage: editData.isAgent && editData.agentRakePercentage !== ''
           ? parseFloat((Number(editData.agentRakePercentage) / 100).toFixed(4))
           : null,
+        rakebackPercentage: editData.rakebackPercentage !== '' && editData.rakebackPercentage != null
+          ? parseFloat((Number(editData.rakebackPercentage) / 100).toFixed(4))
+          : null,
+        rakebackSince: editData.rakebackSince || null,
       });
       const originalAgentId = player.agentId || '';
       if (String(editData.agentId) !== String(originalAgentId)) {
@@ -204,7 +208,7 @@ export default function PlayerDetail() {
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
-              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '' }); }}>
+              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '', rakebackPercentage: player.rakebackPercentage != null ? Math.round(player.rakebackPercentage * 100) : '', rakebackSince: player.rakebackSince || '' }); }}>
                 ✏️ Edit Info
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
@@ -346,6 +350,40 @@ export default function PlayerDetail() {
                     ))}
                   </select>
                 </div>
+                <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>Rakeback</div>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
+                        Rakeback %
+                      </label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={editData.rakebackPercentage}
+                          onChange={e => setEditData(d => ({ ...d, rakebackPercentage: e.target.value }))}
+                          placeholder="0"
+                          style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}
+                        />
+                        <span style={{ color: '#94a3b8' }}>%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
+                        Rakeback since
+                      </label>
+                      <input
+                        type="date"
+                        value={editData.rakebackSince}
+                        onChange={e => setEditData(d => ({ ...d, rakebackSince: e.target.value }))}
+                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
@@ -408,6 +446,15 @@ export default function PlayerDetail() {
               <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>CLUB ID</div>
               <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
             </div>
+            {isAdmin && player.rakebackPercentage != null && player.rakebackPercentage > 0 && (
+              <div>
+                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>RAKEBACK</div>
+                <div style={{ color: '#34d399' }}>
+                  {Math.round(player.rakebackPercentage * 100)}%
+                  {player.rakebackSince && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>since {player.rakebackSince}</span>}
+                </div>
+              </div>
+            )}
             {isAdmin && loginStats && (
               <div>
                 <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>SITE LOGINS</div>
