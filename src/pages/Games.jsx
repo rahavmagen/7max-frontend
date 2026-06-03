@@ -14,6 +14,7 @@ export default function Games() {
   const [costMin, setCostMin] = useState('');
   const [costMax, setCostMax] = useState('');
   const [gameTypeFilter, setGameTypeFilter] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [excludedIds, setExcludedIds] = useState(new Set());
   const navigate = useNavigate();
 
@@ -46,11 +47,12 @@ export default function Games() {
       if (costMin !== '' && cost < Number(costMin)) return false;
       if (costMax !== '' && cost > Number(costMax)) return false;
       if (gameTypeFilter && s.gameType !== gameTypeFilter) return false;
+      if (nameFilter && !(s.tableName || '').toLowerCase().includes(nameFilter.toLowerCase())) return false;
       return true;
     });
-  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter]);
+  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter, nameFilter]);
 
-  const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter;
+  const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter || nameFilter;
 
   const filteredRake = filtered.reduce((s, session) =>
     excludedIds.has(session.id) ? s : s + Number(session.rakeTotal || 0), 0);
@@ -79,6 +81,11 @@ export default function Games() {
 
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Tournament name</label>
+          <input type="text" placeholder="Search..." value={nameFilter} onChange={e => setNameFilter(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '160px' }} />
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Game type</label>
           <select value={gameTypeFilter} onChange={e => setGameTypeFilter(e.target.value)}
@@ -115,7 +122,7 @@ export default function Games() {
             style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
         </div>
         {hasFilter && (
-          <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); setGameTypeFilter(''); }}
+          <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); setGameTypeFilter(''); setNameFilter(''); }}
             style={{ background: '#374151', color: '#94a3b8', border: 'none', borderRadius: '6px', padding: '0.35rem 0.8rem', fontSize: '0.8rem', cursor: 'pointer' }}>
             Clear
           </button>
