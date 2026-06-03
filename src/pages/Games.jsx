@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { getGameSessions, getFridayRakeReport } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
@@ -15,6 +15,8 @@ export default function Games() {
   const [costMax, setCostMax] = useState('');
   const [gameTypeFilter, setGameTypeFilter] = useState('');
   const [hiddenNames, setHiddenNames] = useState(new Set());
+  const [nameDropOpen, setNameDropOpen] = useState(false);
+  const nameDropRef = useRef(null);
   const [excludedIds, setExcludedIds] = useState(new Set());
   const navigate = useNavigate();
 
@@ -84,30 +86,53 @@ export default function Games() {
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
         {uniqueNames.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', position: 'relative' }} ref={nameDropRef}>
             <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Tournament</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-              {uniqueNames.map(name => {
-                const active = !hiddenNames.has(name);
-                return (
-                  <button key={name} onClick={() => setHiddenNames(prev => {
-                    const next = new Set(prev);
-                    next.has(name) ? next.delete(name) : next.add(name);
-                    return next;
-                  })}
-                    style={{
-                      background: active ? '#1e3a5f' : '#12151f',
-                      color: active ? '#93c5fd' : '#475569',
-                      border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
-                      borderRadius: '6px', padding: '0.3rem 0.7rem',
-                      fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap',
-                      textDecoration: active ? 'none' : 'line-through',
-                    }}>
-                    {name}
-                  </button>
-                );
-              })}
-            </div>
+            <button onClick={() => setNameDropOpen(o => !o)}
+              style={{
+                background: hiddenNames.size > 0 ? '#1e3a5f' : '#1e2130',
+                color: hiddenNames.size > 0 ? '#93c5fd' : '#e2e8f0',
+                border: `1px solid ${hiddenNames.size > 0 ? '#3b82f6' : '#334155'}`,
+                borderRadius: '6px', padding: '0.35rem 0.8rem', fontSize: '0.85rem',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem',
+              }}>
+              {hiddenNames.size > 0 ? `${uniqueNames.length - hiddenNames.size}/${uniqueNames.length} selected` : 'All'}
+              <span style={{ fontSize: '0.65rem' }}>▼</span>
+            </button>
+            {nameDropOpen && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, zIndex: 100,
+                background: '#1a1d2e', border: '1px solid #334155', borderRadius: '8px',
+                padding: '0.5rem 0', minWidth: '220px', marginTop: '2px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              }}
+                onMouseLeave={() => setNameDropOpen(false)}>
+                <div
+                  onClick={() => setHiddenNames(hiddenNames.size === 0 ? new Set(uniqueNames) : new Set())}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 0.9rem', cursor: 'pointer', borderBottom: '1px solid #2d3148', marginBottom: '0.25rem' }}>
+                  <input type="checkbox" readOnly
+                    checked={hiddenNames.size === 0}
+                    style={{ accentColor: '#3b82f6', width: '14px', height: '14px' }} />
+                  <span style={{ color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600 }}>(Select All)</span>
+                </div>
+                {uniqueNames.map(name => (
+                  <div key={name}
+                    onClick={() => setHiddenNames(prev => {
+                      const next = new Set(prev);
+                      next.has(name) ? next.delete(name) : next.add(name);
+                      return next;
+                    })}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.35rem 0.9rem', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#1e2130'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <input type="checkbox" readOnly
+                      checked={!hiddenNames.has(name)}
+                      style={{ accentColor: '#3b82f6', width: '14px', height: '14px' }} />
+                    <span style={{ color: '#e2e8f0', fontSize: '0.85rem' }} dir="rtl">{name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
