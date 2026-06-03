@@ -14,7 +14,17 @@ export default function Games() {
   const [costMin, setCostMin] = useState('');
   const [costMax, setCostMax] = useState('');
   const [gameTypeFilter, setGameTypeFilter] = useState('');
+  const [excludedIds, setExcludedIds] = useState(new Set());
   const navigate = useNavigate();
+
+  const toggleExclude = (id, e) => {
+    e.stopPropagation();
+    setExcludedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     getGameSessions().then(r => {
@@ -41,6 +51,9 @@ export default function Games() {
   }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter]);
 
   const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter;
+
+  const filteredRake = filtered.reduce((s, session) =>
+    excludedIds.has(session.id) ? s : s + Number(session.rakeTotal || 0), 0);
 
   const fmtDate = (dt) => {
     if (!dt) return '—';
@@ -114,6 +127,26 @@ export default function Games() {
         )}
       </div>
 
+      {isAdmin && filtered.length > 0 && (
+        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '0.75rem', padding: '0.6rem 1rem', background: '#1a1d2e', borderRadius: '8px', flexWrap: 'wrap' }}>
+          <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+            סה"כ ריק (מסומן):&nbsp;
+            <strong style={{ color: '#f59e0b', fontSize: '1rem' }}>
+              ₪{filteredRake.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </strong>
+          </span>
+          {excludedIds.size > 0 && (
+            <>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>({excludedIds.size} לא נכלל)</span>
+              <button onClick={() => setExcludedIds(new Set())}
+                style={{ background: 'none', border: '1px solid #334155', color: '#94a3b8', padding: '2px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem' }}>
+                אפס הכל
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {sessions.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
           No game data yet — upload a ClubGG report first.
@@ -133,6 +166,7 @@ export default function Games() {
                 <th>Re-entries</th>
                 {isAdmin && <th>Rake</th>}
                 <th>Hands</th>
+                {isAdmin && <th style={{ color: '#64748b', fontSize: '0.78rem' }}>כלול בריק</th>}
               </tr>
             </thead>
             <tbody>
@@ -171,6 +205,16 @@ export default function Games() {
                   <td style={{ color: s.handsPlayed > 0 ? '#94a3b8' : '#64748b' }}>
                     {s.handsPlayed > 0 ? s.handsPlayed : '—'}
                   </td>
+                  {isAdmin && (
+                    <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={!excludedIds.has(s.id)}
+                        onChange={e => toggleExclude(s.id, e)}
+                        style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: '#f59e0b' }}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
