@@ -14,7 +14,7 @@ export default function Games() {
   const [costMin, setCostMin] = useState('');
   const [costMax, setCostMax] = useState('');
   const [gameTypeFilter, setGameTypeFilter] = useState('');
-  const [nameFilter, setNameFilter] = useState('');
+  const [hiddenNames, setHiddenNames] = useState(new Set());
   const [excludedIds, setExcludedIds] = useState(new Set());
   const navigate = useNavigate();
 
@@ -47,12 +47,14 @@ export default function Games() {
       if (costMin !== '' && cost < Number(costMin)) return false;
       if (costMax !== '' && cost > Number(costMax)) return false;
       if (gameTypeFilter && s.gameType !== gameTypeFilter) return false;
-      if (nameFilter && !(s.tableName || '').toLowerCase().includes(nameFilter.toLowerCase())) return false;
+      if (hiddenNames.size > 0 && hiddenNames.has(s.tableName)) return false;
       return true;
     });
-  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter, nameFilter]);
+  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter, hiddenNames]);
 
-  const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter || nameFilter;
+  const uniqueNames = useMemo(() => [...new Set(sessions.map(s => s.tableName).filter(Boolean))].sort(), [sessions]);
+
+  const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter || hiddenNames.size > 0;
 
   const filteredRake = filtered.reduce((s, session) =>
     excludedIds.has(session.id) ? s : s + Number(session.rakeTotal || 0), 0);
@@ -81,11 +83,33 @@ export default function Games() {
 
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Tournament name</label>
-          <input type="text" placeholder="Search..." value={nameFilter} onChange={e => setNameFilter(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '160px' }} />
-        </div>
+        {uniqueNames.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Tournament</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+              {uniqueNames.map(name => {
+                const active = !hiddenNames.has(name);
+                return (
+                  <button key={name} onClick={() => setHiddenNames(prev => {
+                    const next = new Set(prev);
+                    next.has(name) ? next.delete(name) : next.add(name);
+                    return next;
+                  })}
+                    style={{
+                      background: active ? '#1e3a5f' : '#12151f',
+                      color: active ? '#93c5fd' : '#475569',
+                      border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
+                      borderRadius: '6px', padding: '0.3rem 0.7rem',
+                      fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                      textDecoration: active ? 'none' : 'line-through',
+                    }}>
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Game type</label>
           <select value={gameTypeFilter} onChange={e => setGameTypeFilter(e.target.value)}
@@ -122,7 +146,7 @@ export default function Games() {
             style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
         </div>
         {hasFilter && (
-          <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); setGameTypeFilter(''); setNameFilter(''); }}
+          <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); setGameTypeFilter(''); setHiddenNames(new Set()); }}
             style={{ background: '#374151', color: '#94a3b8', border: 'none', borderRadius: '6px', padding: '0.35rem 0.8rem', fontSize: '0.8rem', cursor: 'pointer' }}>
             Clear
           </button>
