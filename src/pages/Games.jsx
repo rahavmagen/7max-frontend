@@ -40,7 +40,7 @@ export default function Games() {
     }).catch(() => {});
   }, []);
 
-  const filtered = useMemo(() => {
+  const preFiltered = useMemo(() => {
     return sessions.filter(s => {
       const date = s.startTime ? s.startTime.substring(0, 10) : '';
       const cost = s.entryFee ? Number(s.entryFee) : 0;
@@ -49,12 +49,16 @@ export default function Games() {
       if (costMin !== '' && cost < Number(costMin)) return false;
       if (costMax !== '' && cost > Number(costMax)) return false;
       if (gameTypeFilter && s.gameType !== gameTypeFilter) return false;
-      if (hiddenNames.size > 0 && hiddenNames.has(s.tableName)) return false;
       return true;
     });
-  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter, hiddenNames]);
+  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter]);
 
-  const uniqueNames = useMemo(() => [...new Set(sessions.map(s => s.tableName).filter(Boolean))].sort(), [sessions]);
+  const uniqueNames = useMemo(() => [...new Set(preFiltered.map(s => s.tableName).filter(Boolean))].sort(), [preFiltered]);
+
+  const filtered = useMemo(() => {
+    if (hiddenNames.size === 0) return preFiltered;
+    return preFiltered.filter(s => !hiddenNames.has(s.tableName));
+  }, [preFiltered, hiddenNames]);
 
   const hasFilter = dateFrom || dateTo || costMin !== '' || costMax !== '' || gameTypeFilter || hiddenNames.size > 0;
 
@@ -85,6 +89,41 @@ export default function Games() {
 
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Game type</label>
+          <select value={gameTypeFilter} onChange={e => setGameTypeFilter(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}>
+            <option value="">All</option>
+            <option value="MTT">MTT</option>
+            <option value="SNG">SNG</option>
+            <option value="NLH">NLH</option>
+            <option value="PLO">PLO</option>
+            <option value="PLO5">PLO5</option>
+            <option value="PLO6">PLO6</option>
+            <option value="AoF">AoF</option>
+            <option value="SPIN_GOLD">SPIN_GOLD</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date from</label>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date to</label>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cost min (₪)</label>
+          <input type="number" placeholder="0" value={costMin} onChange={e => setCostMin(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cost max (₪)</label>
+          <input type="number" placeholder="∞" value={costMax} onChange={e => setCostMax(e.target.value)}
+            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
+        </div>
         {uniqueNames.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', position: 'relative' }} ref={nameDropRef}>
             <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Tournament</label>
@@ -135,41 +174,6 @@ export default function Games() {
             )}
           </div>
         )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Game type</label>
-          <select value={gameTypeFilter} onChange={e => setGameTypeFilter(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }}>
-            <option value="">All</option>
-            <option value="MTT">MTT</option>
-            <option value="SNG">SNG</option>
-            <option value="NLH">NLH</option>
-            <option value="PLO">PLO</option>
-            <option value="PLO5">PLO5</option>
-            <option value="PLO6">PLO6</option>
-            <option value="AoF">AoF</option>
-            <option value="SPIN_GOLD">SPIN_GOLD</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date from</label>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date to</label>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cost min (₪)</label>
-          <input type="number" placeholder="0" value={costMin} onChange={e => setCostMin(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cost max (₪)</label>
-          <input type="number" placeholder="∞" value={costMax} onChange={e => setCostMax(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '90px' }} />
-        </div>
         {hasFilter && (
           <button onClick={() => { setDateFrom(''); setDateTo(''); setCostMin(''); setCostMax(''); setGameTypeFilter(''); setHiddenNames(new Set()); }}
             style={{ background: '#374151', color: '#94a3b8', border: 'none', borderRadius: '6px', padding: '0.35rem 0.8rem', fontSize: '0.8rem', cursor: 'pointer' }}>
