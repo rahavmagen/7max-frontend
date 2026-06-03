@@ -67,7 +67,9 @@ export default function Games() {
 
   const fmtDate = (dt) => {
     if (!dt) return '—';
-    return dt.replace('T', ' ').substring(0, 16);
+    const [datePart, timePart] = dt.replace('T', ' ').substring(0, 16).split(' ');
+    const [y, m, d] = datePart.split('-');
+    return `${d}/${m}/${y} ${timePart}`;
   };
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
