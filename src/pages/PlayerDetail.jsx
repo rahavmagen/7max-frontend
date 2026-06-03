@@ -37,6 +37,13 @@ export default function PlayerDetail() {
   const [dateTo, setDateTo] = useState('');
   const [gameTypeFilter, setGameTypeFilter] = useState('');
   const [resultsSort, setResultsSort] = useState({ col: 'date', dir: -1 });
+  const [excludedIds, setExcludedIds] = useState(new Set());
+
+  const toggleExclude = (id) => setExcludedIds(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   const load = () => {
     setLoadError(false);
@@ -189,9 +196,10 @@ export default function PlayerDetail() {
     return s + (isTournament ? ((r.resultAmount || 0) - (r.buyIn || 0)) : (r.resultAmount || 0));
   }, 0);
   const totalHands = filteredResults.reduce((s, r) => s + (r.handsPlayed || 0), 0);
-  const totalRake = filteredResults.reduce((s, r) => s + (r.rakePaid || 0), 0);
+  const totalRake = filteredResults.reduce((s, r) => excludedIds.has(r.id) ? s : s + (r.rakePaid || 0), 0);
 
   const shabbatRake = results.reduce((s, r) => {
+    if (excludedIds.has(r.id)) return s;
     if (!r.session?.startTime) return s;
     const dt = new Date(r.session.startTime);
     const day = dt.getDay();
@@ -621,6 +629,7 @@ export default function PlayerDetail() {
                 {isAdmin && (
                   <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                     Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
+                    {excludedIds.size > 0 && <span style={{ color: '#64748b', fontSize: '0.75rem', marginLeft: '0.3rem' }}>({excludedIds.size} excluded)</span>}
                   </span>
                 )}
                 {isAdmin && (
@@ -644,6 +653,7 @@ export default function PlayerDetail() {
                   {thSort('hands', 'Hands')}
                   {isAdmin && thSort('rake', 'Rake', { color: '#f59e0b' })}
                   {thSort('pnl', 'Profit / Loss')}
+                  {isAdmin && <th style={{ color: '#64748b', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>כלול בריק</th>}
                 </tr>
               </thead>
               <tbody>
@@ -667,6 +677,16 @@ export default function PlayerDetail() {
                     <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{r.handsPlayed}</td>
                     {isAdmin && <td style={{ color: '#f59e0b', whiteSpace: 'nowrap' }}>{fmt(r.rakePaid)}</td>}
                     <td style={{ whiteSpace: 'nowrap' }} className={balanceClass(pnl)}><strong>{fmt(pnl)}</strong></td>
+                    {isAdmin && (
+                      <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={!excludedIds.has(r.id)}
+                          onChange={() => toggleExclude(r.id)}
+                          style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: '#f59e0b' }}
+                        />
+                      </td>
+                    )}
                   </tr>
                   );
                 })}
