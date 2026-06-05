@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, updateClubExpense, deleteClubExpense, payAdminExpense, payClubExpense, getBankAccounts, getAdminUsers } from '../api';
+import { fmtDateOnly, fmtDateTime } from '../utils/dates';
 
 export default function AdminExpenses() {
   const [data, setData] = useState(null);
@@ -180,6 +181,7 @@ export default function AdminExpenses() {
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Source</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem', fontSize: '0.75rem' }}>Created</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -190,7 +192,7 @@ export default function AdminExpenses() {
                       <>
                         <tr key={`${entry.type || 'ADMIN_EXPENSE'}-${entry.id}`}>
                           {editing?.id === entry.id ? (
-                            <td colSpan={5} style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
+                            <td colSpan={6} style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
                               <form onSubmit={handleEditSubmit} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <input type="number" step="0.01" min="0.01" required value={editing.amount}
                                   onChange={e => setEditing(prev => ({ ...prev, amount: e.target.value }))}
@@ -206,7 +208,7 @@ export default function AdminExpenses() {
                           ) : (
                             <>
                               <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
-                                {entry.expenseDate || '—'}
+                                {fmtDateOnly(entry.expenseDate)}
                               </td>
                               <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                               <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
@@ -218,6 +220,9 @@ export default function AdminExpenses() {
                                 ) : (
                                   <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>Manual</span>
                                 )}
+                              </td>
+                              <td style={{ color: '#475569', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                                {entry.createdAt ? fmtDateTime(entry.createdAt) : '—'}
                               </td>
                               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                                 <button className="btn btn-secondary"
