@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBankHistory, getProfitSummary } from '../api';
+import DateInput from '../components/DateInput';
+import { fmtDateTime } from '../utils/dates';
 
 const fmt = (n) => {
   if (n === undefined || n === null) return '₪0';
@@ -47,11 +49,9 @@ export default function BankBalance() {
         {/* Date filter */}
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Filter:</span>
-          <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)}
-            style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} />
+          <DateInput value={filterFrom} onChange={setFilterFrom} />
           <span style={{ color: '#64748b' }}>→</span>
-          <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)}
-            style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} />
+          <DateInput value={filterTo} onChange={setFilterTo} />
           {(filterFrom || filterTo) && (
             <button onClick={() => { setFilterFrom(''); setFilterTo(''); }}
               style={{ background: 'transparent', color: '#64748b', border: '1px solid #334155', borderRadius: '4px', padding: '0.2rem 0.6rem', fontSize: '0.85rem', cursor: 'pointer' }}>
@@ -83,7 +83,7 @@ export default function BankBalance() {
                     <tr key={i} style={{ borderTop: '1px solid #1e293b' }}>
                       <td style={{ color: '#64748b', paddingTop: '0.4rem', whiteSpace: 'nowrap' }}>
                         <div>{r.date || '—'}</div>
-                        {r.createdAt && <div style={{ fontSize: '0.75rem', color: '#475569' }}>{r.createdAt.replace('T', ' ').substring(0, 16)}</div>}
+                        {r.createdAt && <div style={{ fontSize: '0.75rem', color: '#475569' }}>{fmtDateTime(r.createdAt)}</div>}
                       </td>
                       <td style={{ paddingTop: '0.4rem' }}>
                         <Name id={r.fromPlayerId} name={r.fromName} />

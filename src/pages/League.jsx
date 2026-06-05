@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { getLeagueSessions, saveLeagueConfig, getLeagueStandings } from '../api';
+import DateInput from '../components/DateInput';
+import { fmtDateOnly } from '../utils/dates';
 
 const sel = {
   background: '#1e2130', color: '#e2e8f0',
@@ -23,8 +25,7 @@ const fixedPtsStyle = {
 };
 
 function fmtDate(dt) {
-  if (!dt) return '—';
-  return dt.replace('T', ' ').substring(0, 10);
+  return fmtDateOnly(dt);
 }
 
 function gameTypeBadge(gt) {
@@ -261,11 +262,11 @@ export default function League() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase' }}>Date from</label>
-              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={sel} />
+              <DateInput value={dateFrom} onChange={setDateFrom} style={sel} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <label style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase' }}>Date to</label>
-              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={sel} />
+              <DateInput value={dateTo} onChange={setDateTo} style={sel} />
             </div>
             <button onClick={applyFilters}
               style={{ background: '#6366f1', color: '#fff', border: 'none', borderRadius: '6px', padding: '0.35rem 0.8rem', fontSize: '0.8rem', cursor: 'pointer' }}>

@@ -4,6 +4,7 @@ import {
   getLessonEvent, setLessonEvent, getLessonRegistrations,
   registerLesson, unregisterLesson, getMyPlayerInfo
 } from '../api';
+import DateInput from '../components/DateInput';
 
 const inputStyle = {
   width: '100%',
@@ -364,14 +365,10 @@ export default function Lesson() {
               <form onSubmit={handleSetEvent} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div style={{ flex: '0 0 auto' }}>
                   <label style={{ color: '#64748b', fontSize: '0.8rem', display: 'block', marginBottom: 6 }}>תאריך</label>
-                  <input
-                    type="date"
-                    lang="he"
-                    style={{ ...inputStyle, width: '100%', cursor: 'pointer', minWidth: 190 }}
+                  <DateInput
                     value={adminDate}
-                    onChange={e => setAdminDate(e.target.value)}
-                    onClick={e => e.target.showPicker?.()}
-                    required
+                    onChange={setAdminDate}
+                    style={{ ...inputStyle, width: '100%', minWidth: 190 }}
                   />
                 </div>
                 <div style={{ flex: 1, minWidth: 160 }}>

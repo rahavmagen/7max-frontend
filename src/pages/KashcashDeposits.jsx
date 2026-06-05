@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getPendingKashcashDeposits, getKashcashHistory, confirmKashcashDeposit } from '../api';
+import DateInput from '../components/DateInput';
 
 const th = { padding: '8px 12px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, borderBottom: '1px solid var(--border)' };
 const td = { padding: '8px 12px', color: 'var(--text-secondary)', fontSize: '0.9rem', borderBottom: '1px solid var(--border)' };
@@ -123,19 +124,7 @@ export default function KashcashDeposits() {
           {[['From', from, setFrom], ['To', to, setTo]].map(([label, val, setter]) => (
             <div key={label}>
               <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 4 }}>{label}</label>
-              <input
-                type="date"
-                value={val}
-                onChange={e => setter(e.target.value)}
-                style={{
-                  padding: '6px 10px',
-                  background: 'var(--bg-input)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 6,
-                  color: 'var(--text-primary)',
-                  fontSize: '0.9rem',
-                }}
-              />
+              <DateInput value={val} onChange={setter} />
             </div>
           ))}
           <button

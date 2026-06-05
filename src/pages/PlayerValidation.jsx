@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlayerValidation } from '../api';
+import DateInput from '../components/DateInput';
 
 export default function PlayerValidation() {
   const [rows, setRows] = useState(null);
@@ -38,15 +39,7 @@ export default function PlayerValidation() {
         <h1>Validation — ולידציה לפי שחקן</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <label style={{ color: '#64748b', fontSize: '0.85rem' }}>מאז תאריך:</label>
-          <input
-            type="date"
-            value={sinceDate}
-            onChange={e => setSinceDate(e.target.value)}
-            style={{
-              background: '#1a1d27', border: '1px solid #2d3148', borderRadius: '6px',
-              color: '#e2e8f0', padding: '0.3rem 0.6rem', fontSize: '0.85rem',
-            }}
-          />
+          <DateInput value={sinceDate} onChange={setSinceDate} />
           <button className="btn btn-secondary" style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}
             onClick={() => load(sinceDate)}>
             עדכן

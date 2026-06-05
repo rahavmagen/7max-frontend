@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlayers, createReferral, getReferrals, deleteReferral } from '../api';
+import { fmtDateTime } from '../utils/dates';
 
 export default function BringAFriend() {
   const navigate = useNavigate();
@@ -57,7 +58,7 @@ export default function BringAFriend() {
     setReferrals(r => r.filter(x => x.id !== id));
   };
 
-  const fmtDate = (dt) => dt ? dt.replace('T', ' ').substring(0, 16) : '—';
+  const fmtDate = fmtDateTime;
 
   return (
     <div>

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getHandsReport, getFridayRakeReport, getRakebackReport } from '../api';
+import DateInput from '../components/DateInput';
+import { fmtDateOnly } from '../utils/dates';
 
 export default function AdminReports() {
   const navigate = useNavigate();
-  const fmt = (iso) => iso.split('-').reverse().join('-');
+  const fmt = fmtDateOnly;
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
 
@@ -76,11 +78,11 @@ export default function AdminReports() {
           <div className="form-row" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <div className="form-group">
               <label>מתאריך</label>
-              <input type="date" lang="he" value={dateFrom} onChange={e => setDateFrom(e.target.value)} required />
+              <DateInput value={dateFrom} onChange={setDateFrom} />
             </div>
             <div className="form-group">
               <label>עד תאריך</label>
-              <input type="date" lang="he" value={dateTo} onChange={e => setDateTo(e.target.value)} required />
+              <DateInput value={dateTo} onChange={setDateTo} />
             </div>
             <div className="form-group">
               <label>מינימום ידיים</label>
@@ -163,11 +165,11 @@ export default function AdminReports() {
           <div className="form-row" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <div className="form-group">
               <label>מתאריך</label>
-              <input type="date" lang="he" value={rbDateFrom} onChange={e => setRbDateFrom(e.target.value)} required />
+              <DateInput value={rbDateFrom} onChange={setRbDateFrom} />
             </div>
             <div className="form-group">
               <label>עד תאריך</label>
-              <input type="date" lang="he" value={rbDateTo} onChange={e => setRbDateTo(e.target.value)} required />
+              <DateInput value={rbDateTo} onChange={setRbDateTo} />
             </div>
             <div className="form-group" style={{ paddingTop: '1.5rem' }}>
               <button type="submit" className="btn btn-primary" disabled={rbLoading}>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getSessionResults } from '../api';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { fmtDateTime } from '../utils/dates';
 
 export default function GameResults() {
   const { id } = useParams();
@@ -30,7 +31,7 @@ export default function GameResults() {
 
   const cls = (n) => Number(n) > 0 ? 'positive' : Number(n) < 0 ? 'negative' : 'zero';
 
-  const fmtDate = (dt) => dt ? dt.replace('T', ' ').substring(0, 16) : '—';
+  const fmtDate = fmtDateTime;
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 

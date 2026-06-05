@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { uploadReport, getReports, deleteReport } from '../api';
 import api from '../api';
 import { useNavigate, Link } from 'react-router-dom';
+import { fmtDateTime } from '../utils/dates';
 
 export default function Upload() {
   const [dragging, setDragging] = useState(false);
@@ -208,7 +209,7 @@ export default function Upload() {
                   <td style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{r.fileName}</td>
                   <td>{r.periodStart} to {r.periodEnd}</td>
                   <td className="positive">{Math.round(parseFloat(r.totalRake))}</td>
-                  <td style={{ color: '#64748b' }}>{r.uploadedAt?.replace('T', ' ').substring(0, 16)}</td>
+                  <td style={{ color: '#64748b' }}>{fmtDateTime(r.uploadedAt)}</td>
                   <td>
                     <button
                       onClick={e => { e.stopPropagation(); handleDownload(r.id, r.fileName); }}

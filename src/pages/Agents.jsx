@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage } from '../api';
+import DateInput from '../components/DateInput';
 
 const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '5px', fontSize: '0.82rem' };
 
@@ -202,9 +203,9 @@ export default function Agents() {
             </h3>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>From</span>
-              <input type="date" value={filterFrom} onChange={e => { setFilterFrom(e.target.value); fetchStats(selected.id, e.target.value, filterTo); }} style={inputStyle} />
+              <DateInput value={filterFrom} onChange={v => { setFilterFrom(v); fetchStats(selected.id, v, filterTo); }} style={inputStyle} />
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>To</span>
-              <input type="date" value={filterTo} onChange={e => { setFilterTo(e.target.value); fetchStats(selected.id, filterFrom, e.target.value); }} style={inputStyle} />
+              <DateInput value={filterTo} onChange={v => { setFilterTo(v); fetchStats(selected.id, filterFrom, v); }} style={inputStyle} />
               {(filterFrom || filterTo) && (
                 <button onClick={handleClearFilter}
                   style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.82rem' }}>

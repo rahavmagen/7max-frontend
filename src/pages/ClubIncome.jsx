@@ -1,15 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getIncomeReport } from '../api';
+import DateInput from '../components/DateInput';
+import { fmtDateTime as fmtDisplay } from '../utils/dates';
 
 const toInputDate = (d) => d.toISOString().substring(0, 10);
-
-const fmtDisplay = (isoStr) => {
-  if (!isoStr) return '—';
-  const s = isoStr.replace('T', ' ').substring(0, 16);
-  const [datePart, timePart] = s.split(' ');
-  const [y, m, d] = datePart.split('-');
-  return `${d}/${m}/${y} ${timePart || ''}`.trim();
-};
 
 const getDefaultRange = () => {
   const now = new Date();
@@ -73,11 +67,9 @@ export default function ClubIncome() {
       <div className="card">
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
           <label style={{ color: '#64748b', fontSize: '0.85rem' }}>From:</label>
-          <input type="date" lang="he" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            style={{ background: '#0f1117', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }} />
+          <DateInput value={dateFrom} onChange={setDateFrom} />
           <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
-          <input type="date" lang="he" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            style={{ background: '#0f1117', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }} />
+          <DateInput value={dateTo} onChange={setDateTo} />
           <select value={gameTypeFilter} onChange={e => setGameTypeFilter(e.target.value)}
             style={{ background: '#0f1117', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }}>
             <option value="ALL">All Games</option>

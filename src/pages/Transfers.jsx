@@ -2,6 +2,8 @@ import { Fragment, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, createClubExpense } from '../api';
+import DateInput from '../components/DateInput';
+import { fmtDateOnly } from '../utils/dates';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
@@ -525,8 +527,7 @@ export default function Transfers() {
               </div>
               <div className="form-group">
                 <label>Date *</label>
-                <input type="date" required value={clubExpForm.expenseDate}
-                  onChange={e => setClubExpForm(f => ({ ...f, expenseDate: e.target.value }))} />
+                <DateInput value={clubExpForm.expenseDate} onChange={v => setClubExpForm(f => ({ ...f, expenseDate: v }))} />
               </div>
             </div>
             <div className="form-group">
@@ -724,7 +725,7 @@ export default function Transfers() {
                 const badge = TYPE_BADGE[item.pendingType] || TYPE_BADGE.CREDIT;
                 const isEditing = editing && editing.id === item.id && editing.pendingType === item.pendingType;
                 const rawDate = item.transferDate || item.transactionDate || item.createdAt?.substring(0, 10) || null;
-                const fmtDate = rawDate ? rawDate.substring(8, 10) + '-' + rawDate.substring(5, 7) + '-' + rawDate.substring(0, 4) : '—';
+                const fmtDate = rawDate ? fmtDateOnly(rawDate) : '—';
                 const fmtTime = item.createdAt && item.createdAt.length > 10 ? item.createdAt.substring(11, 16) : '';
                 return (
                   <Fragment key={`${item.pendingType}-${item.id}`}>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getTicketAssets, buyTickets, grantTicket, getAdminUsers, getActivePlayers, markTicketGrantUsed } from '../api';
+import DateInput from '../components/DateInput';
+import { fmtDateOnly } from '../utils/dates';
 
 function PlayerSearchSelect({ players, value, onChange }) {
   const [search, setSearch] = useState('');
@@ -160,10 +162,7 @@ export default function TicketAssets() {
     return '₪' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const fmtDate = (dt) => {
-    if (!dt) return '—';
-    return dt.substring(0, 10).split('-').reverse().join('-');
-  };
+  const fmtDate = fmtDateOnly;
 
   const totalFaceValue = assets.reduce((s, a) => s + Number(a.quantityRemaining) * Number(a.faceValuePerTicket), 0);
 
@@ -220,8 +219,7 @@ export default function TicketAssets() {
               </div>
               <div className="form-group">
                 <label>Purchase Date *</label>
-                <input type="date" required value={buyForm.purchaseDate}
-                  onChange={e => setBuyForm(f => ({ ...f, purchaseDate: e.target.value }))} />
+                <DateInput value={buyForm.purchaseDate} onChange={v => setBuyForm(f => ({ ...f, purchaseDate: v }))} />
               </div>
               <div className="form-group">
                 <label>Notes</label>

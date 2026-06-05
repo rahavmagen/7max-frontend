@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getWalletSummary, getWalletHistory, getBankAccounts, setAdminStartingBalance, getBankTransactions, addBankTransaction, deleteBankTransaction } from '../api';
+import DateInput from '../components/DateInput';
 
 export default function ClubWallets() {
   const [summary, setSummary] = useState(null);
@@ -318,9 +319,7 @@ const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH:
                         </div>
                         <div>
                           <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Date</label>
-                          <input type="date" value={bbForm.date}
-                            onChange={e => setBbForm(f => ({ ...f, date: e.target.value }))}
-                            style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px' }} />
+                          <DateInput value={bbForm.date} onChange={v => setBbForm(f => ({ ...f, date: v }))} />
                         </div>
                         <div>
                           <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Notes</label>
@@ -358,11 +357,11 @@ const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH:
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-end' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label>From</label>
-            <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} />
+            <DateInput value={filterFrom} onChange={setFilterFrom} />
           </div>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label>To</label>
-            <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)} />
+            <DateInput value={filterTo} onChange={setFilterTo} />
           </div>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label>Holder</label>

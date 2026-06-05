@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { getTransactionLabel } from '../utils/transactionLabel';
+import DateInput from '../components/DateInput';
+import { fmtDateTime } from '../utils/dates';
 
 export default function PlayerDetail() {
   const { id } = useParams();
@@ -375,11 +377,9 @@ export default function PlayerDetail() {
                       <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
                         Rakeback since
                       </label>
-                      <input
-                        type="date"
+                      <DateInput
                         value={editData.rakebackSince}
-                        onChange={e => setEditData(d => ({ ...d, rakebackSince: e.target.value }))}
-                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}
+                        onChange={v => setEditData(d => ({ ...d, rakebackSince: v }))}
                       />
                     </div>
                   </div>
@@ -462,7 +462,7 @@ export default function PlayerDetail() {
                   {loginStats.loginCount || 0} times
                   {loginStats.lastLoginAt && (
                     <span style={{ fontSize: '0.75rem', marginLeft: '0.5rem', color: '#64748b' }}>
-                      (last: {loginStats.lastLoginAt.replace('T', ' ').substring(0, 16)})
+                      (last: {fmtDateTime(loginStats.lastLoginAt)})
                     </span>
                   )}
                 </div>
@@ -560,7 +560,7 @@ export default function PlayerDetail() {
                 const displayAmount = isNegative ? fmt(-t.amount) : fmt(t.amount);
                 return (
                 <tr key={t.id}>
-                  <td>{t.createdAt ? t.createdAt.replace('T', ' ').substring(0, 16) : t.transactionDate || '—'}</td>
+                  <td>{t.createdAt ? fmtDateTime(t.createdAt) : t.transactionDate || '—'}</td>
                   <td>
                     <span className={`badge ${t.type === 'DEPOSIT' ? 'deposit' : t.type === 'CREDIT' ? 'credit' : t.type === 'PAYMENT' ? 'payment' : 'withdrawal'}`}>
                       {getTransactionLabel(t.type, t.sourceRef)}
@@ -581,11 +581,9 @@ export default function PlayerDetail() {
           <div>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <label style={{ color: '#64748b', fontSize: '0.85rem' }}>From:</label>
-              <input type="date" lang="he" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+              <DateInput value={dateFrom} onChange={setDateFrom} />
               <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
-              <input type="date" lang="he" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+              <DateInput value={dateTo} onChange={setDateTo} />
               {(dateFrom || dateTo || gameTypeFilter) && (
                 <button onClick={() => { setDateFrom(''); setDateTo(''); setGameTypeFilter(''); }}
                   style={{ background: 'none', border: '1px solid #2d3148', color: '#94a3b8', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
@@ -658,7 +656,7 @@ export default function PlayerDetail() {
                     className={r.session ? 'hoverable-row' : ''}
                   >
                     <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                      {r.session && r.session.startTime ? r.session.startTime.replace('T', ' ').substring(0, 16) : '-'}
+                      {r.session && r.session.startTime ? fmtDateTime(r.session.startTime) : '-'}
                     </td>
                     <td dir="rtl" style={{ textAlign: 'right' }}>{r.session ? r.session.tableName : '-'}</td>
                     <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{r.session ? r.session.gameType : '-'}</span></td>

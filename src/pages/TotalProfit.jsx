@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminExpenses, getBalanceSheet, getPlayers, getPromotions, getProfitSummary, getTransactionRange, getTicketAssetsSummary, getWalletSummary } from '../api';
+import DateInput from '../components/DateInput';
+import { fmtDateTime } from '../utils/dates';
 
 const SOURCE_LABEL = {
   'SCREEN:CREDIT': 'Credit adjustment',
@@ -132,7 +134,7 @@ export default function TotalProfit() {
         <h1>Total Profit</h1>
         {summary?.lastUpdated && (
           <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-            Last updated: {summary.lastUpdated.replace('T', ' ').substring(0, 16)}
+            Last updated: {fmtDateTime(summary.lastUpdated)}
           </span>
         )}
       </div>
@@ -141,19 +143,9 @@ export default function TotalProfit() {
       <div className="card" style={{ marginBottom: '1.5rem', padding: '1rem 1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Period filter:</span>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={e => setFromDate(e.target.value)}
-            style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.3rem 0.6rem' }}
-          />
+          <DateInput value={fromDate} onChange={setFromDate} />
           <span style={{ color: '#64748b' }}>→</span>
-          <input
-            type="date"
-            value={toDate}
-            onChange={e => setToDate(e.target.value)}
-            style={{ background: '#1e293b', border: '1px solid #334155', color: '#e2e8f0', borderRadius: '4px', padding: '0.3rem 0.6rem' }}
-          />
+          <DateInput value={toDate} onChange={setToDate} />
           <button onClick={loadPeriod} disabled={!fromDate || !toDate || periodLoading}
             style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.35rem 1rem', cursor: 'pointer' }}>
             {periodLoading ? 'Loading…' : 'Show Period'}

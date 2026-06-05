@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { getGameSessions, getFridayRakeReport } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import DateInput from '../components/DateInput';
 
 export default function Games() {
   const { auth } = useAuth();
@@ -69,7 +70,7 @@ export default function Games() {
     if (!dt) return '—';
     const [datePart, timePart] = dt.replace('T', ' ').substring(0, 16).split(' ');
     const [y, m, d] = datePart.split('-');
-    return `${d}/${m}/${y} ${timePart}`;
+    return `${d}/${m}/${y}${timePart ? ' ' + timePart : ''}`;
   };
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
@@ -108,13 +109,11 @@ export default function Games() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date from</label>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
+          <DateInput value={dateFrom} onChange={setDateFrom} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Date to</label>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            style={{ background: '#1e2130', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
+          <DateInput value={dateTo} onChange={setDateTo} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           <label style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Cost min (₪)</label>
