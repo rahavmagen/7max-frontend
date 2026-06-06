@@ -152,9 +152,16 @@ export default function ClubWallets() {
       createdByUsername: t.createdBy,
     })) : [];
 
-  const assignedHistory = isBankFilter
+  const assignedHistoryRaw = isBankFilter
     ? bankTxnRows
     : [...startingRows, ...transferHistory];
+
+  const assignedHistory = filterMethod
+    ? assignedHistoryRaw.filter(h => {
+        const type = h._synthetic ? 'STARTING' : h._bankTxn ? 'BANK' : (h.type || 'TRANSFER');
+        return type === filterMethod;
+      })
+    : assignedHistoryRaw;
 
 
   // Returns { signedAmount, color } for a history row based on selected holder
@@ -369,6 +376,19 @@ const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH:
               style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }}>
               <option value="">All holders</option>
               {holderOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Type</label>
+            <select value={filterMethod} onChange={e => setFilterMethod(e.target.value)}
+              style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }}>
+              <option value="">All types</option>
+              <option value="TRANSFER">Transfer</option>
+              <option value="ADJUSTMENT">Adjustment</option>
+              <option value="EXPENSES">Expenses</option>
+              <option value="EXPENSE_PAID">Expense Paid</option>
+              <option value="STARTING">Opening Balance</option>
+              <option value="BANK">Bank</option>
             </select>
           </div>
           <button className="btn btn-secondary" onClick={applyFilters}>Apply</button>
