@@ -74,14 +74,32 @@ export default function CreditCompare() {
 
       const diffs = [];
 
-      // Match col A (username) vs DB username
+      // Match col B (real name) → look up player by fullName in DB first,
+      // track matched DB usernames to exclude them from col A matching
+      const matchedByNameUsernames = new Set();
+      const nameUnmatched = [];
+      for (const [realName, xlsVal] of Object.entries(xlsByName)) {
+        const dbEntry = dbByNameLower[realName.toLowerCase()];
+        if (dbEntry) {
+          matchedByNameUsernames.add(dbEntry.key.toLowerCase());
+          const dbVal = dbEntry.val;
+          const diff = xlsVal - dbVal;
+          if (Math.abs(diff) > 0.01) {
+            diffs.push({ username: dbEntry.key, xlsVal, dbVal, diff, note: `matched by name: ${realName}` });
+          }
+        } else {
+          nameUnmatched.push({ row: realName, amount: xlsVal });
+        }
+      }
+
+      // Match col A (username) vs DB username, excluding players already matched via col B
       const xlsByUserLower = {};
       for (const [k, v] of Object.entries(xlsByUser)) {
         xlsByUserLower[k.toLowerCase()] = { key: k, val: v };
       }
       const allUserKeys = new Set([
         ...Object.keys(xlsByUserLower),
-        ...Object.keys(dbByUserLower).filter(k => dbByUserLower[k].val !== 0),
+        ...Object.keys(dbByUserLower).filter(k => dbByUserLower[k].val !== 0 && !matchedByNameUsernames.has(k)),
       ]);
       for (const key of allUserKeys) {
         const xlsEntry = xlsByUserLower[key];
@@ -92,21 +110,6 @@ export default function CreditCompare() {
         const diff = xlsVal - dbVal;
         if (Math.abs(diff) > 0.01) {
           diffs.push({ username: displayName, xlsVal, dbVal, diff });
-        }
-      }
-
-      // Match col B (real name) → look up player by fullName in DB
-      const nameUnmatched = [];
-      for (const [realName, xlsVal] of Object.entries(xlsByName)) {
-        const dbEntry = dbByNameLower[realName.toLowerCase()];
-        if (dbEntry) {
-          const dbVal = dbEntry.val;
-          const diff = xlsVal - dbVal;
-          if (Math.abs(diff) > 0.01) {
-            diffs.push({ username: dbEntry.key, xlsVal, dbVal, diff, note: `matched by name: ${realName}` });
-          }
-        } else {
-          nameUnmatched.push({ row: realName, amount: xlsVal });
         }
       }
 
