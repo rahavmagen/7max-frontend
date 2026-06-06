@@ -120,6 +120,7 @@ export const getPaidTotals = () => api.get('/admin-expenses/paid-totals');
 export const payAdminExpense = (id, data) => api.patch(`/admin-expenses/${id}/pay`, data);
 export const payClubExpense = (id, data) => api.patch(`/club-expenses/${id}/pay`, data);
 
+export const getAdminTransfers = (admin) => api.get('/transfers/by-admin', { params: { admin } });
 export const getWalletSummary = () => api.get('/wallets/summary');
 export const getWalletHistory = (params) => api.get('/wallets/history', { params });
 export const setBankBalance = (bankBalance) => api.patch('/import-summary/bank-balance', { bankBalance });

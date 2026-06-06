@@ -36,7 +36,7 @@ import Agents from './pages/Agents';
 import AgentPortal from './pages/AgentPortal';
 import BringAFriend from './pages/BringAFriend';
 import Wheel from './pages/Wheel';
-import CreditCompare from './pages/CreditCompare';
+import XlsCompare from './pages/XlsCompare';
 import BankBalance from './pages/BankBalance';
 import ClubWallets from './pages/ClubWallets';
 import TicketAssets from './pages/TicketAssets';
@@ -49,7 +49,7 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/credit-compare'];
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/xls-compare'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -78,7 +78,7 @@ function AccountingDropdown() {
           <NavLink to="/chip-balance">Balance</NavLink>
           <NavLink to="/player-validation">Validation</NavLink>
           <NavLink to="/admin-expenses">Expenses</NavLink>
-          <NavLink to="/credit-compare">Credit Compare</NavLink>
+          <NavLink to="/xls-compare">XLS Compare</NavLink>
         </div>
       )}
     </div>
@@ -226,7 +226,7 @@ function AppRoutes() {
               <Route path="/chip-balance" element={<ChipBalance />} />
               <Route path="/player-validation" element={<PlayerValidation />} />
               <Route path="/admin-expenses" element={<AdminExpenses />} />
-              <Route path="/credit-compare" element={<CreditCompare />} />
+              <Route path="/xls-compare" element={<XlsCompare />} />
               <Route path="/agents" element={<Agents />} />
               <Route path="/agent-portal" element={<AgentPortal />} />
               <Route path="/bring-a-friend" element={<BringAFriend />} />
