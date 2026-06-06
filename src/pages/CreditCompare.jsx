@@ -126,6 +126,8 @@ export default function CreditCompare() {
       const exactMatchedDbKeys = new Set();
       const unmatchedXls = [];
       for (const [key, xlsEntry] of Object.entries(xlsByUserLower)) {
+        // Skip if same player was already matched via col B real name (duplicate XLS row)
+        if (matchedByNameUsernames.has(key)) continue;
         const dbEntry = dbNonZero[key];
         if (dbEntry) {
           exactMatchedDbKeys.add(key);
