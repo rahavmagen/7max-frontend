@@ -48,9 +48,10 @@ export default function CreditCompare() {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
 
-      // Parse: col A=username, col B=real name (fallback when A empty), cols C–F=credit values
-      const xlsByUser = {};  // username (col A) → total
-      const xlsByName = {};  // real name (col B, when col A empty) → total
+      // Parse: col A=username, col B=real name, cols C–F=credit values
+      const xlsByUser = {};   // username (col A) → total
+      const xlsColB = {};     // lowercase col A → col B value (for fallback matching)
+      const xlsByName = {};   // real name (col B, when col A empty) → total
       let xlsTotal = 0;
       const unnamedRows = [];
       for (let i = 2; i < rows.length; i++) {
@@ -66,6 +67,7 @@ export default function CreditCompare() {
           xlsTotal += total;
           if (colA) {
             xlsByUser[colA] = (xlsByUser[colA] || 0) + total;
+            if (colB) xlsColB[colA.toLowerCase().trim()] = colB;
           } else if (colB) {
             xlsByName[colB] = (xlsByName[colB] || 0) + total;
           } else {
@@ -160,11 +162,30 @@ export default function CreditCompare() {
         }
       }
 
-      // Phase 3: remaining XLS — check zero-credit exact match, else truly XLS-only
+      // Phase 3: remaining XLS — try col B as DB fullName or DB username fallback
       for (const [xlsKey, xlsEntry] of stillUnmatchedXls) {
-        const dbEntry = dbZero[xlsKey];
-        const displayName = dbEntry ? dbEntry.key : xlsEntry.key;
-        diffs.push({ username: displayName, xlsVal: xlsEntry.val, dbVal: 0, diff: xlsEntry.val });
+        const colBVal = xlsColB[xlsKey];
+        let colBMatch = null;
+        if (colBVal) {
+          const byFullName = dbByNameLower[colBVal.toLowerCase()];
+          const byUsername = dbByUserLower[colBVal.toLowerCase()];
+          const candidate = byFullName || byUsername;
+          if (candidate && !matchedByNameUsernames.has(candidate.key.toLowerCase())) {
+            colBMatch = candidate;
+          }
+        }
+        if (colBMatch) {
+          fuzzyMatchedDbKeys.add(colBMatch.key.toLowerCase());
+          matchedByNameUsernames.add(colBMatch.key.toLowerCase());
+          const diff = xlsEntry.val - colBMatch.val;
+          if (Math.abs(diff) > 0.01) {
+            diffs.push({ username: colBMatch.key, xlsVal: xlsEntry.val, dbVal: colBMatch.val, diff, note: `matched by name: ${colBVal}` });
+          }
+        } else {
+          const zeroEntry = dbZero[xlsKey];
+          const displayName = zeroEntry ? zeroEntry.key : xlsEntry.key;
+          diffs.push({ username: displayName, xlsVal: xlsEntry.val, dbVal: 0, diff: xlsEntry.val });
+        }
       }
 
       // Remaining non-zero DB entries with no XLS match → "DB only"
