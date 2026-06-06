@@ -2,6 +2,21 @@ import { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { getPlayers } from '../api';
 
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const prev = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) {
+    const curr = [i];
+    for (let j = 1; j <= n; j++)
+      curr[j] = a[i-1] === b[j-1] ? prev[j-1] : 1 + Math.min(prev[j-1], prev[j], curr[j-1]);
+    prev.splice(0, prev.length, ...curr);
+  }
+  return prev[n];
+}
+
 export default function CreditCompare() {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -92,25 +107,52 @@ export default function CreditCompare() {
         }
       }
 
-      // Match col A (username) vs DB username, excluding players already matched via col B
+      // Match col A (username) vs DB username — exact first, then fuzzy (Levenshtein ≤ 2)
       const xlsByUserLower = {};
       for (const [k, v] of Object.entries(xlsByUser)) {
-        xlsByUserLower[k.toLowerCase()] = { key: k, val: v };
+        xlsByUserLower[k.toLowerCase().trim()] = { key: k, val: v };
       }
-      const allUserKeys = new Set([
-        ...Object.keys(xlsByUserLower),
-        ...Object.keys(dbByUserLower).filter(k => dbByUserLower[k].val !== 0 && !matchedByNameUsernames.has(k)),
-      ]);
-      for (const key of allUserKeys) {
-        const xlsEntry = xlsByUserLower[key];
+      const eligibleDb = Object.entries(dbByUserLower)
+        .filter(([k, e]) => e.val !== 0 && !matchedByNameUsernames.has(k));
+
+      // Phase 1: exact match (case-insensitive)
+      const exactMatchedDbKeys = new Set();
+      const unmatchedXls = [];
+      for (const [key, xlsEntry] of Object.entries(xlsByUserLower)) {
         const dbEntry = dbByUserLower[key];
-        const xlsVal = xlsEntry ? xlsEntry.val : 0;
-        const dbVal = dbEntry ? dbEntry.val : 0;
-        const displayName = (dbEntry || xlsEntry).key;
-        const diff = xlsVal - dbVal;
-        if (Math.abs(diff) > 0.01) {
-          diffs.push({ username: displayName, xlsVal, dbVal, diff });
+        if (dbEntry && !matchedByNameUsernames.has(key)) {
+          exactMatchedDbKeys.add(key);
+          const diff = xlsEntry.val - dbEntry.val;
+          if (Math.abs(diff) > 0.01) diffs.push({ username: dbEntry.key, xlsVal: xlsEntry.val, dbVal: dbEntry.val, diff });
+        } else {
+          unmatchedXls.push([key, xlsEntry]);
         }
+      }
+      const unmatchedDb = eligibleDb.filter(([k]) => !exactMatchedDbKeys.has(k));
+
+      // Phase 2: fuzzy match unmatched XLS entries against unmatched DB entries
+      const fuzzyMatchedDbKeys = new Set();
+      for (const [xlsKey, xlsEntry] of unmatchedXls) {
+        let bestMatch = null, bestDist = Infinity;
+        for (const [dbKey, dbEntry] of unmatchedDb) {
+          if (fuzzyMatchedDbKeys.has(dbKey)) continue;
+          const dist = levenshtein(xlsKey, dbKey);
+          if (dist < bestDist) { bestDist = dist; bestMatch = [dbKey, dbEntry]; }
+        }
+        if (bestMatch && bestDist <= 2) {
+          fuzzyMatchedDbKeys.add(bestMatch[0]);
+          const diff = xlsEntry.val - bestMatch[1].val;
+          if (Math.abs(diff) > 0.01) {
+            diffs.push({ username: bestMatch[1].key, xlsVal: xlsEntry.val, dbVal: bestMatch[1].val, diff, note: `fuzzy: ${xlsEntry.key}` });
+          }
+        } else {
+          diffs.push({ username: xlsEntry.key, xlsVal: xlsEntry.val, dbVal: 0, diff: xlsEntry.val });
+        }
+      }
+      // Remaining unmatched DB entries
+      for (const [dbKey, dbEntry] of unmatchedDb) {
+        if (fuzzyMatchedDbKeys.has(dbKey)) continue;
+        diffs.push({ username: dbEntry.key, xlsVal: 0, dbVal: dbEntry.val, diff: -dbEntry.val });
       }
 
       const unnamed = [...unnamedRows, ...nameUnmatched];
