@@ -107,20 +107,27 @@ export default function CreditCompare() {
         }
       }
 
-      // Match col A (username) vs DB username — exact first, then fuzzy (Levenshtein ≤ 2)
+      // Match col A (username) vs DB username
+      // Strategy: prefer non-zero DB entries — avoids a zero-credit duplicate from stealing an exact match
       const xlsByUserLower = {};
       for (const [k, v] of Object.entries(xlsByUser)) {
         xlsByUserLower[k.toLowerCase().trim()] = { key: k, val: v };
       }
-      const eligibleDb = Object.entries(dbByUserLower)
-        .filter(([k, e]) => e.val !== 0 && !matchedByNameUsernames.has(k));
 
-      // Phase 1: exact match (case-insensitive)
+      // Split DB into non-zero and zero-credit entries (excluding col-B matched players)
+      const dbNonZero = Object.fromEntries(
+        Object.entries(dbByUserLower).filter(([k, e]) => e.val !== 0 && !matchedByNameUsernames.has(k))
+      );
+      const dbZero = Object.fromEntries(
+        Object.entries(dbByUserLower).filter(([k, e]) => e.val === 0 && !matchedByNameUsernames.has(k))
+      );
+
+      // Phase 1: exact match XLS against non-zero DB
       const exactMatchedDbKeys = new Set();
       const unmatchedXls = [];
       for (const [key, xlsEntry] of Object.entries(xlsByUserLower)) {
-        const dbEntry = dbByUserLower[key];
-        if (dbEntry && !matchedByNameUsernames.has(key)) {
+        const dbEntry = dbNonZero[key];
+        if (dbEntry) {
           exactMatchedDbKeys.add(key);
           const diff = xlsEntry.val - dbEntry.val;
           if (Math.abs(diff) > 0.01) diffs.push({ username: dbEntry.key, xlsVal: xlsEntry.val, dbVal: dbEntry.val, diff });
@@ -128,13 +135,14 @@ export default function CreditCompare() {
           unmatchedXls.push([key, xlsEntry]);
         }
       }
-      const unmatchedDb = eligibleDb.filter(([k]) => !exactMatchedDbKeys.has(k));
 
-      // Phase 2: fuzzy match unmatched XLS entries against unmatched DB entries
+      // Phase 2: fuzzy match remaining XLS against non-zero DB (Levenshtein ≤ 2)
+      const unmatchedNonZeroDb = Object.entries(dbNonZero).filter(([k]) => !exactMatchedDbKeys.has(k));
       const fuzzyMatchedDbKeys = new Set();
+      const stillUnmatchedXls = [];
       for (const [xlsKey, xlsEntry] of unmatchedXls) {
         let bestMatch = null, bestDist = Infinity;
-        for (const [dbKey, dbEntry] of unmatchedDb) {
+        for (const [dbKey, dbEntry] of unmatchedNonZeroDb) {
           if (fuzzyMatchedDbKeys.has(dbKey)) continue;
           const dist = levenshtein(xlsKey, dbKey);
           if (dist < bestDist) { bestDist = dist; bestMatch = [dbKey, dbEntry]; }
@@ -146,11 +154,19 @@ export default function CreditCompare() {
             diffs.push({ username: bestMatch[1].key, xlsVal: xlsEntry.val, dbVal: bestMatch[1].val, diff, note: `fuzzy: ${xlsEntry.key}` });
           }
         } else {
-          diffs.push({ username: xlsEntry.key, xlsVal: xlsEntry.val, dbVal: 0, diff: xlsEntry.val });
+          stillUnmatchedXls.push([xlsKey, xlsEntry]);
         }
       }
-      // Remaining unmatched DB entries
-      for (const [dbKey, dbEntry] of unmatchedDb) {
+
+      // Phase 3: remaining XLS — check zero-credit exact match, else truly XLS-only
+      for (const [xlsKey, xlsEntry] of stillUnmatchedXls) {
+        const dbEntry = dbZero[xlsKey];
+        const displayName = dbEntry ? dbEntry.key : xlsEntry.key;
+        diffs.push({ username: displayName, xlsVal: xlsEntry.val, dbVal: 0, diff: xlsEntry.val });
+      }
+
+      // Remaining non-zero DB entries with no XLS match → "DB only"
+      for (const [dbKey, dbEntry] of unmatchedNonZeroDb) {
         if (fuzzyMatchedDbKeys.has(dbKey)) continue;
         diffs.push({ username: dbEntry.key, xlsVal: 0, dbVal: dbEntry.val, diff: -dbEntry.val });
       }
