@@ -38,7 +38,7 @@ export default function CreditCompare() {
       let xlsTotal = 0;
       for (let i = 2; i < rows.length; i++) {
         const row = rows[i];
-        const username = row[0] ? String(row[0]).trim() : null;
+        const username = (row[0] ? String(row[0]).trim() : null) || (row[1] ? String(row[1]).trim() : null);
         const c = Number(row[2]) || 0;
         const d = Number(row[3]) || 0;
         const ee = Number(row[4]) || 0;
