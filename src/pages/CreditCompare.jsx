@@ -33,12 +33,15 @@ export default function CreditCompare() {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
 
-      // Parse: row[0]=username, row[2..5]=C,D,E,F credit columns
-      const xls = {};
+      // Parse: col A=username, col B=real name (fallback when A empty), cols C–F=credit values
+      const xlsByUser = {};  // username (col A) → total
+      const xlsByName = {};  // real name (col B, when col A empty) → total
       let xlsTotal = 0;
+      const unnamedRows = [];
       for (let i = 2; i < rows.length; i++) {
         const row = rows[i];
-        const username = (row[0] ? String(row[0]).trim() : null) || (row[1] ? String(row[1]).trim() : null);
+        const colA = row[0] ? String(row[0]).trim() : null;
+        const colB = row[1] ? String(row[1]).trim() : null;
         const c = Number(row[2]) || 0;
         const d = Number(row[3]) || 0;
         const ee = Number(row[4]) || 0;
@@ -46,11 +49,12 @@ export default function CreditCompare() {
         const total = c + d + ee + f;
         if (total !== 0) {
           xlsTotal += total;
-          if (username) {
-            xls[username] = (xls[username] || 0) + total;
+          if (colA) {
+            xlsByUser[colA] = (xlsByUser[colA] || 0) + total;
+          } else if (colB) {
+            xlsByName[colB] = (xlsByName[colB] || 0) + total;
           } else {
-            // unnamed row
-            xls[`__unnamed_row${i + 1}`] = total;
+            unnamedRows.push({ row: `Row ${i + 1}`, amount: total });
           }
         }
       }
@@ -58,30 +62,30 @@ export default function CreditCompare() {
       // Fetch DB players
       const res = await getPlayers();
       const players = res.data;
-      const db = {};
       let dbTotal = 0;
+      const dbByUserLower = {};
+      const dbByNameLower = {};
       for (const p of players) {
         const ct = Number(p.creditTotal) || 0;
-        db[p.username] = ct;
         dbTotal += ct;
+        dbByUserLower[p.username.toLowerCase()] = { key: p.username, val: ct };
+        if (p.fullName) dbByNameLower[p.fullName.toLowerCase()] = { key: p.username, val: ct };
       }
 
-      // Normalize both maps to lowercase keys for matching
-      const xlsLower = {};
-      for (const [k, v] of Object.entries(xls)) {
-        if (!k.startsWith('__unnamed')) xlsLower[k.toLowerCase()] = { key: k, val: v };
-      }
-      const dbLower = {};
-      for (const [k, v] of Object.entries(db)) {
-        if (v !== 0) dbLower[k.toLowerCase()] = { key: k, val: v };
-      }
-
-      const allKeys = new Set([...Object.keys(xlsLower), ...Object.keys(dbLower)]);
       const diffs = [];
 
-      for (const key of allKeys) {
-        const xlsEntry = xlsLower[key];
-        const dbEntry = dbLower[key];
+      // Match col A (username) vs DB username
+      const xlsByUserLower = {};
+      for (const [k, v] of Object.entries(xlsByUser)) {
+        xlsByUserLower[k.toLowerCase()] = { key: k, val: v };
+      }
+      const allUserKeys = new Set([
+        ...Object.keys(xlsByUserLower),
+        ...Object.keys(dbByUserLower).filter(k => dbByUserLower[k].val !== 0),
+      ]);
+      for (const key of allUserKeys) {
+        const xlsEntry = xlsByUserLower[key];
+        const dbEntry = dbByUserLower[key];
         const xlsVal = xlsEntry ? xlsEntry.val : 0;
         const dbVal = dbEntry ? dbEntry.val : 0;
         const displayName = (dbEntry || xlsEntry).key;
@@ -91,10 +95,22 @@ export default function CreditCompare() {
         }
       }
 
-      // Unnamed rows
-      const unnamed = Object.entries(xls)
-        .filter(([k]) => k.startsWith('__unnamed'))
-        .map(([k, v]) => ({ row: k.replace('__unnamed_', 'Row '), amount: v }));
+      // Match col B (real name) → look up player by fullName in DB
+      const nameUnmatched = [];
+      for (const [realName, xlsVal] of Object.entries(xlsByName)) {
+        const dbEntry = dbByNameLower[realName.toLowerCase()];
+        if (dbEntry) {
+          const dbVal = dbEntry.val;
+          const diff = xlsVal - dbVal;
+          if (Math.abs(diff) > 0.01) {
+            diffs.push({ username: dbEntry.key, xlsVal, dbVal, diff, note: `matched by name: ${realName}` });
+          }
+        } else {
+          nameUnmatched.push({ row: realName, amount: xlsVal });
+        }
+      }
+
+      const unnamed = [...unnamedRows, ...nameUnmatched];
 
       diffs.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
 
@@ -176,8 +192,9 @@ export default function CreditCompare() {
                   </tr>
                 </thead>
                 <tbody>
-                  {results.diffs.map(({ username, xlsVal, dbVal, diff }) => {
-                    const note = xlsVal === 0 ? 'In DB only' : dbVal === 0 ? 'In XLS only' : 'Amount differs';
+                  {results.diffs.map((d) => {
+                    const { username, xlsVal, dbVal, diff } = d;
+                    const note = d.note || (xlsVal === 0 ? 'In DB only' : dbVal === 0 ? 'In XLS only' : 'Amount differs');
                     return (
                       <tr key={username}>
                         <td style={{ color: '#e2e8f0', fontWeight: '500' }}>{username}</td>
@@ -200,9 +217,9 @@ export default function CreditCompare() {
           {/* Unnamed rows */}
           {results.unnamed.length > 0 && (
             <div className="card">
-              <h2 style={{ marginBottom: '1rem' }}>XLS Rows with No Username ({results.unnamed.length})</h2>
+              <h2 style={{ marginBottom: '1rem' }}>Unmatched XLS Rows ({results.unnamed.length})</h2>
               <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-                These rows have credit values but no username — cannot be matched to DB.
+                These rows have credit values but could not be matched to a DB player (no username in col A, or real name in col B not found in DB).
               </p>
               <div className="table-wrap"><table>
                 <thead>
