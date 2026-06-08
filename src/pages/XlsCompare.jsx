@@ -619,6 +619,7 @@ function NoNameReport() {
   filtered = [...filtered].sort((a, b) => {
     const numCols = ['currentChips', 'creditTotal', 'balance'];
     if (numCols.includes(sort.col)) return ((Number(a[sort.col]) || 0) - (Number(b[sort.col]) || 0)) * sort.dir;
+    if (sort.col === 'agentName') return (agentMap[a.agentId] || '').localeCompare(agentMap[b.agentId] || '') * sort.dir;
     return (a[sort.col] || '').localeCompare(b[sort.col] || '') * sort.dir;
   });
 
@@ -677,7 +678,7 @@ function NoNameReport() {
               <Th col="username" label="Username" />
               <Th col="phone" label="Phone" />
               <Th col="clubPlayerId" label="Club ID" />
-              <th>Agent</th>
+              <Th col="agentName" label="Agent" />
               <Th col="currentChips" label="Chips" />
               <Th col="creditTotal" label="Credit" />
               <Th col="balance" label="Balance" />
