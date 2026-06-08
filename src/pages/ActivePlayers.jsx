@@ -13,7 +13,8 @@ export default function ActivePlayers() {
 
   const filtered = players.filter(p =>
     p.username.toLowerCase().includes(search.toLowerCase()) ||
-    (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase()))
+    (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
+    (p.agentUsername && p.agentUsername.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -50,6 +51,7 @@ export default function ActivePlayers() {
               <tr>
                 <th>Username</th>
                 <th>Full Name</th>
+                <th>Agent</th>
               </tr>
             </thead>
             <tbody>
@@ -57,6 +59,7 @@ export default function ActivePlayers() {
                 <tr key={i} style={{ cursor: p.id ? 'pointer' : 'default' }} onClick={() => p.id && navigate(`/player/${p.id}`)}>
                   <td style={{ fontWeight: 600, color: '#a5b4fc' }}>{p.username}</td>
                   <td dir="rtl" style={{ textAlign: 'right', color: '#94a3b8' }}>{p.fullName || '—'}</td>
+                  <td style={{ color: '#34d399', fontSize: '0.85rem' }}>{p.agentUsername || '—'}</td>
                 </tr>
               ))}
             </tbody>

@@ -446,6 +446,17 @@ export default function PlayerDetail() {
               <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>CLUB ID</div>
               <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
             </div>
+            {(() => {
+              const agentName = player.agentId
+                ? (agents.find(a => a.id === player.agentId)?.username || `#${player.agentId}`)
+                : null;
+              return agentName ? (
+                <div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>AGENT</div>
+                  <div style={{ color: '#34d399' }}>{agentName}</div>
+                </div>
+              ) : null;
+            })()}
             {isAdmin && player.rakebackPercentage != null && player.rakebackPercentage > 0 && (
               <div>
                 <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>RAKEBACK</div>
