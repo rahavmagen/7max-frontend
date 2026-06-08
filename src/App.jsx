@@ -49,7 +49,7 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/xls-compare'];
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -78,7 +78,7 @@ function AccountingDropdown() {
           <NavLink to="/chip-balance">Balance</NavLink>
           <NavLink to="/player-validation">Validation</NavLink>
           <NavLink to="/admin-expenses">Expenses</NavLink>
-          <NavLink to="/xls-compare">XLS Compare</NavLink>
+          <NavLink to="/tools">Tools</NavLink>
         </div>
       )}
     </div>
@@ -226,7 +226,7 @@ function AppRoutes() {
               <Route path="/chip-balance" element={<ChipBalance />} />
               <Route path="/player-validation" element={<PlayerValidation />} />
               <Route path="/admin-expenses" element={<AdminExpenses />} />
-              <Route path="/xls-compare" element={<XlsCompare />} />
+              <Route path="/tools" element={<XlsCompare />} />
               <Route path="/agents" element={<Agents />} />
               <Route path="/agent-portal" element={<AgentPortal />} />
               <Route path="/bring-a-friend" element={<BringAFriend />} />

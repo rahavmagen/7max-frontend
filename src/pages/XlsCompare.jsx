@@ -720,7 +720,7 @@ export default function XlsCompare() {
   return (
     <div>
       <div className="page-header">
-        <h1>XLS Compare</h1>
+        <h1>Tools</h1>
       </div>
 
       {/* Tab bar */}
