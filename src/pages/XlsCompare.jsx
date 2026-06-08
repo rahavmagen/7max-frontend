@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { getPlayers, getAdminTransfers } from '../api';
 
@@ -575,11 +576,142 @@ function CreditCompare() {
   );
 }
 
+// ── NoNameReport tab ─────────────────────────────────────────────────────────
+
+function NoNameReport() {
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filterChips, setFilterChips] = useState('all');   // all | has | none
+  const [filterAgent, setFilterAgent] = useState('all');   // all | has | none
+  const [filterBalance, setFilterBalance] = useState('all'); // all | nonzero | positive | negative
+  const [sort, setSort] = useState({ col: 'username', dir: 1 });
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    getPlayers().then(r => { setPlayers(r.data); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  const agentMap = {};
+  players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
+
+  const noName = players.filter(p => !p.fullName || p.fullName.trim() === '');
+
+  let filtered = noName.filter(p => {
+    const agentName = agentMap[p.agentId] || '';
+    if (search) {
+      const s = search.toLowerCase();
+      if (!p.username.toLowerCase().includes(s) && !agentName.toLowerCase().includes(s) && !(p.phone || '').includes(s) && !(p.clubPlayerId || '').includes(s)) return false;
+    }
+    if (filterChips === 'has' && !(Number(p.currentChips) > 0)) return false;
+    if (filterChips === 'none' && Number(p.currentChips) > 0) return false;
+    if (filterAgent === 'has' && !p.agentId) return false;
+    if (filterAgent === 'none' && p.agentId) return false;
+    if (filterBalance === 'nonzero' && Number(p.balance) === 0) return false;
+    if (filterBalance === 'positive' && Number(p.balance) <= 0) return false;
+    if (filterBalance === 'negative' && Number(p.balance) >= 0) return false;
+    return true;
+  });
+
+  const toggleSort = (col) => setSort(s => s.col === col ? { col, dir: s.dir * -1 } : { col, dir: 1 });
+  const arrow = (col) => sort.col !== col ? ' ↕' : sort.dir === 1 ? ' ↑' : ' ↓';
+
+  filtered = [...filtered].sort((a, b) => {
+    const numCols = ['currentChips', 'creditTotal', 'balance'];
+    if (numCols.includes(sort.col)) return ((Number(a[sort.col]) || 0) - (Number(b[sort.col]) || 0)) * sort.dir;
+    return (a[sort.col] || '').localeCompare(b[sort.col] || '') * sort.dir;
+  });
+
+  const fmtN = (n) => {
+    if (!n) return '—';
+    const abs = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return (n < 0 ? '-' : '') + '₪' + abs;
+  };
+
+  const Th = ({ col, label }) => (
+    <th onClick={() => toggleSort(col)} style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}>
+      {label}<span style={{ opacity: 0.5, fontSize: '0.75em' }}>{arrow(col)}</span>
+    </th>
+  );
+
+  const sel = (val, set, opts) => (
+    <select value={val} onChange={e => set(e.target.value)}
+      style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }}>
+      {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+    </select>
+  );
+
+  if (loading) return <div style={{ color: '#64748b', padding: '2rem' }}>Loading...</div>;
+
+  return (
+    <div>
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Search username, agent, phone, club ID..."
+            style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '7px 12px', borderRadius: '6px', minWidth: '240px', flex: 1 }} />
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={{ color: '#64748b', fontSize: '0.82rem' }}>Chips:</span>
+            {sel(filterChips, setFilterChips, [['all','All'],['has','Has chips'],['none','No chips']])}
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={{ color: '#64748b', fontSize: '0.82rem' }}>Agent:</span>
+            {sel(filterAgent, setFilterAgent, [['all','All'],['has','Has agent'],['none','No agent']])}
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={{ color: '#64748b', fontSize: '0.82rem' }}>Balance:</span>
+            {sel(filterBalance, setFilterBalance, [['all','All'],['nonzero','Non-zero'],['positive','Positive'],['negative','Negative']])}
+          </div>
+          <span style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+            {filtered.length} of {noName.length} missing names (total players: {players.length})
+          </span>
+        </div>
+      </div>
+
+      <div className="card">
+        {filtered.length === 0 ? (
+          <div style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>No players match the filters</div>
+        ) : (
+          <div className="table-wrap"><table>
+            <thead><tr>
+              <Th col="username" label="Username" />
+              <Th col="phone" label="Phone" />
+              <Th col="clubPlayerId" label="Club ID" />
+              <th>Agent</th>
+              <Th col="currentChips" label="Chips" />
+              <Th col="creditTotal" label="Credit" />
+              <Th col="balance" label="Balance" />
+            </tr></thead>
+            <tbody>
+              {filtered.map(p => {
+                const agentName = agentMap[p.agentId] || null;
+                const bal = Number(p.balance);
+                return (
+                  <tr key={p.id} onClick={() => navigate(`/player/${p.id}`)} style={{ cursor: 'pointer' }}>
+                    <td><strong style={{ color: '#a5b4fc' }}>{p.username}</strong></td>
+                    <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{p.phone || '—'}</td>
+                    <td style={{ color: '#64748b', fontSize: '0.8rem', fontFamily: 'monospace' }}>{p.clubPlayerId || '—'}</td>
+                    <td style={{ color: '#34d399', fontSize: '0.85rem' }}>{agentName || '—'}</td>
+                    <td style={{ color: Number(p.currentChips) > 0 ? '#e2e8f0' : '#475569' }}>{fmtN(p.currentChips)}</td>
+                    <td style={{ color: p.creditTotal > 0 ? '#f59e0b' : '#475569' }}>{p.creditTotal > 0 ? fmtN(p.creditTotal) : '—'}</td>
+                    <td><strong style={{ color: bal > 0 ? '#4ade80' : bal < 0 ? '#f87171' : '#475569' }}>{fmtN(bal)}</strong></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table></div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main page with tabs ──────────────────────────────────────────────────────
 
 const TABS = [
   { key: 'credit', label: 'Credit Compare' },
   { key: 'transfer', label: 'Transfer Compare' },
+  { key: 'noname', label: 'Missing Names' },
 ];
 
 export default function XlsCompare() {
@@ -609,7 +741,9 @@ export default function XlsCompare() {
         ))}
       </div>
 
-      {tab === 'credit' ? <CreditCompare /> : <TransferCompare />}
+      {tab === 'credit' && <CreditCompare />}
+      {tab === 'transfer' && <TransferCompare />}
+      {tab === 'noname' && <NoNameReport />}
     </div>
   );
 }
