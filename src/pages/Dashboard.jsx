@@ -28,11 +28,13 @@ export default function Dashboard() {
   const isStale = (p) => p.chipsStale === true && (!p.clubPlayerId || p.clubPlayerId === '') && (p.currentChips || 0) > 0;
   const isLeftClub = (p) => p.chipsStale === true && p.clubPlayerId;
 
-  let filtered = players.filter(p =>
-    p.username.toLowerCase().includes(search.toLowerCase()) ||
-    (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
-    (p.phone && p.phone.includes(search))
-  );
+  let filtered = players.filter(p => {
+    const agentName = agentMap[p.agentId] || '';
+    return p.username.toLowerCase().includes(search.toLowerCase()) ||
+      (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
+      (p.phone && p.phone.includes(search)) ||
+      agentName.toLowerCase().includes(search.toLowerCase());
+  });
 
   if (showStaleOnly) {
     filtered = filtered.filter(p => isStale(p));
@@ -49,6 +51,10 @@ export default function Dashboard() {
   if (showNoFullName) {
     filtered = filtered.filter(p => !p.fullName || p.fullName.trim() === '');
   }
+
+  // Build agent lookup from the players list itself
+  const agentMap = {};
+  players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
 
   const strCols = ['username', 'fullName', 'phone', 'clubPlayerId'];
   if (sort.col) {
@@ -159,6 +165,7 @@ export default function Dashboard() {
               {thSort('fullName', 'Full Name')}
               {thSort('phone', 'Phone')}
               {thSort('clubPlayerId', 'Club ID')}
+              <th>Agent</th>
               {thSort('currentChips', 'Current Chips')}
               {thSort('creditTotal', 'Credit Given')}
               {thSort('balance', 'Profit / Loss')}
@@ -179,6 +186,7 @@ export default function Dashboard() {
                 <td>{p.fullName || '—'}</td>
                 <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{p.phone || '—'}</td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem', fontFamily: 'monospace' }}>{p.clubPlayerId || '—'}</td>
+                <td style={{ color: '#34d399', fontSize: '0.85rem' }}>{agentMap[p.agentId] || '—'}</td>
                 <td className="neutral"><strong>{fmt(p.currentChips)}</strong></td>
                 <td style={{ color: '#94a3b8' }}>{p.creditTotal > 0 ? fmt(p.creditTotal) : '—'}</td>
                 <td className={cls(p.balance)}><strong>{fmt(p.balance)}</strong></td>
