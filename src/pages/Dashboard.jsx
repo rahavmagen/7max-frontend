@@ -28,6 +28,10 @@ export default function Dashboard() {
   const isStale = (p) => p.chipsStale === true && (!p.clubPlayerId || p.clubPlayerId === '') && (p.currentChips || 0) > 0;
   const isLeftClub = (p) => p.chipsStale === true && p.clubPlayerId;
 
+  // Build agent lookup from the players list itself
+  const agentMap = {};
+  players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
+
   let filtered = players.filter(p => {
     const agentName = agentMap[p.agentId] || '';
     return p.username.toLowerCase().includes(search.toLowerCase()) ||
@@ -51,10 +55,6 @@ export default function Dashboard() {
   if (showNoFullName) {
     filtered = filtered.filter(p => !p.fullName || p.fullName.trim() === '');
   }
-
-  // Build agent lookup from the players list itself
-  const agentMap = {};
-  players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
 
   const strCols = ['username', 'fullName', 'phone', 'clubPlayerId'];
   if (sort.col) {
