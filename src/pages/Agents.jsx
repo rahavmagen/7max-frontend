@@ -230,6 +230,7 @@ export default function Agents() {
                   <thead>
                     <tr style={{ borderBottom: '1px solid #2d3148', color: '#64748b', textAlign: 'left', fontSize: '0.82rem' }}>
                       <th style={{ padding: '8px' }}>Player</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Balance</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Games</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Club Rake</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Agent Share</th>
@@ -244,17 +245,19 @@ export default function Agents() {
                           </Link>
                           {p.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>{p.fullName}</span>}
                         </td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: Number(p.balance) < 0 ? '#f87171' : '#4ade80', fontWeight: 600 }}>{fmt(p.balance)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{p.gameCount}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{fmt(p.totalRake)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 600 }}>{fmt(p.agentShare)}</td>
                       </tr>
                     ))}
                     {playerStats.length === 0 && (
-                      <tr><td colSpan={4} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
+                      <tr><td colSpan={5} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
                     )}
                     {playerStats.length > 0 && (
                       <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
                         <td style={{ padding: '8px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
+                        <td />
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{playerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(statsTotalRake)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 700 }}>{fmt(statsTotalShare)}</td>
