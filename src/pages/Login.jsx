@@ -117,6 +117,13 @@ export default function Login() {
           </button>
         </form>
 
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', borderTop: '1px solid #2d3148', paddingTop: '1.25rem' }}>
+          <span style={{ color: '#64748b', fontSize: '0.85rem' }}>עדיין לא חבר? </span>
+          <a href="/join" style={{ color: '#6366f1', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>
+            הצטרף למועדון ←
+          </a>
+        </div>
+
       </div>
     </div>
   );
