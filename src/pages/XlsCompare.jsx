@@ -582,7 +582,7 @@ function NoNameReport() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterChips, setFilterChips] = useState('all');   // all | has | none
+  const [filterChips, setFilterChips] = useState('has');   // all | has | none
   const [filterAgent, setFilterAgent] = useState('all');   // all | has | none
   const [filterBalance, setFilterBalance] = useState('all'); // all | nonzero | positive | negative
   const [sort, setSort] = useState({ col: 'username', dir: 1 });
@@ -716,7 +716,7 @@ const TABS = [
 ];
 
 export default function XlsCompare() {
-  const [tab, setTab] = useState('credit');
+  const [tab, setTab] = useState('noname');
 
   return (
     <div>
