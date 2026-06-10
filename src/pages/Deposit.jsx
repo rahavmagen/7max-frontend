@@ -215,6 +215,9 @@ export default function Deposit() {
               <span>🔒</span>
               <span>Payments are processed securely by KashCash</span>
             </div>
+            <div style={{ marginTop: '0.75rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem', direction: 'rtl' }}>
+              📞 טלפון מועדון 050-963-5828
+            </div>
           </div>
       </div>
 
