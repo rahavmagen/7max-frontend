@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { getGameSessions, getShabatRakeLatest } from '../api';
+import { getGameSessions, getShabatRakeSummary } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import DateInput from '../components/DateInput';
@@ -35,7 +35,7 @@ export default function Games() {
       setSessions(r.data);
       setLoading(false);
     });
-    getShabatRakeLatest().then(r => setShabbatRake(r.data)).catch(() => {});
+    getShabatRakeSummary().then(r => setShabbatRake(r.data)).catch(() => {});
   }, []);
 
   const preFiltered = useMemo(() => {
@@ -82,7 +82,7 @@ export default function Games() {
       {shabbatRake && (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#1a1d2e', border: '1px solid #3730a3', borderRadius: '10px', padding: '0.6rem 1.2rem', marginBottom: '1.5rem' }}>
           <span style={{ color: '#7a8499', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>ריק שבת</span>
-          <strong style={{ color: '#a5b4fc', fontSize: '1.1rem' }}>₪{Number(shabbatRake.amount).toLocaleString()}</strong>
+          <strong style={{ color: '#a5b4fc', fontSize: '1.1rem' }}>₪{Number(shabbatRake.current).toLocaleString()}</strong>
           <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Shabbat Rake</span>
         </div>
       )}

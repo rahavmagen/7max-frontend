@@ -175,8 +175,8 @@ export const getJoinHistory = () => api.get('/join/history');
 export const approveJoinRequest = (id) => api.post(`/join/${id}/approve`);
 export const rejectJoinRequest = (id) => api.post(`/join/${id}/reject`);
 
-export const getShabatRakeLatest = () => api.get('/shabat-rake/latest');
+export const getShabatRakeSummary = () => api.get('/shabat-rake/summary');
 export const getShabatRakeHistory = () => api.get('/shabat-rake/history');
-export const postShabatRake = (data) => api.post('/shabat-rake', data);
+export const postShabatBonus = (data) => api.post('/shabat-rake/bonus', data);
 
 export default api;
