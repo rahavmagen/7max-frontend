@@ -247,9 +247,9 @@ export default function AdminReports() {
       </div>
 
       <div className="card" style={{ marginTop: '1.5rem' }}>
-        <h2 style={{ marginTop: 0, color: '#e2e8f0' }}>ריק שבת — בונוסים</h2>
+        <h2 style={{ marginTop: 0, color: '#e2e8f0' }}>ריק שבת</h2>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
-          רשום כל בונוס שניתן לשחקן מקופת ריק השבת. הסכום מתקזז אוטומטית מהכולל.
+          רשום כל ריקבק שניתן לשחקן מקופת ריק השבת. הסכום מתקזז אוטומטית מהכולל.
         </p>
 
         {shabatSummary && (
@@ -259,7 +259,7 @@ export default function AdminReports() {
               <div style={{ color: '#a5b4fc', fontWeight: 700, fontSize: '1.2rem' }}>₪{Number(shabatSummary.fridayRakeTotal).toLocaleString()}</div>
             </div>
             <div style={{ background: '#12151f', border: '1px solid #1e2130', borderRadius: '8px', padding: '0.75rem 1.25rem', textAlign: 'center' }}>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>בונוסים שולמו</div>
+              <div style={{ color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>ריקבק ששולם</div>
               <div style={{ color: '#f87171', fontWeight: 700, fontSize: '1.2rem' }}>−₪{Number(shabatSummary.bonusPaid).toLocaleString()}</div>
             </div>
             <div style={{ background: '#0d1a0d', border: '1px solid #16a34a', borderRadius: '8px', padding: '0.75rem 1.25rem', textAlign: 'center' }}>
@@ -269,10 +269,10 @@ export default function AdminReports() {
           </div>
         )}
 
-        <p style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem' }}>רישום בונוס חדש</p>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem' }}>רישום ריקבק חדש</p>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
           <div className="form-group">
-            <label>סכום בונוס (₪)</label>
+            <label>סכום (₪)</label>
             <input type="number" placeholder="0" value={shabatForm.amount}
               onChange={e => setShabatForm(f => ({ ...f, amount: e.target.value }))}
               style={{ width: '120px' }} />
@@ -305,14 +305,14 @@ export default function AdminReports() {
                   setShabatSaving(false);
                 }
               }}>
-              {shabatSaving ? 'שומר...' : 'רשום בונוס'}
+              {shabatSaving ? 'שומר...' : 'שמור'}
             </button>
           </div>
         </div>
 
         {shabatHistory.length > 0 && (
           <>
-            <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>היסטוריית בונוסים</p>
+            <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>היסטוריית ריקבק</p>
             <div className="table-wrap"><table>
               <thead>
                 <tr>
