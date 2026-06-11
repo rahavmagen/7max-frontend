@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { getGameSessions, getShabatRakeLatest, getShabatRakeHistory, postShabatRake } from '../api';
+import { getGameSessions, getShabatRakeLatest } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import DateInput from '../components/DateInput';
@@ -10,10 +10,6 @@ export default function Games() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [shabbatRake, setShabbatRake] = useState(null);
-  const [shabbatHistory, setShabbatHistory] = useState([]);
-  const [showShabatAdmin, setShowShabatAdmin] = useState(false);
-  const [shabatForm, setShabatForm] = useState({ amount: '', date: '', reason: '' });
-  const [shabatSaving, setShabatSaving] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [costMin, setCostMin] = useState('');
@@ -34,19 +30,12 @@ export default function Games() {
     });
   };
 
-  const loadShabatRake = () => {
-    getShabatRakeLatest().then(r => setShabbatRake(r.data)).catch(() => {});
-    if (isAdmin) {
-      getShabatRakeHistory().then(r => setShabbatHistory(r.data)).catch(() => {});
-    }
-  };
-
   useEffect(() => {
     getGameSessions().then(r => {
       setSessions(r.data);
       setLoading(false);
     });
-    loadShabatRake();
+    getShabatRakeLatest().then(r => setShabbatRake(r.data)).catch(() => {});
   }, []);
 
   const preFiltered = useMemo(() => {
@@ -90,92 +79,13 @@ export default function Games() {
         All game sessions. Click a game to see results.
       </p>
 
-      <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#1a1d2e', border: '1px solid #3730a3', borderRadius: '10px', padding: '0.6rem 1.2rem' }}>
+      {shabbatRake && (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#1a1d2e', border: '1px solid #3730a3', borderRadius: '10px', padding: '0.6rem 1.2rem', marginBottom: '1.5rem' }}>
           <span style={{ color: '#7a8499', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px' }}>ריק שבת</span>
-          {shabbatRake ? (
-            <strong style={{ color: '#a5b4fc', fontSize: '1.1rem' }}>₪{Number(shabbatRake.amount).toLocaleString()}</strong>
-          ) : (
-            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>—</span>
-          )}
+          <strong style={{ color: '#a5b4fc', fontSize: '1.1rem' }}>₪{Number(shabbatRake.amount).toLocaleString()}</strong>
           <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Shabbat Rake</span>
-          {isAdmin && (
-            <button onClick={() => setShowShabatAdmin(o => !o)}
-              style={{ background: 'none', border: '1px solid #3730a3', color: '#a5b4fc', borderRadius: '6px', padding: '2px 8px', fontSize: '0.75rem', cursor: 'pointer', marginLeft: '0.5rem' }}>
-              {showShabatAdmin ? 'סגור' : 'עדכן'}
-            </button>
-          )}
         </div>
-
-        {isAdmin && showShabatAdmin && (
-          <div style={{ marginTop: '0.75rem', background: '#1a1d2e', border: '1px solid #334155', borderRadius: '10px', padding: '1rem 1.25rem', maxWidth: '600px' }}>
-            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.75rem', fontWeight: 600 }}>עדכון ריק שבת</p>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                <label style={{ color: '#64748b', fontSize: '0.75rem' }}>סכום (₪)</label>
-                <input type="number" placeholder="0" value={shabatForm.amount}
-                  onChange={e => setShabatForm(f => ({ ...f, amount: e.target.value }))}
-                  style={{ background: '#0f1117', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', width: '100px' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                <label style={{ color: '#64748b', fontSize: '0.75rem' }}>תאריך</label>
-                <DateInput value={shabatForm.date} onChange={v => setShabatForm(f => ({ ...f, date: v }))} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: 1, minWidth: '160px' }}>
-                <label style={{ color: '#64748b', fontSize: '0.75rem' }}>סיבה</label>
-                <input type="text" placeholder="הערה..." value={shabatForm.reason}
-                  onChange={e => setShabatForm(f => ({ ...f, reason: e.target.value }))}
-                  style={{ background: '#0f1117', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '6px', padding: '0.35rem 0.6rem', fontSize: '0.85rem' }} />
-              </div>
-              <button
-                disabled={!shabatForm.amount || !shabatForm.date || shabatSaving}
-                onClick={async () => {
-                  setShabatSaving(true);
-                  try {
-                    await postShabatRake(shabatForm);
-                    setShabatForm({ amount: '', date: '', reason: '' });
-                    loadShabatRake();
-                  } finally {
-                    setShabatSaving(false);
-                  }
-                }}
-                style={{ background: '#3730a3', color: '#e2e8f0', border: 'none', borderRadius: '6px', padding: '0.4rem 1rem', fontSize: '0.85rem', cursor: 'pointer', opacity: (!shabatForm.amount || !shabatForm.date || shabatSaving) ? 0.5 : 1 }}>
-                {shabatSaving ? '...' : 'שמור'}
-              </button>
-            </div>
-
-            {shabbatHistory.length > 0 && (
-              <>
-                <p style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>היסטוריה</p>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', fontSize: '0.82rem', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ color: '#64748b', borderBottom: '1px solid #1e2130' }}>
-                        <th style={{ textAlign: 'left', padding: '0.3rem 0.5rem' }}>סכום</th>
-                        <th style={{ textAlign: 'left', padding: '0.3rem 0.5rem' }}>תאריך</th>
-                        <th style={{ textAlign: 'left', padding: '0.3rem 0.5rem' }}>סיבה</th>
-                        <th style={{ textAlign: 'left', padding: '0.3rem 0.5rem' }}>עודכן ע"י</th>
-                        <th style={{ textAlign: 'left', padding: '0.3rem 0.5rem' }}>עודכן ב</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {shabbatHistory.map((h, i) => (
-                        <tr key={h.id} style={{ borderBottom: '1px solid #1a1d2e', background: i === 0 ? '#1e2a1e' : 'transparent' }}>
-                          <td style={{ padding: '0.3rem 0.5rem', color: '#a5b4fc', fontWeight: 600 }}>₪{Number(h.amount).toLocaleString()}</td>
-                          <td style={{ padding: '0.3rem 0.5rem', color: '#94a3b8' }}>{h.date?.substring(0, 10)}</td>
-                          <td style={{ padding: '0.3rem 0.5rem', color: '#e2e8f0' }}>{h.reason || '—'}</td>
-                          <td style={{ padding: '0.3rem 0.5rem', color: '#64748b' }}>{h.createdBy || '—'}</td>
-                          <td style={{ padding: '0.3rem 0.5rem', color: '#64748b' }}>{h.createdAt?.substring(0, 16).replace('T', ' ')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Filters */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>

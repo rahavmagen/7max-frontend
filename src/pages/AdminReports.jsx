@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getHandsReport, getFridayRakeReport, getRakebackReport } from '../api';
+import { getHandsReport, getFridayRakeReport, getRakebackReport, getShabatRakeLatest, getShabatRakeHistory, postShabatRake } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateOnly } from '../utils/dates';
 
@@ -27,11 +27,22 @@ export default function AdminReports() {
   const [rbLoading, setRbLoading] = useState(false);
   const [rbError, setRbError] = useState('');
 
+  const [shabatLatest, setShabatLatest] = useState(null);
+  const [shabatHistory, setShabatHistory] = useState([]);
+  const [shabatForm, setShabatForm] = useState({ amount: '', date: '', reason: '' });
+  const [shabatSaving, setShabatSaving] = useState(false);
+
+  const loadShabatRake = () => {
+    getShabatRakeLatest().then(r => setShabatLatest(r.data)).catch(() => {});
+    getShabatRakeHistory().then(r => setShabatHistory(r.data)).catch(() => {});
+  };
+
   useEffect(() => {
     getFridayRakeReport()
       .then(res => setFridayRows(res.data))
       .catch(() => setFridayError('שגיאה בטעינת דוח ריק שישי'))
       .finally(() => setFridayLoading(false));
+    loadShabatRake();
   }, []);
 
   const run = async (e) => {
@@ -232,6 +243,82 @@ export default function AdminReports() {
               </>
             )}
           </div>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+          <h2 style={{ margin: 0, color: '#e2e8f0' }}>ריק שבת — עדכון ידני</h2>
+          {shabatLatest && (
+            <span style={{ background: '#1e1a3f', border: '1px solid #4338ca', borderRadius: '8px', padding: '4px 14px', color: '#a5b4fc', fontWeight: 700, fontSize: '1rem' }}>
+              ערך נוכחי: ₪{Number(shabatLatest.amount).toLocaleString()}
+            </span>
+          )}
+        </div>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
+          הגדרת ערך ריק השבת שמוצג לשחקנים באתר. כל עדכון נשמר בהיסטוריה.
+        </p>
+
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
+          <div className="form-group">
+            <label>סכום (₪)</label>
+            <input type="number" placeholder="0" value={shabatForm.amount}
+              onChange={e => setShabatForm(f => ({ ...f, amount: e.target.value }))}
+              style={{ width: '110px' }} />
+          </div>
+          <div className="form-group">
+            <label>תאריך</label>
+            <DateInput value={shabatForm.date} onChange={v => setShabatForm(f => ({ ...f, date: v }))} />
+          </div>
+          <div className="form-group" style={{ flex: 1, minWidth: '200px' }}>
+            <label>סיבה / הערה</label>
+            <input type="text" placeholder="לדוגמה: שישי 6.6.25" value={shabatForm.reason}
+              onChange={e => setShabatForm(f => ({ ...f, reason: e.target.value }))} />
+          </div>
+          <div className="form-group" style={{ paddingTop: '1.5rem' }}>
+            <button className="btn btn-primary"
+              disabled={!shabatForm.amount || !shabatForm.date || shabatSaving}
+              onClick={async () => {
+                setShabatSaving(true);
+                try {
+                  await postShabatRake(shabatForm);
+                  setShabatForm({ amount: '', date: '', reason: '' });
+                  loadShabatRake();
+                } finally {
+                  setShabatSaving(false);
+                }
+              }}>
+              {shabatSaving ? 'שומר...' : 'שמור'}
+            </button>
+          </div>
+        </div>
+
+        {shabatHistory.length > 0 && (
+          <>
+            <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>היסטוריית עדכונים</p>
+            <div className="table-wrap"><table>
+              <thead>
+                <tr>
+                  <th>סכום</th>
+                  <th>תאריך</th>
+                  <th>סיבה</th>
+                  <th>עודכן ע"י</th>
+                  <th>עודכן ב</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shabatHistory.map((h, i) => (
+                  <tr key={h.id} style={{ background: i === 0 ? 'rgba(99,102,241,0.08)' : 'transparent' }}>
+                    <td><strong style={{ color: '#a5b4fc' }}>₪{Number(h.amount).toLocaleString()}</strong></td>
+                    <td style={{ color: '#94a3b8' }}>{h.date?.substring(0, 10)}</td>
+                    <td>{h.reason || '—'}</td>
+                    <td style={{ color: '#64748b' }}>{h.createdBy || '—'}</td>
+                    <td style={{ color: '#64748b', fontSize: '0.82rem' }}>{h.createdAt?.substring(0, 16).replace('T', ' ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+          </>
         )}
       </div>
 
