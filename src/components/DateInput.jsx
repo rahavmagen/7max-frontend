@@ -22,13 +22,17 @@ export default function DateInput({ value, onChange, style, placeholder = 'dd/mm
   }, [value]);
 
   const handleChange = (e) => {
-    let raw = e.target.value;
-    // Auto-insert slashes
-    if (/^\d{2}$/.test(raw) && text.length === 1) raw = raw + '/';
-    if (/^\d{2}\/\d{2}$/.test(raw) && text.length === 4) raw = raw + '/';
-    setText(raw);
-    if (raw === '') { onChange(''); return; }
-    const iso = displayToIso(raw);
+    // Strip to digits and re-insert slashes, so typing with or without
+    // the "/" separators (and pasting full dates) both work.
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+    const formatted = digits.length > 4
+      ? `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+      : digits.length > 2
+        ? `${digits.slice(0, 2)}/${digits.slice(2)}`
+        : digits;
+    setText(formatted);
+    if (formatted === '') { onChange(''); return; }
+    const iso = displayToIso(formatted);
     if (iso) onChange(iso);
   };
 

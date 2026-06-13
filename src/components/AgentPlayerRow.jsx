@@ -15,7 +15,7 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
     <>
       <tr onClick={onToggle} style={{ borderBottom: '1px solid #1e2235', cursor: 'pointer' }}>
         <td style={{ padding: '8px' }}>
-          <span style={{ display: 'inline-block', width: '1.2em', color: '#64748b' }}>{expanded ? '▾' : '▸'}</span>
+          <span style={{ display: 'inline-block', width: '1.4em', color: '#94a3b8', fontSize: '1.1rem', fontWeight: 700 }}>{expanded ? '▾' : '▸'}</span>
           <Link to={`/player/${player.playerId}`} onClick={e => e.stopPropagation()} style={{ color: '#60a5fa', textDecoration: 'underline' }}>
             {player.username}
           </Link>
