@@ -13,17 +13,3 @@ export function fmtDateOnly(iso) {
   return `${d}/${m}/${y}`;
 }
 
-// Convert display "13/04/2026" → ISO "2026-04-13"
-export function displayToIso(display) {
-  if (!display) return '';
-  const match = display.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!match) return '';
-  return `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`;
-}
-
-// Convert ISO "2026-04-13" → display "13/04/2026"
-export function isoToDisplay(iso) {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
-}

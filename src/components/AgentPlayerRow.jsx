@@ -36,6 +36,14 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
               <div style={{ padding: '0.6rem 1rem', color: '#64748b', fontSize: '0.82rem' }}>No games in this period</div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <colgroup>
+                  <col style={{ width: '28%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '14.5%' }} />
+                  <col style={{ width: '14.5%' }} />
+                  <col style={{ width: '14.5%' }} />
+                  <col style={{ width: '14.5%' }} />
+                </colgroup>
                 <thead>
                   <tr style={{ color: '#64748b', textAlign: 'left', fontSize: '0.78rem' }}>
                     <th style={{ padding: '4px 1rem' }}>Date</th>

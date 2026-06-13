@@ -119,6 +119,13 @@ export default function AgentPortal() {
         {statsLoading ? <div style={{ color: '#64748b', padding: '1rem', textAlign: 'center' }}>Loading...</div> : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <colgroup>
+                <col style={{ width: '42%' }} />
+                <col style={{ width: '14.5%' }} />
+                <col style={{ width: '14.5%' }} />
+                <col style={{ width: '14.5%' }} />
+                <col style={{ width: '14.5%' }} />
+              </colgroup>
               <thead>
                 <tr style={{ borderBottom: '1px solid #2d3148', color: '#64748b', textAlign: 'left', fontSize: '0.82rem' }}>
                   <th style={{ padding: '8px' }}>Player</th>
