@@ -277,7 +277,7 @@ export default function Agents() {
                     {playerStats.length === 0 && (
                       <tr><td colSpan={6} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
                     )}
-                    {playerStats.length > 0 && (
+                    {playerStats.length > 1 && (
                       <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
                         <td style={{ padding: '8px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
                         <td />
