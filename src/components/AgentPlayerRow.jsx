@@ -35,7 +35,7 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
             {(!player.games || player.games.length === 0) ? (
               <div style={{ padding: '0.6rem 1rem', color: '#64748b', fontSize: '0.82rem' }}>No games in this period</div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <colgroup>
                   <col style={{ width: '28%' }} />
                   <col style={{ width: '14%' }} />
