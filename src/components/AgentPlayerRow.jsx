@@ -9,8 +9,23 @@ const fmt = (n) => {
 
 const balanceClass = (n) => Number(n) > 0 ? 'positive' : Number(n) < 0 ? 'negative' : 'zero';
 
+const gameTypeColors = {
+  MTT: { background: '#1e3a5f', color: '#60a5fa' },
+  SNG: { background: '#1e3a2f', color: '#4ade80' },
+  NLH: { background: '#3a1e1e', color: '#f87171' },
+};
+const gameTypeStyle = (type) => gameTypeColors[type] || { background: '#2a1e3a', color: '#c084fc' };
+
 export default function AgentPlayerRow({ player, showBalance, expanded, onToggle }) {
   const colCount = showBalance ? 6 : 5;
+  const games = player.games || [];
+  const totals = games.reduce((acc, g) => ({
+    buyIn: acc.buyIn + Number(g.buyIn || 0),
+    cashout: acc.cashout + Number(g.cashout || 0),
+    rakePaid: acc.rakePaid + Number(g.rakePaid || 0),
+    pnl: acc.pnl + Number(g.pnl || 0),
+  }), { buyIn: 0, cashout: 0, rakePaid: 0, pnl: 0 });
+
   return (
     <>
       <tr onClick={onToggle} style={{ borderBottom: '1px solid #1e2235', cursor: 'pointer' }}>
@@ -32,18 +47,10 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
       {expanded && (
         <tr>
           <td colSpan={colCount} style={{ padding: 0, background: '#0d0f1a', borderBottom: '1px solid #1e2235' }}>
-            {(!player.games || player.games.length === 0) ? (
+            {games.length === 0 ? (
               <div style={{ padding: '0.6rem 1rem', color: '#64748b', fontSize: '0.82rem' }}>No games in this period</div>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                <colgroup>
-                  <col style={{ width: '28%' }} />
-                  <col style={{ width: '14%' }} />
-                  <col style={{ width: '14.5%' }} />
-                  <col style={{ width: '14.5%' }} />
-                  <col style={{ width: '14.5%' }} />
-                  <col style={{ width: '14.5%' }} />
-                </colgroup>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ color: '#64748b', textAlign: 'left', fontSize: '0.78rem' }}>
                     <th style={{ padding: '4px 1rem' }}>Date</th>
@@ -55,16 +62,27 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
                   </tr>
                 </thead>
                 <tbody>
-                  {player.games.map((g, i) => (
+                  {games.map((g, i) => (
                     <tr key={i} style={{ fontSize: '0.82rem' }}>
                       <td style={{ padding: '4px 1rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDateOnly(g.date)}</td>
-                      <td style={{ padding: '4px 8px' }}><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem' }}>{g.gameType}</span></td>
+                      <td style={{ padding: '4px 8px' }}>
+                        <div dir="rtl" style={{ color: '#e2e8f0', marginBottom: '2px' }}>{g.tableName || '—'}</div>
+                        <span style={{ ...gameTypeStyle(g.gameType), padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem' }}>{g.gameType}</span>
+                      </td>
                       <td style={{ padding: '4px 8px', textAlign: 'right', color: '#ef4444' }}>{fmt(-(g.buyIn || 0))}</td>
                       <td style={{ padding: '4px 8px', textAlign: 'right' }}>{fmt(g.cashout)}</td>
                       <td style={{ padding: '4px 8px', textAlign: 'right', color: '#f59e0b' }}>{fmt(g.rakePaid)}</td>
                       <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(g.pnl)}>{fmt(g.pnl)}</td>
                     </tr>
                   ))}
+                  <tr style={{ fontSize: '0.82rem', borderTop: '1px solid #334155', background: '#12151f' }}>
+                    <td style={{ padding: '4px 1rem', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
+                    <td />
+                    <td style={{ padding: '4px 8px', textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(-totals.buyIn)}</td>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600 }}>{fmt(totals.cashout)}</td>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', color: '#f59e0b', fontWeight: 600 }}>{fmt(totals.rakePaid)}</td>
+                    <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(totals.pnl)}>{fmt(totals.pnl)}</td>
+                  </tr>
                 </tbody>
               </table>
             )}
