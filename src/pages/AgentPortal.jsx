@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getAgentSummary, getAgentPlayerStats } from '../api';
 import DateInput from '../components/DateInput';
+import AgentPlayerRow from '../components/AgentPlayerRow';
 
 const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '5px', fontSize: '0.82rem' };
 
@@ -11,6 +12,8 @@ const fmt = (n) => {
   const abs = Math.abs(Number(n)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return (Number(n) < 0 ? '-' : '') + '₪' + abs;
 };
+
+const balanceClass = (n) => Number(n) > 0 ? 'positive' : Number(n) < 0 ? 'negative' : 'zero';
 
 export default function AgentPortal() {
   const navigate = useNavigate();
@@ -24,9 +27,11 @@ export default function AgentPortal() {
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [expandedIds, setExpandedIds] = useState(new Set());
 
   const fetchStats = (from, to) => {
     setStatsLoading(true);
+    setExpandedIds(new Set());
     const params = {};
     if (from) params.from = from;
     if (to) params.to = to;
@@ -34,6 +39,17 @@ export default function AgentPortal() {
       .then(r => { setPlayerStats(r.data); setStatsLoading(false); })
       .catch(() => { setPlayerStats([]); setStatsLoading(false); });
   };
+
+  const toggleExpand = (playerId) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId); else next.add(playerId);
+      return next;
+    });
+  };
+
+  const expandAll = () => setExpandedIds(new Set(playerStats.map(p => p.playerId)));
+  const collapseAll = () => setExpandedIds(new Set());
 
   useEffect(() => {
     if (!agentId) { setError('No player account linked to your user.'); setLoading(false); return; }
@@ -58,6 +74,7 @@ export default function AgentPortal() {
   });
   const statsTotalRake = playerStats.reduce((s, p) => s + Number(p.totalRake || 0), 0);
   const statsTotalShare = playerStats.reduce((s, p) => s + Number(p.agentShare || 0), 0);
+  const statsTotalPnl = playerStats.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
   const historyRakeTotal = filteredHistory.reduce((s, h) => s + Number(h.totalRake || 0), 0);
   const historyShareTotal = filteredHistory.reduce((s, h) => s + Number(h.agentShare || 0), 0);
 
@@ -87,9 +104,17 @@ export default function AgentPortal() {
 
       {/* Players */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ marginBottom: '1rem' }}>
-          <strong style={{ color: '#e2e8f0' }}>Players ({playerStats.length})</strong>
-          {(filterFrom || filterTo) && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.75rem' }}>{filterFrom || '…'} – {filterTo || '…'}</span>}
+        <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div>
+            <strong style={{ color: '#e2e8f0' }}>Players ({playerStats.length})</strong>
+            {(filterFrom || filterTo) && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.75rem' }}>{filterFrom || '…'} – {filterTo || '…'}</span>}
+          </div>
+          {playerStats.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={expandAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Expand All</button>
+              <button onClick={collapseAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Collapse All</button>
+            </div>
+          )}
         </div>
         {statsLoading ? <div style={{ color: '#64748b', padding: '1rem', textAlign: 'center' }}>Loading...</div> : (
           <div style={{ overflowX: 'auto' }}>
@@ -100,29 +125,21 @@ export default function AgentPortal() {
                   <th style={{ padding: '8px', textAlign: 'right' }}>Games</th>
                   <th style={{ padding: '8px', textAlign: 'right' }}>Club Rake</th>
                   <th style={{ padding: '8px', textAlign: 'right' }}>Your Share</th>
+                  <th style={{ padding: '8px', textAlign: 'right' }}>Period P&L</th>
                 </tr>
               </thead>
               <tbody>
                 {playerStats.map(p => (
-                  <tr key={p.playerId} style={{ borderBottom: '1px solid #1e2235' }}>
-                    <td style={{ padding: '8px' }}>
-                      <Link to={`/player/${p.playerId}`} style={{ color: '#60a5fa', textDecoration: 'underline' }}>
-                        {p.username}
-                      </Link>
-                      {p.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>{p.fullName}</span>}
-                    </td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{p.gameCount}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{fmt(p.totalRake)}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 600 }}>{fmt(p.agentShare)}</td>
-                  </tr>
+                  <AgentPlayerRow key={p.playerId} player={p} showBalance={false} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
                 ))}
-                {playerStats.length === 0 && <tr><td colSpan={4} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>}
+                {playerStats.length === 0 && <tr><td colSpan={5} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>}
                 {playerStats.length > 0 && (
                   <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
                     <td style={{ padding: '8px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
                     <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{playerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
                     <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(statsTotalRake)}</td>
                     <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 700 }}>{fmt(statsTotalShare)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(statsTotalPnl)}>{fmt(statsTotalPnl)}</td>
                   </tr>
                 )}
               </tbody>
