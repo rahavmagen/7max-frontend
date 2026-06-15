@@ -16,6 +16,7 @@ export default function DateInput({ value, onChange, style, ...props }) {
   return (
     <input
       type="date"
+      lang="he-IL"
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
       style={{ ...defaultStyle, ...style }}
