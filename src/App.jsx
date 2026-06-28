@@ -37,7 +37,6 @@ import AgentPortal from './pages/AgentPortal';
 import BringAFriend from './pages/BringAFriend';
 import Wheel from './pages/Wheel';
 import XlsCompare from './pages/XlsCompare';
-import BankBalance from './pages/BankBalance';
 import ClubWallets from './pages/ClubWallets';
 import TicketAssets from './pages/TicketAssets';
 import WhatsAppMessages from './pages/WhatsAppMessages';
@@ -144,7 +143,6 @@ function AppRoutes() {
               <NavLink to="/transfers">Transfers</NavLink>
               <NavLink to="/balance-report">התחשבנות</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
-              <NavLink to="/bank-balance">Bank Balance</NavLink>
               <NavLink to="/club-wallets">Club Wallets</NavLink>
               <NavLink to="/ticket-assets">Tickets</NavLink>
               <AccountingDropdown />
@@ -217,7 +215,6 @@ function AppRoutes() {
               <Route path="/balance-report" element={<BalanceReport />} />
               <Route path="/club-income" element={<ClubIncome />} />
               <Route path="/total-profit" element={<TotalProfit />} />
-              <Route path="/bank-balance" element={<BankBalance />} />
               <Route path="/club-wallets" element={<ClubWallets />} />
               <Route path="/ticket-assets" element={<TicketAssets />} />
               <Route path="/messages" element={<WhatsAppMessages />} />
