@@ -6,6 +6,10 @@ import DateInput from '../components/DateInput';
 import { fmtDateOnly } from '../utils/dates';
 
 const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
+// Bit/PayBox are tied to a personal phone/account, so money sent that way always lands in a
+// specific admin's wallet - never directly in the club's bank. When the club side of a transfer
+// is "Bank Transfer", only these methods make sense.
+const BANK_METHODS = ['BANK_TRANSFER', 'KASHCASH', 'CASH'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
 
 function PlayerSelect({ label, value, onChange, players, bankAccounts = [], excludeId, includeClub = false }) {
@@ -602,7 +606,7 @@ export default function Transfers() {
                     <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem' }}>
                       {[{ key: 'admin', label: '👤 Admin Wallet' }, { key: 'bank', label: '🏦 Bank Transfer' }].map(({ key, label }) => (
                         <button key={key} type="button"
-                          onClick={() => setTransferForm(f => ({ ...f, fromClubType: key, fromAdminUsername: '' }))}
+                          onClick={() => setTransferForm(f => ({ ...f, fromClubType: key, fromAdminUsername: '', method: key === 'bank' && !BANK_METHODS.includes(f.method) ? '' : f.method }))}
                           style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
                             background: transferForm.fromClubType === key ? '#2d3148' : 'transparent',
                             borderColor: transferForm.fromClubType === key ? '#6366f1' : '#2d3148',
@@ -629,7 +633,7 @@ export default function Transfers() {
                     <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.4rem' }}>
                       {[{ key: 'admin', label: '👤 Admin Wallet' }, { key: 'bank', label: '🏦 Bank Transfer' }].map(({ key, label }) => (
                         <button key={key} type="button"
-                          onClick={() => setTransferForm(f => ({ ...f, toClubType: key, toAdminUsername: '' }))}
+                          onClick={() => setTransferForm(f => ({ ...f, toClubType: key, toAdminUsername: '', method: key === 'bank' && !BANK_METHODS.includes(f.method) ? '' : f.method }))}
                           style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
                             background: transferForm.toClubType === key ? '#2d3148' : 'transparent',
                             borderColor: transferForm.toClubType === key ? '#6366f1' : '#2d3148',
@@ -652,10 +656,16 @@ export default function Transfers() {
             <div className="form-row">
               <div className="form-group">
                 <label>Payment Method *</label>
-                <select required value={transferForm.method} onChange={e => setTransferForm(f => ({ ...f, method: e.target.value }))}>
-                  <option value="">Select method...</option>
-                  {METHODS.map(m => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}
-                </select>
+                {(() => {
+                  const isBankSide = transferForm.fromClubType === 'bank' || transferForm.toClubType === 'bank';
+                  const availableMethods = isBankSide ? BANK_METHODS : METHODS;
+                  return (
+                    <select required value={transferForm.method} onChange={e => setTransferForm(f => ({ ...f, method: e.target.value }))}>
+                      <option value="">Select method...</option>
+                      {availableMethods.map(m => <option key={m} value={m}>{METHOD_LABELS[m]}</option>)}
+                    </select>
+                  );
+                })()}
               </div>
               <div className="form-group">
                 <label>Amount (₪) *</label>
