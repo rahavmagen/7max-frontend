@@ -142,7 +142,7 @@ export const saveLeagueConfig = (data) => api.post('/league/config', data);
 export const getLeagueStandings = () => api.get('/league/standings');
 
 // Agent system
-export const getAgents = () => api.get('/agents');
+export const getAgents = (params) => api.get('/agents', { params });
 export const getAgentSummary = (id) => api.get(`/agents/${id}/summary`);
 export const getAgentBreakdown = (id, params) => api.get(`/agents/${id}/breakdown`, { params });
 export const getAgentPlayerStats = (id, params) => api.get(`/agents/${id}/player-stats`, { params });

@@ -29,10 +29,15 @@ export default function Agents() {
   const [editingRake, setEditingRake] = useState(null); // agentId being edited
   const [rakeInput, setRakeInput] = useState('');
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const [summaryFrom, setSummaryFrom] = useState(''); // date filter for the agents table
+  const [summaryTo, setSummaryTo] = useState('');
 
-  const load = () => {
+  const load = (from = summaryFrom, to = summaryTo) => {
     setLoading(true);
-    getAgents()
+    const params = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    getAgents(params)
       .then(r => { setAgents(r.data); setLoading(false); })
       .catch(() => { setMsg({ type: 'error', text: 'Failed to load agents' }); setLoading(false); });
   };
@@ -118,13 +123,32 @@ export default function Agents() {
   const statsTotalShare = playerStats.reduce((s, p) => s + Number(p.agentShare || 0), 0);
   const statsTotalPnl = playerStats.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
 
+  // Agents table totals (across all agents)
+  const summaryTotalPlayers = agents.reduce((s, a) => s + Number(a.playerCount || 0), 0);
+  const summaryTotalActive = agents.reduce((s, a) => s + Number(a.activePlayerCount || 0), 0);
+  const summaryTotalGames = agents.reduce((s, a) => s + Number(a.gameCount || 0), 0);
+  const summaryTotalRake = agents.reduce((s, a) => s + Number(a.totalRake || 0), 0);
+  const summaryTotalPending = agents.reduce((s, a) => s + Number(a.pendingBalance || 0), 0);
+
   if (loading) return <div className="page-container">Loading...</div>;
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <h2 style={{ margin: 0 }}>Agents</h2>
-        <span style={{ fontSize: '0.78rem', color: '#64748b', background: '#1e2235', padding: '3px 10px', borderRadius: '4px' }}>Admin only</span>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ color: '#64748b', fontSize: '0.82rem' }}>From</span>
+          <DateInput value={summaryFrom} onChange={v => { setSummaryFrom(v); load(v, summaryTo); }} style={inputStyle} />
+          <span style={{ color: '#64748b', fontSize: '0.82rem' }}>To</span>
+          <DateInput value={summaryTo} onChange={v => { setSummaryTo(v); load(summaryFrom, v); }} style={inputStyle} />
+          {(summaryFrom || summaryTo) && (
+            <button onClick={() => { setSummaryFrom(''); setSummaryTo(''); load('', ''); }}
+              style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.82rem' }}>
+              Clear
+            </button>
+          )}
+          <span style={{ fontSize: '0.78rem', color: '#64748b', background: '#1e2235', padding: '3px 10px', borderRadius: '4px' }}>Admin only</span>
+        </div>
       </div>
 
       {msg && (
@@ -145,6 +169,9 @@ export default function Agents() {
               <th style={{ padding: '10px 12px' }}>Agent</th>
               <th style={{ padding: '10px 12px' }}>Rake %</th>
               <th style={{ padding: '10px 12px' }}>Players</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Active</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Games</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total Rake</th>
               <th style={{ padding: '10px 12px' }}>Pending Balance</th>
               <th style={{ padding: '10px 12px' }}>Last Settlement</th>
               <th style={{ padding: '10px 12px' }}>Action</th>
@@ -186,6 +213,9 @@ export default function Agents() {
                   )}
                 </td>
                 <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{a.playerCount}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.activePlayerCount ?? 0}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.gameCount ?? 0}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(a.totalRake)}</td>
                 <td style={{ padding: '10px 12px', color: Number(a.pendingBalance) > 0 ? '#fbbf24' : '#94a3b8', fontWeight: Number(a.pendingBalance) > 0 ? 600 : 400 }}>
                   {fmt(a.pendingBalance)}
                 </td>
@@ -200,7 +230,20 @@ export default function Agents() {
               </tr>
             ))}
             {agents.length === 0 && (
-              <tr><td colSpan={5} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
+              <tr><td colSpan={9} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
+            )}
+            {agents.length > 0 && (
+              <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
+                <td style={{ padding: '10px 12px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
+                <td />
+                <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalPlayers}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalActive}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{summaryTotalGames}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{fmt(summaryTotalRake)}</td>
+                <td style={{ padding: '10px 12px', color: Number(summaryTotalPending) > 0 ? '#fbbf24' : '#94a3b8', fontWeight: 700 }}>{fmt(summaryTotalPending)}</td>
+                <td />
+                <td />
+              </tr>
             )}
           </tbody>
         </table>
