@@ -11,6 +11,10 @@ export default function ClubWallets() {
   const [msg, setMsg] = useState(null);
   const [startingBalanceForms, setStartingBalanceForms] = useState({});
   const [startingBalanceSaving, setStartingBalanceSaving] = useState(null);
+  // Assumes a single bank account — form state isn't keyed by bank id. If a second
+  // bank account is ever added, this needs an accountId field (mirroring the
+  // startingBalanceForms object-keyed-by-username pattern above) so each row's
+  // form is independent.
   const [bankBalanceForm, setBankBalanceForm] = useState(null);
   const [bankBalanceSaving, setBankBalanceSaving] = useState(false);
   const historyRef = useRef(null);
