@@ -12,7 +12,7 @@ const METHODS = ['BIT', 'PAYBOX', 'KASHCASH', 'BANK_TRANSFER', 'CASH', 'OTHER'];
 const BANK_METHODS = ['BANK_TRANSFER', 'KASHCASH', 'CASH'];
 const METHOD_LABELS = { BIT: 'Bit', PAYBOX: 'PayBox', KASHCASH: 'KashCash', BANK_TRANSFER: 'Bank Transfer', CASH: 'Cash', OTHER: 'Other' };
 
-function PlayerSelect({ label, value, onChange, players, bankAccounts = [], excludeId, includeClub = false }) {
+function PlayerSelect({ label, value, onChange, players, bankAccounts = [], excludeId, includeClub = false, includeExternal = false }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const ref = useRef();
@@ -26,8 +26,9 @@ function PlayerSelect({ label, value, onChange, players, bankAccounts = [], excl
   const isBankValue = typeof value === 'string' && value.startsWith('BANK_');
   const bankId = isBankValue ? parseInt(value.slice(5)) : null;
   const selectedBank = bankAccounts.find(b => b.id === bankId);
-  const selectedPlayer = !isBankValue && value !== 'CLUB' ? players.find(p => p.id === value) : null;
+  const selectedPlayer = !isBankValue && value !== 'CLUB' && value !== 'EXTERNAL' ? players.find(p => p.id === value) : null;
   const displayText = value === 'CLUB' ? 'CLUB'
+    : value === 'EXTERNAL' ? '🤝 External Entity'
     : selectedBank ? `🏦 ${selectedBank.name}`
     : selectedPlayer ? (selectedPlayer.username + (selectedPlayer.fullName ? ` — ${selectedPlayer.fullName}` : ''))
     : '';
@@ -68,6 +69,11 @@ function PlayerSelect({ label, value, onChange, players, bankAccounts = [], excl
           {includeClub && (
             <div onClick={() => handleSelect('CLUB')} style={{ padding: '8px 12px', cursor: 'pointer', fontWeight: 600, color: '#f59e0b', borderBottom: '1px solid #2d3148' }}>
               CLUB
+            </div>
+          )}
+          {includeExternal && (
+            <div onClick={() => handleSelect('EXTERNAL')} style={{ padding: '8px 12px', cursor: 'pointer', fontWeight: 600, color: '#a78bfa', borderBottom: '1px solid #2d3148' }}>
+              🤝 External Entity
             </div>
           )}
           {filteredBanks.length > 0 && (
@@ -154,7 +160,7 @@ export default function Transfers() {
   const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
 
   // Transfer form
-  const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '' });
+  const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '', toExternalName: '' });
 
   const load = () => {
     getPlayers().then(r => setPlayers(r.data));
@@ -302,7 +308,7 @@ export default function Transfers() {
   };
 
   const resolveParty = (id) => {
-    if (!id || id === 'CLUB') return { playerId: null, bankAccountId: null };
+    if (!id || id === 'CLUB' || id === 'EXTERNAL') return { playerId: null, bankAccountId: null };
     if (typeof id === 'string' && id.startsWith('BANK_')) return { playerId: null, bankAccountId: parseInt(id.slice(5)) };
     return { playerId: id, bankAccountId: null };
   };
@@ -312,10 +318,6 @@ export default function Transfers() {
     e.preventDefault();
     if (!transferForm.fromId || !transferForm.toId || !transferForm.method || !transferForm.amount) {
       setMsg({ type: 'error', text: 'From, To, Method, and Amount are required' });
-      return;
-    }
-    if (transferForm.fromId === transferForm.toId) {
-      setMsg({ type: 'error', text: 'From and To cannot be the same' });
       return;
     }
     if (transferForm.fromId === 'CLUB' && !transferForm.fromClubType) {
@@ -334,23 +336,55 @@ export default function Transfers() {
       setMsg({ type: 'error', text: 'Select which admin wallet the funds go to' });
       return;
     }
+    // "CLUB" is not a single party — it splits into sub-accounts (each admin's wallet + the bank).
+    // Both sides may be CLUB as long as they resolve to different sub-accounts, e.g. Bank → Admin
+    // Wallet, or Admin X → Admin Y. Only a truly identical endpoint is rejected.
+    const isSameParty = (() => {
+      if (transferForm.fromId !== transferForm.toId) return false;
+      if (transferForm.fromId !== 'CLUB') return true; // same player / same bank account
+      if (transferForm.fromClubType !== transferForm.toClubType) return false; // e.g. bank → admin
+      if (transferForm.fromClubType === 'admin') {
+        return transferForm.fromAdminUsername === transferForm.toAdminUsername; // same admin wallet
+      }
+      return true; // both bank → same bank endpoint
+    })();
+    if (isSameParty) {
+      setMsg({ type: 'error', text: 'From and To cannot be the same' });
+      return;
+    }
+    if (transferForm.toId === 'EXTERNAL' && !transferForm.toExternalName.trim()) {
+      setMsg({ type: 'error', text: 'Enter the external entity name' });
+      return;
+    }
+    if ((transferForm.fromClubType === 'bank' || transferForm.toClubType === 'bank') && !bankAccounts[0]?.id) {
+      setMsg({ type: 'error', text: 'No bank account is configured - add one before recording a bank transfer' });
+      return;
+    }
     setSubmitting(true);
     const from = resolveParty(transferForm.fromId);
     const to = resolveParty(transferForm.toId);
+    // "Bank Transfer" club sub-choice must link the real bank account, not just clear the admin field -
+    // otherwise the transfer is indistinguishable from an unassigned club transaction and never moves
+    // the tracked bank balance.
+    const fromBankAccountId = transferForm.fromId === 'CLUB' && transferForm.fromClubType === 'bank' ? bankAccounts[0]?.id ?? null : from.bankAccountId;
+    const toBankAccountId = transferForm.toId === 'CLUB' && transferForm.toClubType === 'bank' ? bankAccounts[0]?.id ?? null : to.bankAccountId;
+    const notes = transferForm.toId === 'EXTERNAL'
+      ? `External: ${transferForm.toExternalName.trim()}${transferForm.notes ? ' — ' + transferForm.notes : ''}`
+      : (transferForm.notes || null);
     try {
       await createTransfer({
         fromPlayerId: from.playerId,
-        fromBankAccountId: from.bankAccountId,
+        fromBankAccountId,
         toPlayerId: to.playerId,
-        toBankAccountId: to.bankAccountId,
+        toBankAccountId,
         method: transferForm.method,
         amount: parseFloat(transferForm.amount),
-        notes: transferForm.notes || null,
+        notes,
         fromAdminUsername: transferForm.fromId === 'CLUB' && transferForm.fromClubType === 'admin' ? (transferForm.fromAdminUsername || null) : null,
         toAdminUsername: transferForm.toId === 'CLUB' && transferForm.toClubType === 'admin' ? (transferForm.toAdminUsername || null) : null,
       });
       setMsg({ type: 'success', text: 'Transfer recorded successfully' });
-      setTransferForm({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '' });
+      setTransferForm({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '', toExternalName: '' });
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to record transfer' });
@@ -599,7 +633,7 @@ export default function Transfers() {
           <form onSubmit={handleTransferSubmit}>
             <div className="form-row">
               <div>
-                <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v, fromAdminUsername: '', fromClubType: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.toId} includeClub />
+                <PlayerSelect label="From" value={transferForm.fromId} onChange={v => setTransferForm(f => ({ ...f, fromId: v, fromAdminUsername: '', fromClubType: '', toId: v !== 'CLUB' && f.toId === 'EXTERNAL' ? '' : f.toId, toExternalName: v !== 'CLUB' && f.toId === 'EXTERNAL' ? '' : f.toExternalName }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.toId} includeClub />
                 {transferForm.fromId === 'CLUB' && (
                   <div style={{ marginTop: '0.5rem' }}>
                     <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Club funds source *</label>
@@ -626,7 +660,16 @@ export default function Transfers() {
                 )}
               </div>
               <div>
-                <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v, toAdminUsername: '', toClubType: '' }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.fromId} includeClub />
+                <PlayerSelect label="To" value={transferForm.toId} onChange={v => setTransferForm(f => ({ ...f, toId: v, toAdminUsername: '', toClubType: '', toExternalName: '', method: v === 'EXTERNAL' && !BANK_METHODS.includes(f.method) ? '' : f.method }))} players={players} bankAccounts={bankAccounts} excludeId={transferForm.fromId} includeClub includeExternal={transferForm.fromId === 'CLUB'} />
+                {transferForm.toId === 'EXTERNAL' && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Entity name *</label>
+                    <input type="text" required value={transferForm.toExternalName}
+                      onChange={e => setTransferForm(f => ({ ...f, toExternalName: e.target.value }))}
+                      placeholder="e.g. Partner Club ABC"
+                      style={{ width: '100%', padding: '0.6rem 0.9rem', background: 'var(--bg-input)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.9rem', boxSizing: 'border-box' }} />
+                  </div>
+                )}
                 {transferForm.toId === 'CLUB' && (
                   <div style={{ marginTop: '0.5rem' }}>
                     <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Club funds destination *</label>
@@ -657,7 +700,7 @@ export default function Transfers() {
               <div className="form-group">
                 <label>Payment Method *</label>
                 {(() => {
-                  const isBankSide = transferForm.fromClubType === 'bank' || transferForm.toClubType === 'bank';
+                  const isBankSide = transferForm.fromClubType === 'bank' || transferForm.toClubType === 'bank' || transferForm.toId === 'EXTERNAL';
                   const availableMethods = isBankSide ? BANK_METHODS : METHODS;
                   return (
                     <select required value={transferForm.method} onChange={e => setTransferForm(f => ({ ...f, method: e.target.value }))}>
