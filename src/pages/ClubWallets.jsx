@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getWalletSummary, getWalletHistory, getBankAccounts, setAdminStartingBalance, getBankHistory } from '../api';
+import { getWalletSummary, getWalletHistory, getBankAccounts, setAdminStartingBalance, getBankHistory, setBankBalance } from '../api';
 import DateInput from '../components/DateInput';
 
 export default function ClubWallets() {
@@ -11,6 +11,8 @@ export default function ClubWallets() {
   const [msg, setMsg] = useState(null);
   const [startingBalanceForms, setStartingBalanceForms] = useState({});
   const [startingBalanceSaving, setStartingBalanceSaving] = useState(null);
+  const [bankBalanceForm, setBankBalanceForm] = useState(null);
+  const [bankBalanceSaving, setBankBalanceSaving] = useState(false);
   const historyRef = useRef(null);
 
   // Filters
@@ -187,6 +189,25 @@ export default function ClubWallets() {
     setStartingBalanceSaving(null);
   };
 
+  const handleUpdateBankBalance = async () => {
+    const newBalance = parseFloat(bankBalanceForm?.amount);
+    if (isNaN(newBalance) || newBalance < 0) {
+      setMsg({ type: 'error', text: 'Enter a valid, non-negative balance' });
+      return;
+    }
+    setBankBalanceSaving(true);
+    try {
+      const res = await setBankBalance(newBalance, bankBalanceForm?.notes || null);
+      setMsg({ type: 'success', text: `Bank balance updated: ${fmt(res.data.previousBalance)} → ${fmt(res.data.newBalance)}` });
+      setBankBalanceForm(null);
+      load();
+    } catch (e) {
+      const errMsg = e?.response?.data?.error || 'Failed to update bank balance';
+      setMsg({ type: 'error', text: errMsg });
+    }
+    setBankBalanceSaving(false);
+  };
+
 const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH: 'Cash', OTHER: 'Other', TRANSFER: 'Transfer', ADJUSTMENT: 'Adjustment', EXPENSES: 'Expenses', EXPENSE_PAID: 'Expense', STARTING: 'Opening' };
   const METHOD_COLOR = { BIT: '#3b82f6', PAYBOX: '#a855f7', KASHCASH: '#06b6d4', CASH: '#22c55e', OTHER: '#475569', TRANSFER: '#64748b', ADJUSTMENT: '#f59e0b', EXPENSES: '#ef4444', STARTING: '#475569' };
 
@@ -280,13 +301,44 @@ const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH:
               );
             })}
             {bankWallets.map(b => (
-              <tr key={b.id ?? 'bank'}>
-                <td style={{ color: '#34d399', padding: '0.4rem 0' }}>
-                  <span onClick={() => selectHolder(`BANK_${b.id}`)} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: '#34d39988' }}
-                    title="Click to view history">🏦 {b.name}</span>
-                </td>
-                <td style={{ textAlign: 'right', fontWeight: 600, color: '#34d399' }}>{fmt(b.balance)}</td>
-              </tr>
+              <>
+                <tr key={b.id ?? 'bank'}>
+                  <td style={{ color: '#34d399', padding: '0.4rem 0' }}>
+                    <span onClick={() => selectHolder(`BANK_${b.id}`)} style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationColor: '#34d39988' }}
+                      title="Click to view history">🏦 {b.name}</span>
+                    {' '}
+                    <button onClick={() => setBankBalanceForm(f => f ? null : { amount: b.balance ?? '', notes: '' })}
+                      style={{ fontSize: '0.7rem', background: 'none', border: '1px solid #334155', color: '#64748b', borderRadius: '4px', padding: '1px 6px', cursor: 'pointer', marginLeft: '6px' }}>
+                      {bankBalanceForm ? '✕' : '✏️ Update Balance'}
+                    </button>
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: 600, color: '#34d399' }}>{fmt(b.balance)}</td>
+                </tr>
+                {bankBalanceForm && (
+                  <tr key={`${b.id ?? 'bank'}-balance-form`}>
+                    <td colSpan={2} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>New Balance (₪)</label>
+                          <input type="number" step="0.01" placeholder="0" value={bankBalanceForm.amount ?? ''}
+                            onChange={e => setBankBalanceForm(f => ({ ...f, amount: e.target.value }))}
+                            style={{ background: '#1a1d2e', border: '1px solid #34d39955', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '140px' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '2px' }}>Note (optional)</label>
+                          <input type="text" placeholder="e.g. reconciled with bank statement" value={bankBalanceForm.notes ?? ''}
+                            onChange={e => setBankBalanceForm(f => ({ ...f, notes: e.target.value }))}
+                            style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 8px', borderRadius: '5px', width: '240px' }} />
+                        </div>
+                        <button onClick={handleUpdateBankBalance} disabled={bankBalanceSaving}
+                          style={{ padding: '5px 12px', borderRadius: '5px', background: '#0f2a1a', border: 'none', color: '#34d399', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}>
+                          {bankBalanceSaving ? '...' : 'Save'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
             {unassignedTotal !== 0 && (
               <tr>
@@ -367,7 +419,7 @@ const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH:
                       <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{(h._synthetic || (isBankRow && h.type === 'XLS')) ? '—' : fmtDate(h.transferDate || h.createdAt)}</td>
                       <td>
                         <span style={{ fontSize: '0.78rem', background: h._synthetic ? '#1a3a1a' : isBankRow ? '#0f2a1a' : '#1e3a5f', color: h._synthetic ? '#4ade80' : isBankRow ? '#34d399' : '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>
-                          {h._synthetic ? 'OPENING' : isBankRow ? (h.type === 'XLS' ? 'XLS BASE' : 'BANK') : (h.type || 'Transfer')}
+                          {h._synthetic ? 'OPENING' : isBankRow ? (h.type === 'XLS' ? 'XLS BASE' : h.type === 'ADJUSTMENT' ? 'CORRECTION' : 'BANK') : (h.type || 'Transfer')}
                         </span>
                       </td>
                       <td style={{ color: '#64748b' }}>{isBankRow ? (h.fromName ? <span style={{ color: '#e2e8f0' }}>{h.fromName}</span> : '—') : h._synthetic ? '—' : (h.fromAdminUsername ? <span style={{ color: '#e2e8f0' }}>{h.fromAdminUsername}</span> : h.fromBankAccount ? <span style={{ color: '#34d399' }}>🏦 {h.fromBankAccount}</span> : <span style={{ color: '#f59e0b' }}>{h.fromPlayer || 'CLUB'}</span>)}</td>
