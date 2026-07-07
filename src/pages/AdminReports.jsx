@@ -26,6 +26,11 @@ export default function AdminReports() {
   const [rbRows, setRbRows] = useState(null);
   const [rbLoading, setRbLoading] = useState(false);
   const [rbError, setRbError] = useState('');
+  const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'PLO6', 'SNG', 'MTT', 'AoF', 'SPIN_GOLD'];
+  const [rbGameTypes, setRbGameTypes] = useState(['NLH']);
+  const toggleRbGameType = (type) => {
+    setRbGameTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
+  };
 
   const [shabatSummary, setShabatSummary] = useState(null);
   const [shabatHistory, setShabatHistory] = useState([]);
@@ -64,7 +69,7 @@ export default function AdminReports() {
     setRbError('');
     setRbLoading(true);
     try {
-      const res = await getRakebackReport({ dateFrom: rbDateFrom, dateTo: rbDateTo });
+      const res = await getRakebackReport({ dateFrom: rbDateFrom, dateTo: rbDateTo, gameTypes: rbGameTypes.join(',') });
       setRbRows(res.data);
     } catch {
       setRbError('שגיאה בטעינת דוח ריקבק');
@@ -173,6 +178,17 @@ export default function AdminReports() {
           סיכום ריקבק לשחקנים עם אחוז ריקבק מוגדר. תאריך התחלה אפקטיבי = MAX(מתאריך, rakebackSince)
         </p>
         <form onSubmit={runRakeback}>
+          <div className="form-group" style={{ marginBottom: '1rem' }}>
+            <label>סוגי משחק (ריק = ללא ריקבק)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.25rem' }}>
+              {RB_GAME_TYPES.map(type => (
+                <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={rbGameTypes.includes(type)} onChange={() => toggleRbGameType(type)} />
+                  {type}
+                </label>
+              ))}
+            </div>
+          </div>
           <div className="form-row" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <div className="form-group">
               <label>מתאריך</label>
