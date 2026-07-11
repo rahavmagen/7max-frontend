@@ -423,7 +423,7 @@ const METHOD_LABEL = { BIT: 'Bit', PAYBOX: 'Paybox', KASHCASH: 'Kashcash', CASH:
                       <td style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{(h._synthetic || (isBankRow && h.type === 'XLS')) ? '—' : fmtDate(h.transferDate || h.createdAt)}</td>
                       <td>
                         <span style={{ fontSize: '0.78rem', background: h._synthetic ? '#1a3a1a' : isBankRow ? '#0f2a1a' : '#1e3a5f', color: h._synthetic ? '#4ade80' : isBankRow ? '#34d399' : '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>
-                          {h._synthetic ? 'OPENING' : isBankRow ? (h.type === 'XLS' ? 'XLS BASE' : h.type === 'ADJUSTMENT' ? 'CORRECTION' : 'BANK') : (h.type || 'Transfer')}
+                          {h._synthetic ? 'OPENING' : isBankRow ? (h.type === 'XLS' ? 'XLS BASE' : h.type === 'ADJUSTMENT' ? 'CORRECTION' : 'BANK') : h.type === 'EXPENSE_DEBT' ? 'DEBT (owed)' : h.type === 'EXPENSE_PAID' ? 'EXPENSE' : (h.type || 'Transfer')}
                         </span>
                       </td>
                       <td style={{ color: '#64748b' }}>{isBankRow ? (h.fromName ? <span style={{ color: '#e2e8f0' }}>{h.fromName}</span> : '—') : h._synthetic ? '—' : (h.fromAdminUsername ? <span style={{ color: '#e2e8f0' }}>{h.fromAdminUsername}</span> : h.fromBankAccount ? <span style={{ color: '#34d399' }}>🏦 {h.fromBankAccount}</span> : <span style={{ color: '#f59e0b' }}>{h.fromPlayer || 'CLUB'}</span>)}</td>
