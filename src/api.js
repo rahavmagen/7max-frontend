@@ -149,6 +149,8 @@ export const getAgentPlayerStats = (id, params) => api.get(`/agents/${id}/player
 export const settleAgent = (id) => api.post(`/agents/${id}/settle`);
 export const setAgentRakePercentage = (id, rakePercentage) => api.patch(`/agents/${id}/rake-percentage`, { rakePercentage });
 export const setAgentClubManaged = (id, clubManaged) => api.patch(`/agents/${id}/club-managed`, { clubManaged });
+export const resyncAgents = () => api.post('/reports/admin/resync-agents');
+export const computeAgentCredit = () => api.post('/reports/admin/compute-agent-credit');
 export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playerId}/agent`, { agentId: agentId || null });
 
 // KashCash deposits

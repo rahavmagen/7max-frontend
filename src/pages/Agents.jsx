@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
 
@@ -115,6 +115,21 @@ export default function Agents() {
     }
   };
 
+  const [resyncing, setResyncing] = useState(false);
+  const handleResync = async () => {
+    setResyncing(true);
+    setMsg({ type: 'success', text: 'Resyncing agent links & recomputing credit…' });
+    try {
+      await resyncAgents();
+      await computeAgentCredit();
+      setMsg({ type: 'success', text: 'Agent links & credit refreshed from the latest report' });
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Resync failed' });
+    }
+    setResyncing(false);
+  };
+
   const handleToggleClubManaged = async (agent) => {
     try {
       await setAgentClubManaged(agent.id, !agent.clubManaged);
@@ -185,6 +200,11 @@ export default function Agents() {
           <button onClick={() => showAllAgents ? collapseAllAgents() : loadAllAgentDetails()}
             style={{ padding: '5px 12px', borderRadius: '5px', border: '1px solid #2d3148', background: showAllAgents ? '#1e3a5f' : 'transparent', color: showAllAgents ? '#60a5fa' : '#94a3b8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
             {showAllAgents ? 'Collapse All Agents' : 'Expand All Agents'}
+          </button>
+          <button onClick={handleResync} disabled={resyncing}
+            title="Re-link players to agents from the latest report and recompute the credit cross-check"
+            style={{ padding: '5px 12px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#a78bfa', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: resyncing ? 0.6 : 1 }}>
+            {resyncing ? 'Resyncing…' : '🔄 Resync agents'}
           </button>
           <span style={{ fontSize: '0.78rem', color: '#64748b', background: '#1e2235', padding: '3px 10px', borderRadius: '4px' }}>Admin only</span>
         </div>
