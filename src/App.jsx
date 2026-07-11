@@ -135,6 +135,7 @@ function AppRoutes() {
           {isAdmin && (
             <>
               <NavLink to="/" end>Dashboard</NavLink>
+              {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
               <NavLink to="/upload">Upload Report</NavLink>
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/import">Import Players</NavLink>

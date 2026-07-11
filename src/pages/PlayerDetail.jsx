@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent } from '../api';
+import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { getTransactionLabel } from '../utils/transactionLabel';
 import DateInput from '../components/DateInput';
@@ -28,6 +28,9 @@ export default function PlayerDetail() {
   const [editUsername, setEditUsername] = useState('');
   const [editData, setEditData] = useState({});
   const [agents, setAgents] = useState([]);
+  const [allPlayers, setAllPlayers] = useState([]);
+  const [playerSearch, setPlayerSearch] = useState('');
+  const [showPlayerDropdown, setShowPlayerDropdown] = useState(false);
   const [showSetBalance, setShowSetBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
   const [balanceNotes, setBalanceNotes] = useState('');
@@ -47,6 +50,7 @@ export default function PlayerDetail() {
     getPlayerResults(id).then(r => setResults(r.data)).catch(() => {});
     if (isAdmin) getLoginStats(id).then(r => setLoginStats(r.data)).catch(() => {});
     if (isAdmin) getAgents().then(r => setAgents(r.data || [])).catch(() => {});
+    getActivePlayers().then(r => setAllPlayers(r.data || [])).catch(() => {});
   };
 
   useEffect(() => { load(); }, [id]);
@@ -193,6 +197,16 @@ export default function PlayerDetail() {
   const totalHands = filteredResults.reduce((s, r) => s + (r.handsPlayed || 0), 0);
   const totalRake = filteredResults.reduce((s, r) => s + (r.rakePaid || 0), 0);
 
+  const playerSearchResults = isAdmin && playerSearch.length >= 1
+    ? allPlayers
+        .filter(p => String(p.id) !== String(id))
+        .filter(p =>
+          p.username.toLowerCase().includes(playerSearch.toLowerCase()) ||
+          (p.fullName && p.fullName.toLowerCase().includes(playerSearch.toLowerCase()))
+        )
+        .slice(0, 8)
+    : [];
+
   const shabbatRake = results.reduce((s, r) => {
     if (!r.session?.startTime) return s;
     const dt = new Date(r.session.startTime);
@@ -205,7 +219,34 @@ export default function PlayerDetail() {
   return (
     <div>
       <div className="page-header">
-        {isAdmin && <button className="back-btn" onClick={() => navigate('/')}>← Back to Dashboard</button>}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          {isAdmin && <button className="back-btn" onClick={() => navigate('/')}>← Back to Dashboard</button>}
+          {isAdmin && (
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="Jump to player..."
+                value={playerSearch}
+                onChange={e => { setPlayerSearch(e.target.value); setShowPlayerDropdown(true); }}
+                onFocus={() => { if (playerSearch) setShowPlayerDropdown(true); }}
+                onBlur={() => setTimeout(() => setShowPlayerDropdown(false), 150)}
+                style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0', fontSize: '0.85rem', width: '200px' }}
+              />
+              {showPlayerDropdown && playerSearch && playerSearchResults.length > 0 && (
+                <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, background: '#1e293b', border: '1px solid #2d3148', borderRadius: '6px', zIndex: 100, minWidth: '220px', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}>
+                  {playerSearchResults.map(p => (
+                    <div key={p.id}
+                      onMouseDown={() => { navigate(`/player/${p.id}`); setPlayerSearch(''); setShowPlayerDropdown(false); }}
+                      style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '1px solid #2d3148', fontSize: '0.85rem' }}>
+                      <span style={{ fontWeight: 600 }}>{p.username}</span>
+                      {p.fullName && <span style={{ color: '#94a3b8', marginLeft: '8px', fontSize: '0.8rem' }}>{p.fullName}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
@@ -448,7 +489,7 @@ export default function PlayerDetail() {
             </div>
             {(() => {
               const agentName = player.agentId
-                ? (agents.find(a => a.id === player.agentId)?.username || `#${player.agentId}`)
+                ? (allPlayers.find(p => Number(p.id) === Number(player.agentId))?.username || `#${player.agentId}`)
                 : null;
               return agentName ? (
                 <div>
@@ -457,7 +498,7 @@ export default function PlayerDetail() {
                 </div>
               ) : null;
             })()}
-            {isAdmin && player.rakebackPercentage != null && player.rakebackPercentage > 0 && (
+            {player.rakebackPercentage != null && player.rakebackPercentage > 0 && (
               <div>
                 <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>RAKEBACK</div>
                 <div style={{ color: '#34d399' }}>
