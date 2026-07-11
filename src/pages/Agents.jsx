@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
 
@@ -31,6 +31,9 @@ export default function Agents() {
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [summaryFrom, setSummaryFrom] = useState(''); // date filter for the agents table
   const [summaryTo, setSummaryTo] = useState('');
+  const [showAllAgents, setShowAllAgents] = useState(false); // expand ALL agents at once
+  const [allAgentStats, setAllAgentStats] = useState({});    // agentId -> playerStats[]
+  const [allLoading, setAllLoading] = useState(false);
 
   const load = (from = summaryFrom, to = summaryTo) => {
     setLoading(true);
@@ -79,6 +82,26 @@ export default function Agents() {
   const expandAll = () => setExpandedIds(new Set(playerStats.map(p => p.playerId)));
   const collapseAll = () => setExpandedIds(new Set());
 
+  // Open ALL agents at once — fetch every agent's player stats (respecting the table date filter).
+  const loadAllAgentDetails = async () => {
+    setShowAllAgents(true);
+    setAllLoading(true);
+    const params = {};
+    if (summaryFrom) params.from = summaryFrom;
+    if (summaryTo) params.to = summaryTo;
+    try {
+      const entries = await Promise.all(agents.map(a =>
+        getAgentPlayerStats(a.id, params).then(r => [a.id, r.data]).catch(() => [a.id, []])
+      ));
+      const map = {};
+      for (const [id, data] of entries) map[id] = data;
+      setAllAgentStats(map);
+    } finally {
+      setAllLoading(false);
+    }
+  };
+  const collapseAllAgents = () => { setShowAllAgents(false); setAllAgentStats({}); };
+
   const handleSaveRake = async (agentId) => {
     const pct = parseFloat(rakeInput);
     if (isNaN(pct) || pct < 0 || pct > 100) { setMsg({ type: 'error', text: 'Rake must be 0–100%' }); return; }
@@ -89,6 +112,16 @@ export default function Agents() {
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to update rake' });
+    }
+  };
+
+  const handleToggleClubManaged = async (agent) => {
+    try {
+      await setAgentClubManaged(agent.id, !agent.clubManaged);
+      setMsg({ type: 'success', text: `${agent.username} ${!agent.clubManaged ? 'marked club-managed' : 'unmarked club-managed'}` });
+      load();
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to update club-managed flag' });
     }
   };
 
@@ -128,6 +161,8 @@ export default function Agents() {
   const summaryTotalActive = agents.reduce((s, a) => s + Number(a.activePlayerCount || 0), 0);
   const summaryTotalGames = agents.reduce((s, a) => s + Number(a.gameCount || 0), 0);
   const summaryTotalRake = agents.reduce((s, a) => s + Number(a.totalRake || 0), 0);
+  // Grand total excludes club-managed agents (their players are handled directly by the club).
+  const summaryTotalFreeCredit = agents.reduce((s, a) => s + (a.clubManaged ? 0 : Number(a.freeCreditTotal || 0)), 0);
   const summaryTotalPending = agents.reduce((s, a) => s + Number(a.pendingBalance || 0), 0);
 
   if (loading) return <div className="page-container">Loading...</div>;
@@ -147,6 +182,10 @@ export default function Agents() {
               Clear
             </button>
           )}
+          <button onClick={() => showAllAgents ? collapseAllAgents() : loadAllAgentDetails()}
+            style={{ padding: '5px 12px', borderRadius: '5px', border: '1px solid #2d3148', background: showAllAgents ? '#1e3a5f' : 'transparent', color: showAllAgents ? '#60a5fa' : '#94a3b8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
+            {showAllAgents ? 'Collapse All Agents' : 'Expand All Agents'}
+          </button>
           <span style={{ fontSize: '0.78rem', color: '#64748b', background: '#1e2235', padding: '3px 10px', borderRadius: '4px' }}>Admin only</span>
         </div>
       </div>
@@ -161,6 +200,32 @@ export default function Agents() {
         </div>
       )}
 
+      {/* Reconciliation errors surfaced on the main screen (no need to open each agent) */}
+      {(() => {
+        const flagged = agents.flatMap(a => (a.flaggedPlayers || []).map(p => ({ agent: a.username, player: p })));
+        if (flagged.length === 0) return null;
+        return (
+          <div style={{ marginBottom: '1rem', padding: '0.6rem 1rem', borderRadius: '6px', background: '#3a1a1a', border: '1px solid #f8717155', color: '#f87171', fontSize: '0.88rem' }}>
+            ⚠ <strong>{flagged.length} player{flagged.length > 1 ? 's' : ''} don’t reconcile</strong> (free credit couldn’t be derived) — review:
+            <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {flagged.map((f, i) => (
+                <span key={i} style={{ background: '#4a1f1f', borderRadius: '4px', padding: '2px 8px', fontSize: '0.82rem' }}>
+                  {f.agent} → <strong>{f.player}</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Grand total of free chips (credit) given by all agents to their players */}
+      {summaryTotalFreeCredit !== 0 && (
+        <div style={{ marginBottom: '1rem', padding: '0.6rem 1rem', borderRadius: '6px', background: '#2a1420', border: '1px solid #f472b655', color: '#f472b6', fontSize: '0.9rem' }}>
+          Total credit given by agents to players: <strong>{fmt(summaryTotalFreeCredit)}</strong>
+          <span style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '0.5rem' }}>(free chips = current chips − game P&amp;L; not yet booked as credit)</span>
+        </div>
+      )}
+
       {/* Agents summary table */}
       <div className="card" style={{ marginBottom: '2rem', padding: 0, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -172,6 +237,7 @@ export default function Agents() {
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Active</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Games</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total Rake</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Free Credit</th>
               <th style={{ padding: '10px 12px' }}>Pending Balance</th>
               <th style={{ padding: '10px 12px' }}>Last Settlement</th>
               <th style={{ padding: '10px 12px' }}>Action</th>
@@ -186,6 +252,13 @@ export default function Agents() {
                     {a.username}
                   </button>
                   {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{a.fullName}</span>}
+                  <button onClick={() => handleToggleClubManaged(a)}
+                    title="Club-managed: club handles this agent's players directly (excluded from credit total, players may get manual credit)"
+                    style={{ marginLeft: '0.5rem', fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', cursor: 'pointer',
+                      border: '1px solid', borderColor: a.clubManaged ? '#22c55e55' : '#33415555',
+                      background: a.clubManaged ? '#14532d' : 'transparent', color: a.clubManaged ? '#4ade80' : '#64748b' }}>
+                    {a.clubManaged ? '✓ club-managed' : 'club-managed?'}
+                  </button>
                 </td>
                 <td style={{ padding: '10px 12px' }}>
                   {editingRake === a.id ? (
@@ -216,6 +289,10 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.activePlayerCount ?? 0}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.gameCount ?? 0}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(a.totalRake)}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: a.clubManaged ? '#475569' : (Number(a.freeCreditTotal) > 0 ? '#f472b6' : '#475569'), fontWeight: (!a.clubManaged && Number(a.freeCreditTotal) > 0) ? 700 : 400, textDecoration: a.clubManaged ? 'line-through' : 'none' }}
+                  title={a.clubManaged ? 'Club-managed — excluded from the credit total' : 'Free chips this agent gave players (credit)'}>
+                  {fmt(a.freeCreditTotal)}
+                </td>
                 <td style={{ padding: '10px 12px', color: Number(a.pendingBalance) > 0 ? '#fbbf24' : '#94a3b8', fontWeight: Number(a.pendingBalance) > 0 ? 600 : 400 }}>
                   {fmt(a.pendingBalance)}
                 </td>
@@ -230,7 +307,7 @@ export default function Agents() {
               </tr>
             ))}
             {agents.length === 0 && (
-              <tr><td colSpan={9} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
+              <tr><td colSpan={10} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
             )}
             {agents.length > 0 && (
               <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
@@ -240,6 +317,7 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalActive}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{summaryTotalGames}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{fmt(summaryTotalRake)}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#f472b6', fontWeight: 700 }}>{fmt(summaryTotalFreeCredit)}</td>
                 <td style={{ padding: '10px 12px', color: Number(summaryTotalPending) > 0 ? '#fbbf24' : '#94a3b8', fontWeight: 700 }}>{fmt(summaryTotalPending)}</td>
                 <td />
                 <td />
@@ -248,6 +326,71 @@ export default function Agents() {
           </tbody>
         </table>
       </div>
+
+      {/* All-agents expanded overview */}
+      {showAllAgents && (
+        <div style={{ marginBottom: '2rem' }}>
+          {allLoading ? (
+            <div style={{ color: '#64748b', padding: '1rem', textAlign: 'center' }}>Loading all agents…</div>
+          ) : (
+            agents.map(a => {
+              const rows = allAgentStats[a.id] || [];
+              const tGames = rows.reduce((s, p) => s + Number(p.gameCount || 0), 0);
+              const tPnl = rows.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
+              const tChips = rows.reduce((s, p) => s + Number(p.currentChips || 0), 0);
+              const tCredit = rows.reduce((s, p) => s + Number(p.agentChipCredit || 0), 0);
+              return (
+                <div key={a.id} className="card" style={{ marginBottom: '1rem' }}>
+                  <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <strong style={{ color: '#e2e8f0' }}>{a.username}</strong>
+                    {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{a.fullName}</span>}
+                    {a.clubManaged && <span style={{ fontSize: '0.68rem', color: '#4ade80', background: '#14532d', padding: '1px 6px', borderRadius: '4px' }}>club-managed</span>}
+                    <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: 'auto' }}>{rows.length} players</span>
+                  </div>
+                  {rows.length === 0 ? (
+                    <div style={{ color: '#64748b', fontSize: '0.82rem', padding: '0.5rem' }}>No players / no data for the selected range</div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid #2d3148', color: '#64748b', textAlign: 'left', fontSize: '0.8rem' }}>
+                          <th style={{ padding: '6px' }}>Player</th>
+                          <th style={{ padding: '6px', textAlign: 'right' }}>Games</th>
+                          <th style={{ padding: '6px', textAlign: 'right' }}>P&L</th>
+                          <th style={{ padding: '6px', textAlign: 'right' }}>Chips</th>
+                          <th style={{ padding: '6px', textAlign: 'right' }}>Free Credit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map(p => (
+                          <tr key={p.playerId} style={{ borderBottom: '1px solid #1e2235', fontSize: '0.85rem' }}>
+                            <td style={{ padding: '6px' }}>
+                              <span onClick={() => navigate(`/player/${p.playerId}`)} style={{ cursor: 'pointer', color: '#60a5fa', textDecoration: 'underline' }}>{p.username}</span>
+                              {p.fullName && <span style={{ color: '#64748b', fontSize: '0.78rem', marginLeft: '0.4rem' }}>{p.fullName}</span>}
+                            </td>
+                            <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{p.gameCount}</td>
+                            <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(p.periodPnl)}>{fmt(p.periodPnl)}</td>
+                            <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{fmt(p.currentChips)}</td>
+                            <td style={{ padding: '6px', textAlign: 'right', color: Number(p.agentChipCredit) > 0 ? '#f472b6' : '#475569', fontWeight: Number(p.agentChipCredit) > 0 ? 700 : 400 }}>
+                              {fmt(p.agentChipCredit)}{p.reconciles === false && <span style={{ color: '#f59e0b', marginLeft: 4 }}>⚠</span>}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr style={{ borderTop: '1px solid #334155', background: '#12151f', fontWeight: 700 }}>
+                          <td style={{ padding: '6px', color: '#e2e8f0' }}>Total</td>
+                          <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{tGames}</td>
+                          <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(tPnl)}>{fmt(tPnl)}</td>
+                          <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{fmt(tChips)}</td>
+                          <td style={{ padding: '6px', textAlign: 'right', color: '#f472b6' }}>{fmt(tCredit)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
 
       {/* Agent detail panel */}
       {selected && (
@@ -303,6 +446,8 @@ export default function Agents() {
                       <th style={{ padding: '8px', textAlign: 'right' }}>Club Rake</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Agent Share</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Period P&L</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Chips</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Free Credit</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -310,7 +455,7 @@ export default function Agents() {
                       <AgentPlayerRow key={p.playerId} player={p} showBalance={true} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
                     ))}
                     {playerStats.length === 0 && (
-                      <tr><td colSpan={6} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
+                      <tr><td colSpan={8} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
                     )}
                     {playerStats.length > 1 && (
                       <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
@@ -320,6 +465,8 @@ export default function Agents() {
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(statsTotalRake)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 700 }}>{fmt(statsTotalShare)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(statsTotalPnl)}>{fmt(statsTotalPnl)}</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>{fmt(playerStats.reduce((s, p) => s + Number(p.currentChips || 0), 0))}</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#f472b6', fontWeight: 700 }}>{fmt(playerStats.reduce((s, p) => s + Number(p.agentChipCredit || 0), 0))}</td>
                       </tr>
                     )}
                   </tbody>
