@@ -384,6 +384,8 @@ export default function Agents() {
             agents.map(a => {
               const rows = allAgentStats[a.id] || [];
               const tGames = rows.reduce((s, p) => s + Number(p.gameCount || 0), 0);
+              const tRake = rows.reduce((s, p) => s + Number(p.totalRake || 0), 0);
+              const tShare = rows.reduce((s, p) => s + Number(p.agentShare || 0), 0);
               const tPnl = rows.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
               const tChips = rows.reduce((s, p) => s + Number(p.currentChips || 0), 0);
               const tCredit = rows.reduce((s, p) => s + Number(p.agentChipCredit || 0), 0);
@@ -411,6 +413,8 @@ export default function Agents() {
                         <tr style={{ borderBottom: '1px solid #2d3148', color: '#64748b', textAlign: 'left', fontSize: '0.8rem' }}>
                           <th style={{ padding: '6px' }}>Player</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>Games</th>
+                          <th style={{ padding: '6px', textAlign: 'right' }}>Club Rake</th>
+                          <th style={{ padding: '6px', textAlign: 'right' }}>Agent Share</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>P&L</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>Chips</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>Free Credit</th>
@@ -418,30 +422,15 @@ export default function Agents() {
                       </thead>
                       <tbody>
                         {rows.map(p => (
-                          <tr key={p.playerId} style={{ borderBottom: '1px solid #1e2235', fontSize: '0.85rem' }}>
-                            <td style={{ padding: '6px' }}>
-                              <span onClick={() => navigate(`/player/${p.playerId}`)} style={{ cursor: 'pointer', color: '#60a5fa', textDecoration: 'underline' }}>{p.username}</span>
-                              {p.fullName && <span style={{ color: '#64748b', fontSize: '0.78rem', marginLeft: '0.4rem' }}>{p.fullName}</span>}
-                            </td>
-                            <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{p.gameCount}</td>
-                            <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(p.periodPnl)}>{fmt(p.periodPnl)}</td>
-                            <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{fmt(p.currentChips)}</td>
-                            <td style={{ padding: '6px', textAlign: 'right', color: Number(p.agentChipCredit) > 0 ? '#f472b6' : '#475569', fontWeight: Number(p.agentChipCredit) > 0 ? 700 : 400 }}>
-                              {fmt(p.agentChipCredit)}
-                              {p.reconciles === false && (
-                                <>
-                                  <span style={{ color: '#f59e0b', marginLeft: 4 }}>⚠</span>
-                                  <input type="checkbox" title="Mark reviewed, then click Done"
-                                    checked={checkedFlags.has(p.playerId)} onChange={() => toggleFlag(p.playerId)}
-                                    style={{ marginLeft: 6, cursor: 'pointer', verticalAlign: 'middle' }} />
-                                </>
-                              )}
-                            </td>
-                          </tr>
+                          <AgentPlayerRow key={p.playerId} player={p} showBalance={false}
+                            expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)}
+                            checked={checkedFlags.has(p.playerId)} onToggleFlag={() => toggleFlag(p.playerId)} />
                         ))}
                         <tr style={{ borderTop: '1px solid #334155', background: '#12151f', fontWeight: 700 }}>
                           <td style={{ padding: '6px', color: '#e2e8f0' }}>Total</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{tGames}</td>
+                          <td style={{ padding: '6px', textAlign: 'right', color: '#f59e0b' }}>{fmt(tRake)}</td>
+                          <td style={{ padding: '6px', textAlign: 'right', color: '#fbbf24' }}>{fmt(tShare)}</td>
                           <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(tPnl)}>{fmt(tPnl)}</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{fmt(tChips)}</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#f472b6' }}>{fmt(tCredit)}</td>
