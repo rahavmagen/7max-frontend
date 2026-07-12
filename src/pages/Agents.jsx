@@ -389,12 +389,20 @@ export default function Agents() {
               const tCredit = rows.reduce((s, p) => s + Number(p.agentChipCredit || 0), 0);
               return (
                 <div key={a.id} className="card" style={{ marginBottom: '1rem' }}>
+                  {(() => { const agentChecked = rows.filter(p => p.reconciles === false && checkedFlags.has(p.playerId)).length; return (
                   <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <strong style={{ color: '#e2e8f0' }}>{a.username}</strong>
                     {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{a.fullName}</span>}
                     {a.clubManaged && <span style={{ fontSize: '0.68rem', color: '#4ade80', background: '#14532d', padding: '1px 6px', borderRadius: '4px' }}>club-managed</span>}
+                    {agentChecked > 0 && (
+                      <button onClick={handleDismissFlags} disabled={dismissing}
+                        style={{ ...inputStyle, background: '#16a34a', color: '#e2e8f0', fontWeight: 600, cursor: 'pointer' }}>
+                        {dismissing ? 'Saving…' : `Done (${agentChecked})`}
+                      </button>
+                    )}
                     <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: 'auto' }}>{rows.length} players</span>
                   </div>
+                  ); })()}
                   {rows.length === 0 ? (
                     <div style={{ color: '#64748b', fontSize: '0.82rem', padding: '0.5rem' }}>No players / no data for the selected range</div>
                   ) : (
@@ -419,7 +427,15 @@ export default function Agents() {
                             <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(p.periodPnl)}>{fmt(p.periodPnl)}</td>
                             <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{fmt(p.currentChips)}</td>
                             <td style={{ padding: '6px', textAlign: 'right', color: Number(p.agentChipCredit) > 0 ? '#f472b6' : '#475569', fontWeight: Number(p.agentChipCredit) > 0 ? 700 : 400 }}>
-                              {fmt(p.agentChipCredit)}{p.reconciles === false && <span style={{ color: '#f59e0b', marginLeft: 4 }}>⚠</span>}
+                              {fmt(p.agentChipCredit)}
+                              {p.reconciles === false && (
+                                <>
+                                  <span style={{ color: '#f59e0b', marginLeft: 4 }}>⚠</span>
+                                  <input type="checkbox" title="Mark reviewed, then click Done"
+                                    checked={checkedFlags.has(p.playerId)} onChange={() => toggleFlag(p.playerId)}
+                                    style={{ marginLeft: 6, cursor: 'pointer', verticalAlign: 'middle' }} />
+                                </>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -474,7 +490,13 @@ export default function Agents() {
                 {(filterFrom || filterTo) && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.75rem' }}>{filterFrom || '…'} – {filterTo || '…'}</span>}
               </div>
               {playerStats.length > 0 && (
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  {(() => { const n = playerStats.filter(p => p.reconciles === false && checkedFlags.has(p.playerId)).length; return n > 0 && (
+                    <button onClick={handleDismissFlags} disabled={dismissing}
+                      style={{ padding: '4px 10px', borderRadius: '5px', border: 'none', background: '#16a34a', color: '#e2e8f0', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+                      {dismissing ? 'Saving…' : `Done (${n})`}
+                    </button>
+                  ); })()}
                   <button onClick={expandAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Expand All</button>
                   <button onClick={collapseAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Collapse All</button>
                 </div>
@@ -500,7 +522,7 @@ export default function Agents() {
                   </thead>
                   <tbody>
                     {playerStats.map(p => (
-                      <AgentPlayerRow key={p.playerId} player={p} showBalance={true} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
+                      <AgentPlayerRow key={p.playerId} player={p} showBalance={true} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} checked={checkedFlags.has(p.playerId)} onToggleFlag={() => toggleFlag(p.playerId)} />
                     ))}
                     {playerStats.length === 0 && (
                       <tr><td colSpan={8} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>

@@ -16,7 +16,7 @@ const gameTypeColors = {
 };
 const gameTypeStyle = (type) => gameTypeColors[type] || { background: '#2a1e3a', color: '#c084fc' };
 
-export default function AgentPlayerRow({ player, showBalance, expanded, onToggle }) {
+export default function AgentPlayerRow({ player, showBalance, expanded, onToggle, checked, onToggleFlag }) {
   const colCount = showBalance ? 8 : 7;
   const games = player.games || [];
   const totals = games.reduce((acc, g) => ({
@@ -47,7 +47,16 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
         <td style={{ padding: '8px', textAlign: 'right', color: Number(player.agentChipCredit) > 0 ? '#f472b6' : '#475569', fontWeight: Number(player.agentChipCredit) > 0 ? 700 : 400 }}
           title={player.reconciles === false ? 'Does not reconcile: chips − game P&L is negative — review' : 'Free chips (credit) = chips − game P&L'}>
           {fmt(player.agentChipCredit)}
-          {player.reconciles === false && <span style={{ color: '#f59e0b', marginLeft: 4 }}>⚠</span>}
+          {player.reconciles === false && (
+            <>
+              <span style={{ color: '#f59e0b', marginLeft: 4 }}>⚠</span>
+              {onToggleFlag && (
+                <input type="checkbox" title="Mark reviewed, then click Done"
+                  checked={!!checked} onClick={e => e.stopPropagation()} onChange={onToggleFlag}
+                  style={{ marginLeft: 6, cursor: 'pointer', verticalAlign: 'middle' }} />
+              )}
+            </>
+          )}
         </td>
       </tr>
       {expanded && (
