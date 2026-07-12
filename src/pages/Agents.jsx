@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
 
@@ -34,6 +34,24 @@ export default function Agents() {
   const [showAllAgents, setShowAllAgents] = useState(false); // expand ALL agents at once
   const [allAgentStats, setAllAgentStats] = useState({});    // agentId -> playerStats[]
   const [allLoading, setAllLoading] = useState(false);
+  const [checkedFlags, setCheckedFlags] = useState(new Set()); // flagged player ids ticked for dismissal
+  const [dismissing, setDismissing] = useState(false);
+
+  const toggleFlag = (id) => setCheckedFlags(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const handleDismissFlags = () => {
+    const ids = [...checkedFlags];
+    if (ids.length === 0) return;
+    setDismissing(true);
+    dismissAgentFlags(ids)
+      .then(() => { setCheckedFlags(new Set()); load(); })
+      .catch(() => setMsg({ type: 'error', text: 'Failed to update error list' }))
+      .finally(() => setDismissing(false));
+  };
 
   const load = (from = summaryFrom, to = summaryTo) => {
     setLoading(true);
@@ -222,16 +240,26 @@ export default function Agents() {
 
       {/* Reconciliation errors surfaced on the main screen (no need to open each agent) */}
       {(() => {
-        const flagged = agents.flatMap(a => (a.flaggedPlayers || []).map(p => ({ agent: a.username, player: p })));
+        const flagged = agents.flatMap(a => (a.flaggedPlayers || []).map(p => ({ agent: a.username, id: p.id, player: p.username })));
         if (flagged.length === 0) return null;
+        const checkedCount = flagged.filter(f => checkedFlags.has(f.id)).length;
         return (
           <div style={{ marginBottom: '1rem', padding: '0.6rem 1rem', borderRadius: '6px', background: '#3a1a1a', border: '1px solid #f8717155', color: '#f87171', fontSize: '0.88rem' }}>
-            ⚠ <strong>{flagged.length} player{flagged.length > 1 ? 's' : ''} don’t reconcile</strong> (free credit couldn’t be derived) — review:
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <span>⚠ <strong>{flagged.length} player{flagged.length > 1 ? 's' : ''} don’t reconcile</strong> (free credit couldn’t be derived) — tick the ones you’ve reviewed, then click Done:</span>
+              <button
+                onClick={handleDismissFlags}
+                disabled={dismissing || checkedCount === 0}
+                style={{ ...inputStyle, background: checkedCount ? '#16a34a' : '#1a1d2e', cursor: checkedCount ? 'pointer' : 'default', color: '#e2e8f0', fontWeight: 600 }}>
+                {dismissing ? 'Saving…' : `Done${checkedCount ? ` (${checkedCount})` : ''}`}
+              </button>
+            </div>
             <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {flagged.map((f, i) => (
-                <span key={i} style={{ background: '#4a1f1f', borderRadius: '4px', padding: '2px 8px', fontSize: '0.82rem' }}>
+              {flagged.map((f) => (
+                <label key={f.id} style={{ background: '#4a1f1f', borderRadius: '4px', padding: '2px 8px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={checkedFlags.has(f.id)} onChange={() => toggleFlag(f.id)} style={{ cursor: 'pointer' }} />
                   {f.agent} → <strong>{f.player}</strong>
-                </span>
+                </label>
               ))}
             </div>
           </div>

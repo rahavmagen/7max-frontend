@@ -152,6 +152,7 @@ export const setAgentClubManaged = (id, clubManaged) => api.patch(`/agents/${id}
 export const resyncAgents = () => api.post('/reports/admin/resync-agents');
 export const computeAgentCredit = () => api.post('/reports/admin/compute-agent-credit');
 export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playerId}/agent`, { agentId: agentId || null });
+export const dismissAgentFlags = (playerIds) => api.post('/agents/dismiss-flags', { playerIds });
 
 // KashCash deposits
 export const initiateKashcashDeposit = (amount) => api.post('/kashcash/initiate', { amount });
