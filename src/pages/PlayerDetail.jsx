@@ -498,6 +498,15 @@ export default function PlayerDetail() {
                 </div>
               ) : null;
             })()}
+            {player.isAgent && (
+              <div>
+                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>ROLE</div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ background: '#7c3aed', color: '#fff', fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.5px' }}>AGENT</span>
+                  {player.clubManaged && <span style={{ background: '#14532d', color: '#4ade80', fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px' }}>club-managed</span>}
+                </div>
+              </div>
+            )}
             {player.rakebackPercentage != null && player.rakebackPercentage > 0 && (
               <div>
                 <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>RAKEBACK</div>

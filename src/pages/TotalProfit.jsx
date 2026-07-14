@@ -85,8 +85,26 @@ export default function TotalProfit() {
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
   // All-time calculation
-  const totalCredit = Number(summary?.snapshotCreditTotal || 0);
-  const totalChips = players.filter(p => !p.chipsStale).reduce((s, p) => s + Number(p.currentChips || 0), 0);
+  const rawCredit = Number(summary?.snapshotCreditTotal || 0);
+  const rawChips = players.filter(p => !p.chipsStale).reduce((s, p) => s + Number(p.currentChips || 0), 0);
+
+  // Agents run their own blue/red-chip pool the club does NOT manage, so chips & credit held by a
+  // (non-club-managed) agent or one of their players are the agent's liability, not the club's —
+  // exclude them from the מאזן. Club-managed agents are handled like normal players, so they stay.
+  const agentClubManaged = {};
+  players.forEach(p => { if (p.isAgent) agentClubManaged[Number(p.id)] = !!p.clubManaged; });
+  const isUnmanagedAgentSide = (p) =>
+    (p.isAgent && !p.clubManaged) ||
+    (p.agentId != null && !agentClubManaged[Number(p.agentId)]);
+  const excludedChips = players
+    .filter(p => !p.chipsStale && isUnmanagedAgentSide(p))
+    .reduce((s, p) => s + Number(p.currentChips || 0), 0);
+  const excludedCredit = players
+    .filter(p => isUnmanagedAgentSide(p))
+    .reduce((s, p) => s + Number(p.creditTotal || 0), 0);
+
+  const totalCredit = rawCredit - excludedCredit;
+  const totalChips = rawChips - excludedChips;
   const willExpense = Number(summary?.willExpense || 0);
   const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
   const bankDeposits = clubWalletTotal !== null ? clubWalletTotal : Number(summary?.bankDeposits || 0);
@@ -304,6 +322,13 @@ export default function TotalProfit() {
               <td className="positive"><strong>{fmt(totalCredit)}</strong></td>
               <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Sum of all player credits</td>
             </tr>
+            {excludedCredit > 0 && (
+              <tr>
+                <td style={{ color: '#64748b' }}>&nbsp;&nbsp;<span style={{ fontSize: '0.8rem' }}>↳ excl. {fmt(excludedCredit)} agent-held credit (not club-managed)</span></td>
+                <td></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Agents' own pool — not club liability</td>
+              </tr>
+            )}
             {ticketAssetsFaceValue > 0 && (
               <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/ticket-assets')}>
                 <td style={{ color: '#94a3b8' }}>+ 🎟 Ticket Assets <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
@@ -319,8 +344,15 @@ export default function TotalProfit() {
             <tr>
               <td style={{ color: '#94a3b8' }}>− ציפים (Total Chips)</td>
               <td className="negative"><strong>({fmt(totalChips)})</strong></td>
-              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>All chips held by players</td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Club-managed chips only</td>
             </tr>
+            {excludedChips > 0 && (
+              <tr>
+                <td style={{ color: '#64748b' }}>&nbsp;&nbsp;<span style={{ fontSize: '0.8rem' }}>↳ excl. {fmt(excludedChips)} agent-held chips (not club-managed)</span></td>
+                <td></td>
+                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{fmt(rawChips)} total − agent pool</td>
+              </tr>
+            )}
             <tr style={{ borderTop: '2px solid #334155', background: 'rgba(59,130,246,0.07)' }}>
               <td style={{ padding: '0.6rem 0.4rem' }}>
                 <strong style={{ color: '#93c5fd', fontSize: '1.05rem' }}>= Club Earning</strong>
