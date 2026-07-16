@@ -339,30 +339,61 @@ function CreditCompare() {
       const ws = wb.Sheets[sheetName];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
 
+      // Pass 1: identify אורי's players (any row with a value in col E) so they can be dropped from
+      // BOTH sides, and record every name that already has its own explicit username row.
+      const uriIds = new Set();        // lowercased username + full name of Uri's players
+      const explicitNames = new Set(); // lowercased col-B names that have their own col-A row
+      for (let i = 2; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row) continue;
+        const colA = row[0] ? String(row[0]).trim() : null;
+        const colB = row[1] ? String(row[1]).trim() : null;
+        if ((Number(row[4]) || 0) !== 0) {
+          if (colA) uriIds.add(colA.toLowerCase());
+          if (colB) uriIds.add(colB.toLowerCase());
+        }
+        if (colA && colB) explicitNames.add(colB.toLowerCase());
+      }
+
+      // Pass 2: aggregate cols C, D, F — skipping Uri's players entirely.
       const xlsByUser = {};
       const xlsColB = {};
       const xlsByName = {};
       let xlsTotal = 0;
+      let uriSkipped = 0;
       const unnamedRows = [];
       for (let i = 2; i < rows.length; i++) {
         const row = rows[i];
+        if (!row) continue;
         const colA = row[0] ? String(row[0]).trim() : null;
         const colB = row[1] ? String(row[1]).trim() : null;
         const c = Number(row[2]) || 0;
         const d = Number(row[3]) || 0;
-        // col E (index 4) = אורי — excluded from this comparison on purpose
+        const e = Number(row[4]) || 0; // col E = אורי
         const f = Number(row[5]) || 0;
         const total = c + d + f;
-        if (total !== 0) {
-          xlsTotal += total;
-          if (colA) {
-            xlsByUser[colA] = (xlsByUser[colA] || 0) + total;
-            if (colB) xlsColB[colA.toLowerCase().trim()] = colB;
-          } else if (colB) {
-            xlsByName[colB] = (xlsByName[colB] || 0) + total;
+
+        // אורי's player — not part of this comparison at all.
+        if (e !== 0 || (colA && uriIds.has(colA.toLowerCase())) || (colB && uriIds.has(colB.toLowerCase()))) {
+          uriSkipped++;
+          continue;
+        }
+        if (total === 0) continue;
+
+        xlsTotal += total;
+        if (colA) {
+          xlsByUser[colA] = (xlsByUser[colA] || 0) + total;
+          if (colB) xlsColB[colA.toLowerCase().trim()] = colB;
+        } else if (colB) {
+          // A name-only row for someone who already has their own username row is a stale duplicate —
+          // don't attribute it to that player (that's how X-ADV 750 wrongly showed 1,000).
+          if (explicitNames.has(colB.toLowerCase())) {
+            unnamedRows.push({ row: `Row ${i + 1} — ${colB} (duplicate of their own row)`, amount: total });
           } else {
-            unnamedRows.push({ row: `Row ${i + 1}`, amount: total });
+            xlsByName[colB] = (xlsByName[colB] || 0) + total;
           }
+        } else {
+          unnamedRows.push({ row: `Row ${i + 1}`, amount: total });
         }
       }
 
@@ -372,10 +403,13 @@ function CreditCompare() {
       const dbByUserLower = {};
       const dbByNameLower = {};
       for (const p of players) {
+        const uname = (p.username || '').toLowerCase();
+        const fname = (p.fullName || '').toLowerCase();
+        if (uriIds.has(uname) || (fname && uriIds.has(fname))) continue; // skip Uri's players
         const ct = Number(p.creditTotal) || 0;
         dbTotal += ct;
-        dbByUserLower[p.username.toLowerCase()] = { key: p.username, val: ct };
-        if (p.fullName) dbByNameLower[p.fullName.toLowerCase()] = { key: p.username, val: ct };
+        dbByUserLower[uname] = { key: p.username, val: ct };
+        if (p.fullName) dbByNameLower[fname] = { key: p.username, val: ct };
       }
 
       const diffs = [];
@@ -460,7 +494,7 @@ function CreditCompare() {
 
       const unnamed = [...unnamedRows, ...nameUnmatched];
       diffs.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
-      setResults({ diffs, unnamed, xlsTotal, dbTotal, netDiff: xlsTotal - dbTotal, sheetName });
+      setResults({ diffs, unnamed, xlsTotal, dbTotal, netDiff: xlsTotal - dbTotal, sheetName, uriSkipped });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -492,9 +526,15 @@ function CreditCompare() {
                 <td><strong style={{ color: '#e2e8f0' }}>{fmtC(results.xlsTotal)}</strong></td>
               </tr>
               <tr>
-                <td style={{ color: '#94a3b8' }}>DB Total (all player credits)</td>
+                <td style={{ color: '#94a3b8' }}>DB Total (excl. אורי's players)</td>
                 <td><strong style={{ color: '#e2e8f0' }}>{fmtC(results.dbTotal)}</strong></td>
               </tr>
+              {results.uriSkipped > 0 && (
+                <tr>
+                  <td style={{ color: '#64748b', fontSize: '0.85rem' }}>↳ אורי's players skipped (col E), both sides</td>
+                  <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{results.uriSkipped} rows</td>
+                </tr>
+              )}
               <tr style={{ borderTop: '2px solid #334155' }}>
                 <td><strong style={{ color: '#e2e8f0' }}>Difference (XLS − DB)</strong></td>
                 <td>
