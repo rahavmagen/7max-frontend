@@ -350,9 +350,9 @@ function CreditCompare() {
         const colB = row[1] ? String(row[1]).trim() : null;
         const c = Number(row[2]) || 0;
         const d = Number(row[3]) || 0;
-        const ee = Number(row[4]) || 0;
+        // col E (index 4) = אורי — excluded from this comparison on purpose
         const f = Number(row[5]) || 0;
-        const total = c + d + ee + f;
+        const total = c + d + f;
         if (total !== 0) {
           xlsTotal += total;
           if (colA) {
@@ -473,7 +473,7 @@ function CreditCompare() {
     <div>
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <p style={{ color: '#94a3b8', marginBottom: '1rem', fontSize: '0.9rem' }}>
-          Upload a 7MAX XLS file to compare the <strong>מעקב קרדיטים</strong> sheet (columns C–F) against the production database.
+          Upload a 7MAX XLS file to compare the <strong>מעקב קרדיטים</strong> sheet (columns C, D, F — <strong>col E (אורי) excluded</strong>) against the production database.
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <input ref={fileRef} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ color: '#e2e8f0' }} />
@@ -488,7 +488,7 @@ function CreditCompare() {
             <h2 style={{ marginBottom: '1rem' }}>Summary</h2>
             <div className="table-wrap"><table><tbody>
               <tr>
-                <td style={{ color: '#94a3b8' }}>XLS Total (cols C–F)</td>
+                <td style={{ color: '#94a3b8' }}>XLS Total (cols C, D, F — excl. E/אורי)</td>
                 <td><strong style={{ color: '#e2e8f0' }}>{fmtC(results.xlsTotal)}</strong></td>
               </tr>
               <tr>
