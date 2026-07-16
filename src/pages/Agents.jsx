@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
 
@@ -36,6 +36,43 @@ export default function Agents() {
   const [allLoading, setAllLoading] = useState(false);
   const [checkedFlags, setCheckedFlags] = useState(new Set()); // flagged player ids ticked for dismissal
   const [dismissing, setDismissing] = useState(false);
+  const [balance, setBalance] = useState(null);       // running-balance breakdown for the selected agent
+  const [ledger, setLedger] = useState([]);           // ledger entries (openings + payments)
+  const [openingForm, setOpeningForm] = useState(null); // { amount, effectiveDate, notes }
+  const [paymentForm, setPaymentForm] = useState(null); // { amount, effectiveDate, notes, direction }
+  const [ledgerSaving, setLedgerSaving] = useState(false);
+
+  const loadBalance = (agentId) => {
+    getAgentBalance(agentId).then(r => setBalance(r.data)).catch(() => setBalance(null));
+    getAgentLedger(agentId).then(r => setLedger(r.data || [])).catch(() => setLedger([]));
+  };
+
+  const submitOpening = () => {
+    const amt = parseFloat(openingForm?.amount);
+    if (isNaN(amt)) { setMsg({ type: 'error', text: 'Enter a valid opening balance (may be negative)' }); return; }
+    setLedgerSaving(true);
+    addAgentOpening(selected.id, { amount: amt, effectiveDate: openingForm.effectiveDate || undefined, notes: openingForm.notes || null })
+      .then(r => { setBalance(r.data); setOpeningForm(null); loadBalance(selected.id); load(); })
+      .catch(e => setMsg({ type: 'error', text: e?.response?.data?.error || 'Failed to set opening balance' }))
+      .finally(() => setLedgerSaving(false));
+  };
+
+  const submitPayment = () => {
+    const amt = parseFloat(paymentForm?.amount);
+    if (isNaN(amt) || amt <= 0) { setMsg({ type: 'error', text: 'Enter a positive amount' }); return; }
+    const signed = paymentForm.direction === 'fromAgent' ? -amt : amt; // + = we paid agent, − = agent paid us
+    setLedgerSaving(true);
+    addAgentPayment(selected.id, { amount: signed, effectiveDate: paymentForm.effectiveDate || undefined, notes: paymentForm.notes || null })
+      .then(r => { setBalance(r.data); setPaymentForm(null); loadBalance(selected.id); load(); })
+      .catch(e => setMsg({ type: 'error', text: e?.response?.data?.error || 'Failed to log payment' }))
+      .finally(() => setLedgerSaving(false));
+  };
+
+  const removeLedgerEntry = (entryId) => {
+    if (!window.confirm('Delete this ledger entry?')) return;
+    deleteAgentLedgerEntry(entryId).then(() => { loadBalance(selected.id); load(); })
+      .catch(() => setMsg({ type: 'error', text: 'Failed to delete entry' }));
+  };
 
   const toggleFlag = (id) => setCheckedFlags(prev => {
     const next = new Set(prev);
@@ -69,7 +106,10 @@ export default function Agents() {
     setSelected(agent);
     setFilterFrom('');
     setFilterTo('');
+    setOpeningForm(null);
+    setPaymentForm(null);
     fetchStats(agent.id, '', '');
+    loadBalance(agent.id);
     getAgentSummary(agent.id)
       .then(r => setSettlementHistory(r.data.settlementHistory || []))
       .catch(() => setSettlementHistory([]));
@@ -197,6 +237,7 @@ export default function Agents() {
   // Grand total excludes club-managed agents (their players are handled directly by the club).
   const summaryTotalFreeCredit = agents.reduce((s, a) => s + (a.clubManaged ? 0 : Number(a.freeCreditTotal || 0)), 0);
   const summaryTotalPending = agents.reduce((s, a) => s + Number(a.pendingBalance || 0), 0);
+  const summaryTotalCurrentBalance = agents.reduce((s, a) => s + Number(a.currentBalance || 0), 0);
 
   if (loading) return <div className="page-container">Loading...</div>;
 
@@ -259,6 +300,7 @@ export default function Agents() {
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total Rake</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Free Credit</th>
               <th style={{ padding: '10px 12px' }}>Pending Balance</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Running balance: opening + rakeback + players' P&L − payments. + = club owes agent, − = agent owes club">Current Balance</th>
               <th style={{ padding: '10px 12px' }}>Last Settlement</th>
               <th style={{ padding: '10px 12px' }}>Action</th>
             </tr>
@@ -316,6 +358,10 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', color: Number(a.pendingBalance) > 0 ? '#fbbf24' : '#94a3b8', fontWeight: Number(a.pendingBalance) > 0 ? 600 : 400 }}>
                   {fmt(a.pendingBalance)}
                 </td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(a.currentBalance)}
+                  title={Number(a.currentBalance) >= 0 ? 'Club owes agent' : 'Agent owes club'}>
+                  {fmt(a.currentBalance)}
+                </td>
                 <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '0.85rem' }}>{a.lastSettlementDate || '—'}</td>
                 <td style={{ padding: '10px 12px' }}>
                   <button onClick={() => handleSettle(a.id)} disabled={settling || Number(a.pendingBalance) <= 0}
@@ -327,7 +373,7 @@ export default function Agents() {
               </tr>
             ))}
             {agents.length === 0 && (
-              <tr><td colSpan={10} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
+              <tr><td colSpan={11} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
             )}
             {agents.length > 0 && (
               <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
@@ -339,6 +385,7 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{fmt(summaryTotalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#f472b6', fontWeight: 700 }}>{fmt(summaryTotalFreeCredit)}</td>
                 <td style={{ padding: '10px 12px', color: Number(summaryTotalPending) > 0 ? '#fbbf24' : '#94a3b8', fontWeight: 700 }}>{fmt(summaryTotalPending)}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalCurrentBalance)}>{fmt(summaryTotalCurrentBalance)}</td>
                 <td />
                 <td />
               </tr>
@@ -441,6 +488,98 @@ export default function Agents() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Running balance ledger */}
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <strong style={{ color: '#e2e8f0' }}>Current Balance</strong>
+                <div style={{ fontSize: '1.6rem', fontWeight: 800, marginTop: '0.25rem' }} className={balanceClass(balance?.currentBalance)}>
+                  {fmt(balance?.currentBalance)}
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                  {Number(balance?.currentBalance) >= 0 ? 'Club owes agent' : 'Agent owes club'}
+                  {!balance?.hasBaseline && <span style={{ color: '#f59e0b', marginLeft: '0.5rem' }}>⚠ no opening balance set — counting all-time</span>}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <button onClick={() => { setOpeningForm(openingForm ? null : { amount: '', effectiveDate: '', notes: '' }); setPaymentForm(null); }}
+                  style={{ ...inputStyle, cursor: 'pointer', color: '#a78bfa', fontWeight: 600 }}>Set opening balance</button>
+                <button onClick={() => { setPaymentForm(paymentForm ? null : { amount: '', effectiveDate: '', notes: '', direction: 'toAgent' }); setOpeningForm(null); }}
+                  style={{ ...inputStyle, cursor: 'pointer', color: '#4ade80', fontWeight: 600 }}>Log payment</button>
+              </div>
+            </div>
+
+            {/* Breakdown */}
+            <div style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '1.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>
+              <span>Opening {balance?.openingDate ? `(${balance.openingDate})` : '(none)'}: <strong className={balanceClass(balance?.openingBalance)}>{fmt(balance?.openingBalance)}</strong></span>
+              <span>+ Rakeback: <strong style={{ color: '#fbbf24' }}>{fmt(balance?.rakebackSince)}</strong></span>
+              <span>+ Players' P&L: <strong className={balanceClass(balance?.playerPnlSince)}>{fmt(balance?.playerPnlSince)}</strong></span>
+              <span>− Payments: <strong style={{ color: '#e2e8f0' }}>{fmt(balance?.paymentsSince)}</strong></span>
+            </div>
+
+            {/* Set-opening form */}
+            {openingForm && (
+              <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#12151f', borderRadius: '6px', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Opening balance (+ club owes, − agent owes)</div>
+                  <input type="number" step="0.01" value={openingForm.amount} autoFocus
+                    onChange={e => setOpeningForm(f => ({ ...f, amount: e.target.value }))} style={{ ...inputStyle, width: 160 }} /></div>
+                <div><div style={{ color: '#64748b', fontSize: '0.75rem' }}>As of date</div>
+                  <DateInput value={openingForm.effectiveDate} onChange={v => setOpeningForm(f => ({ ...f, effectiveDate: v }))} style={inputStyle} /></div>
+                <div style={{ flex: 1, minWidth: 140 }}><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Note</div>
+                  <input value={openingForm.notes} onChange={e => setOpeningForm(f => ({ ...f, notes: e.target.value }))} style={{ ...inputStyle, width: '100%' }} /></div>
+                <button onClick={submitOpening} disabled={ledgerSaving}
+                  style={{ padding: '6px 14px', borderRadius: 5, border: 'none', background: '#7c3aed', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>{ledgerSaving ? 'Saving…' : 'Save'}</button>
+              </div>
+            )}
+
+            {/* Log-payment form */}
+            {paymentForm && (
+              <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#12151f', borderRadius: '6px', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Direction</div>
+                  <select value={paymentForm.direction} onChange={e => setPaymentForm(f => ({ ...f, direction: e.target.value }))} style={inputStyle}>
+                    <option value="toAgent">We paid the agent</option>
+                    <option value="fromAgent">Agent paid us</option>
+                  </select></div>
+                <div><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Amount</div>
+                  <input type="number" step="0.01" min="0" value={paymentForm.amount} autoFocus
+                    onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))} style={{ ...inputStyle, width: 140 }} /></div>
+                <div><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Date</div>
+                  <DateInput value={paymentForm.effectiveDate} onChange={v => setPaymentForm(f => ({ ...f, effectiveDate: v }))} style={inputStyle} /></div>
+                <div style={{ flex: 1, minWidth: 140 }}><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Note</div>
+                  <input value={paymentForm.notes} onChange={e => setPaymentForm(f => ({ ...f, notes: e.target.value }))} style={{ ...inputStyle, width: '100%' }} /></div>
+                <button onClick={submitPayment} disabled={ledgerSaving}
+                  style={{ padding: '6px 14px', borderRadius: 5, border: 'none', background: '#16a34a', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>{ledgerSaving ? 'Saving…' : 'Save'}</button>
+              </div>
+            )}
+
+            {/* Ledger history */}
+            {ledger.length > 0 && (
+              <div style={{ marginTop: '1rem' }}>
+                <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.35rem' }}>Ledger history</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <tbody>
+                    {ledger.map(e => (
+                      <tr key={e.id} style={{ borderBottom: '1px solid #1e2235' }}>
+                        <td style={{ padding: '4px 8px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{e.effectiveDate}</td>
+                        <td style={{ padding: '4px 8px' }}>
+                          <span style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: 4, background: e.type === 'OPENING' ? '#3b2a5f' : '#14532d', color: e.type === 'OPENING' ? '#c4b5fd' : '#4ade80' }}>
+                            {e.type === 'OPENING' ? 'opening' : (Number(e.amount) >= 0 ? 'paid agent' : 'agent paid')}
+                          </span>
+                        </td>
+                        <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(e.type === 'PAYMENT' ? -e.amount : e.amount)}>{fmt(e.amount)}</td>
+                        <td style={{ padding: '4px 8px', color: '#64748b' }}>{e.notes || ''}</td>
+                        <td style={{ padding: '4px 8px', textAlign: 'right' }}>
+                          <button onClick={() => removeLedgerEntry(e.id)} title="Delete entry"
+                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '0.9rem' }}>✕</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Player stats */}

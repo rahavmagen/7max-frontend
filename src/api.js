@@ -153,6 +153,11 @@ export const resyncAgents = () => api.post('/reports/admin/resync-agents');
 export const computeAgentCredit = () => api.post('/reports/admin/compute-agent-credit');
 export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playerId}/agent`, { agentId: agentId || null });
 export const dismissAgentFlags = (playerIds) => api.post('/agents/dismiss-flags', { playerIds });
+export const getAgentBalance = (id) => api.get(`/agents/${id}/balance`);
+export const getAgentLedger = (id) => api.get(`/agents/${id}/ledger`);
+export const addAgentOpening = (id, data) => api.post(`/agents/${id}/ledger/opening`, data);
+export const addAgentPayment = (id, data) => api.post(`/agents/${id}/ledger/payment`, data);
+export const deleteAgentLedgerEntry = (entryId) => api.delete(`/agents/ledger/${entryId}`);
 
 // KashCash deposits
 export const initiateKashcashDeposit = (amount) => api.post('/kashcash/initiate', { amount });
