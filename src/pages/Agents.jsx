@@ -238,34 +238,6 @@ export default function Agents() {
         </div>
       )}
 
-      {/* Reconciliation errors surfaced on the main screen (no need to open each agent) */}
-      {(() => {
-        const flagged = agents.flatMap(a => (a.flaggedPlayers || []).map(p => ({ agent: a.username, id: p.id, player: p.username })));
-        if (flagged.length === 0) return null;
-        const checkedCount = flagged.filter(f => checkedFlags.has(f.id)).length;
-        return (
-          <div style={{ marginBottom: '1rem', padding: '0.6rem 1rem', borderRadius: '6px', background: '#3a1a1a', border: '1px solid #f8717155', color: '#f87171', fontSize: '0.88rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span>⚠ <strong>{flagged.length} player{flagged.length > 1 ? 's' : ''} don’t reconcile</strong> (free credit couldn’t be derived) — tick the ones you’ve reviewed, then click Done:</span>
-              <button
-                onClick={handleDismissFlags}
-                disabled={dismissing || checkedCount === 0}
-                style={{ ...inputStyle, background: checkedCount ? '#16a34a' : '#1a1d2e', cursor: checkedCount ? 'pointer' : 'default', color: '#e2e8f0', fontWeight: 600 }}>
-                {dismissing ? 'Saving…' : `Done${checkedCount ? ` (${checkedCount})` : ''}`}
-              </button>
-            </div>
-            <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {flagged.map((f) => (
-                <label key={f.id} style={{ background: '#4a1f1f', borderRadius: '4px', padding: '2px 8px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={checkedFlags.has(f.id)} onChange={() => toggleFlag(f.id)} style={{ cursor: 'pointer' }} />
-                  {f.agent} → <strong>{f.player}</strong>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
-
       {/* Grand total of free chips (credit) given by all agents to their players */}
       {summaryTotalFreeCredit !== 0 && (
         <div style={{ marginBottom: '1rem', padding: '0.6rem 1rem', borderRadius: '6px', background: '#2a1420', border: '1px solid #f472b655', color: '#f472b6', fontSize: '0.9rem' }}>
