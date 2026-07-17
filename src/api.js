@@ -155,6 +155,7 @@ export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playe
 export const dismissAgentFlags = (playerIds) => api.post('/agents/dismiss-flags', { playerIds });
 export const getLastSettlementDate = () => api.get('/agents/last-settlement-date');
 export const getAgentLedgerHistory = () => api.get('/agents/ledger-history');
+export const getAgentTotalBalance = (params) => api.get('/agents/total-balance', { params });
 export const getAgentBalance = (id, params) => api.get(`/agents/${id}/balance`, { params });
 export const getAgentLedger = (id) => api.get(`/agents/${id}/ledger`);
 export const addAgentOpening = (id, data) => api.post(`/agents/${id}/ledger/opening`, data);

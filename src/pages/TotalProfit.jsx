@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminExpenses, getBalanceSheet, getPlayers, getPromotions, getProfitSummary, getTransactionRange, getTicketAssetsSummary, getWalletSummary } from '../api';
+import { getAdminExpenses, getBalanceSheet, getPlayers, getPromotions, getProfitSummary, getTransactionRange, getTicketAssetsSummary, getWalletSummary, getAgentTotalBalance } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateTime } from '../utils/dates';
 
@@ -28,6 +28,15 @@ export default function TotalProfit() {
   const [expenseData, setExpenseData] = useState(null);
   const [promotionsData, setPromotionsData] = useState(null);
   const [expandedSections, setExpandedSections] = useState({});
+  const [agentBal, setAgentBal] = useState(null);      // { from, to, totalBalance } — net agent position
+  const [agentFrom, setAgentFrom] = useState('');       // starting date (defaults to last התחשבנות)
+
+  const loadAgentBalance = (from) => {
+    getAgentTotalBalance(from ? { from } : {})
+      .then(r => { setAgentBal(r.data); setAgentFrom(r.data?.from || ''); })
+      .catch(() => setAgentBal(null));
+  };
+  useEffect(() => { loadAgentBalance(); }, []);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -109,10 +118,15 @@ export default function TotalProfit() {
   const chipPromoTotal = Number(summary?.chipPromoTotal || 0);
   const bankDeposits = clubWalletTotal !== null ? clubWalletTotal : Number(summary?.bankDeposits || 0);
 
-  // מאזן (net worth): Banks & Players + Credit + Tickets − Raw chips = Club Earning.
+  // Net agent position (agent POV: + = we owe agents, − = agents owe us). We owe agents → reduces
+  // profit; agents owe us → increases it. So the adjustment to Club Earning is −totalBalance.
+  const agentTotalBalance = Number(agentBal?.totalBalance || 0);
+  const agentAdjustment = -agentTotalBalance;
+
+  // מאזן (net worth): Banks & Players + Credit + Tickets − Raw chips − agents net = Club Earning.
   // Debts to admins are no longer a separate line — each admin's wallet balance is now NET
   // (cash held minus what the club owes them), so it's already inside bankDeposits (clubTotal).
-  const clubEarning = bankDeposits + totalCredit + ticketAssetsFaceValue - totalChips;
+  const clubEarning = bankDeposits + totalCredit + ticketAssetsFaceValue - totalChips + agentAdjustment;
   const netProfit = clubEarning;
 
   // Expense breakdown data
@@ -353,6 +367,19 @@ export default function TotalProfit() {
                 <td style={{ color: '#64748b', fontSize: '0.8rem' }}>{fmt(rawChips)} total − agent pool</td>
               </tr>
             )}
+            <tr>
+              <td style={{ color: '#94a3b8' }}>
+                {agentAdjustment >= 0 ? '+ ' : '− '}סוכנים (Agents net)
+                <span style={{ marginLeft: '0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <span style={{ color: '#64748b', fontSize: '0.75rem' }}>since</span>
+                  <DateInput value={agentFrom} onChange={v => loadAgentBalance(v)} style={{ fontSize: '0.78rem', padding: '2px 6px' }} />
+                </span>
+              </td>
+              <td className={cls(agentAdjustment)}><strong>{agentAdjustment < 0 ? `(${fmt(agentAdjustment)})` : fmt(agentAdjustment)}</strong></td>
+              <td style={{ color: '#64748b', fontSize: '0.8rem' }}>
+                {agentTotalBalance > 0 ? `we owe agents ${fmt(agentTotalBalance)} → subtracts` : agentTotalBalance < 0 ? `agents owe us ${fmt(-agentTotalBalance)} → adds` : 'agents settled'}
+              </td>
+            </tr>
             <tr style={{ borderTop: '2px solid #334155', background: 'rgba(59,130,246,0.07)' }}>
               <td style={{ padding: '0.6rem 0.4rem' }}>
                 <strong style={{ color: '#93c5fd', fontSize: '1.05rem' }}>= Club Earning</strong>
