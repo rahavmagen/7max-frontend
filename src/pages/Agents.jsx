@@ -48,6 +48,7 @@ export default function Agents() {
   const [paymentForm, setPaymentForm] = useState(null); // { amount, effectiveDate, notes, direction }
   const [ledgerSaving, setLedgerSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [hideInactive, setHideInactive] = useState(false);
   const [settleForm, setSettleForm] = useState(null); // { agent, direction, counterpartyId, clubType, adminUser, method, amount, notes }
   const [settlePlayers, setSettlePlayers] = useState([]);
   const [settleBanks, setSettleBanks] = useState([]);
@@ -322,7 +323,9 @@ export default function Agents() {
 
   // Club-managed agents are settled by the club directly — keep them out of the main table & totals,
   // and show them in their own section below.
-  const mainAgents = agents.filter(a => !a.clubManaged);
+  const mainAgentsAll = agents.filter(a => !a.clubManaged);
+  // "Hide inactive": drop agents whose current balance is zero for the filtered period.
+  const mainAgents = hideInactive ? mainAgentsAll.filter(a => Math.abs(Number(a.currentBalance || 0)) >= 0.005) : mainAgentsAll;
   const clubManagedAgents = agents.filter(a => a.clubManaged);
 
   // Agents table totals (main = non-club-managed only)
@@ -443,6 +446,11 @@ export default function Agents() {
             style={{ padding: '5px 12px', borderRadius: '5px', border: '1px solid #2d3148', background: txHistoryOpen ? '#1e3a5f' : 'transparent', color: txHistoryOpen ? '#60a5fa' : '#94a3b8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
             📜 {txHistoryOpen ? 'Hide History' : 'History'}
           </button>
+          <label title="Hide agents whose current balance is zero for the selected period"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: hideInactive ? '#60a5fa' : '#94a3b8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, border: '1px solid #2d3148', borderRadius: '5px', padding: '5px 10px' }}>
+            <input type="checkbox" checked={hideInactive} onChange={e => setHideInactive(e.target.checked)} style={{ cursor: 'pointer' }} />
+            Hide inactive
+          </label>
           <button onClick={handleResync} disabled={resyncing}
             title="Re-link players to agents from the latest report and recompute the credit cross-check"
             style={{ padding: '5px 12px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#a78bfa', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: resyncing ? 0.6 : 1 }}>
