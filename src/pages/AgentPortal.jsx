@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getAgentSummary, getAgentPlayerStats } from '../api';
+import { getAgentSummary, getAgentPlayerStats, getAgentBalance } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
+import { fmtDateOnly } from '../utils/dates';
 
 const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '4px 8px', borderRadius: '5px', fontSize: '0.82rem' };
 
@@ -28,6 +29,8 @@ export default function AgentPortal() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const [balance, setBalance] = useState(null);
+  const [tab, setTab] = useState('dashboard');
 
   const fetchStats = (from, to) => {
     setStatsLoading(true);
@@ -54,10 +57,11 @@ export default function AgentPortal() {
   useEffect(() => {
     if (!agentId) { setError('No player account linked to your user.'); setLoading(false); return; }
     if (!isAgent) { setError('Access denied. This page is for agents only.'); setLoading(false); return; }
-    Promise.all([getAgentSummary(agentId), getAgentPlayerStats(agentId, {})])
-      .then(([sRes, psRes]) => {
+    Promise.all([getAgentSummary(agentId), getAgentPlayerStats(agentId, {}), getAgentBalance(agentId, {}).catch(() => ({ data: null }))])
+      .then(([sRes, psRes, bRes]) => {
         setSummary(sRes.data);
         setPlayerStats(psRes.data);
+        setBalance(bRes.data);
         setLoading(false);
       })
       .catch(e => { setError(e.response?.data?.error || 'Failed to load agent data'); setLoading(false); });
@@ -96,12 +100,40 @@ export default function AgentPortal() {
         </div>
       </div>
 
-      {/* Pending Balance */}
-      <div style={{ background: '#0f172a', border: '1px solid #2d3148', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-        <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Pending Balance</div>
-        <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#fbbf24' }}>{fmt(summary.pendingBalance)}</div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #2d3148' }}>
+        {[['dashboard', 'Dashboard'], ['players', 'Players & Games']].map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.6rem 1.2rem',
+              color: tab === key ? '#60a5fa' : '#64748b', fontWeight: tab === key ? 700 : 400, fontSize: '0.95rem',
+              borderBottom: tab === key ? '2px solid #60a5fa' : '2px solid transparent', marginBottom: '-1px' }}>
+            {label}
+          </button>
+        ))}
       </div>
 
+      {/* Dashboard tab — current balance */}
+      {tab === 'dashboard' && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Your balance with the club</div>
+          <div style={{ fontSize: '2.4rem', fontWeight: 800, marginTop: '0.25rem' }} className={balanceClass(balance?.currentBalance)}>
+            {fmt(balance?.currentBalance)}
+          </div>
+          <div style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            {Number(balance?.currentBalance) > 0 ? 'the club owes you' : Number(balance?.currentBalance) < 0 ? 'you owe the club' : 'settled'}
+            {balance?.hasBaseline ? '' : ' · counting all-time (no starting balance set)'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem', fontSize: '0.9rem', color: '#94a3b8', paddingTop: '0.75rem', borderTop: '1px solid #2d3148' }}>
+            <span>Starting {balance?.openingDate ? `(${fmtDateOnly(balance.openingDate)})` : ''}: <strong className={balanceClass(balance?.openingBalance)}>{fmt(balance?.openingBalance)}</strong></span>
+            <span>+ Your rake: <strong className={balanceClass(balance?.rakebackSince)}>{fmt(balance?.rakebackSince)}</strong></span>
+            <span>+ Players' P&L: <strong className={balanceClass(balance?.playerPnlSince)}>{fmt(balance?.playerPnlSince)}</strong></span>
+            <span>− Payments: <strong className={balanceClass(balance?.paymentsSince)}>{fmt(balance?.paymentsSince)}</strong></span>
+          </div>
+        </div>
+      )}
+
+      {/* Players tab */}
+      {tab === 'players' && (<>
       {/* Players */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -186,6 +218,7 @@ export default function AgentPortal() {
           </table>
         </div>
       </div>
+      </>)}
     </div>
   );
 }
