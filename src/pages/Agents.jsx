@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, getAgentLedgerHistory } from '../api';
-import { getPlayers, getBankAccounts, createTransfer, getAdminUsers } from '../api';
+import { getPlayers, getBankAccounts, createTransfer, getAdminUsers, getPlayerTransactions } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
 import PlayerSelect from '../components/PlayerSelect';
@@ -49,6 +49,9 @@ export default function Agents() {
   const [ledgerSaving, setLedgerSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [hideInactive, setHideInactive] = useState(false);
+  const [agentTx, setAgentTx] = useState([]);          // the agent's own player transactions
+  const [agentTxOpen, setAgentTxOpen] = useState(false);
+  const loadAgentTx = (agentId) => getPlayerTransactions(agentId).then(r => setAgentTx(r.data || [])).catch(() => setAgentTx([]));
   const [settleForm, setSettleForm] = useState(null); // { agent, direction, counterpartyId, clubType, adminUser, method, amount, notes }
   const [settlePlayers, setSettlePlayers] = useState([]);
   const [settleBanks, setSettleBanks] = useState([]);
@@ -95,7 +98,7 @@ export default function Agents() {
       await addAgentPayment(f.agent.id, { amount: ledgerAmt, notes: f.notes || `Settle via ${f.method}` });
       setSettleForm(null);
       setMsg({ type: 'success', text: 'Settlement recorded' });
-      if (selected?.id === f.agent.id) loadBalance(f.agent.id, filterFrom, filterTo);
+      if (selected?.id === f.agent.id) { loadBalance(f.agent.id, filterFrom, filterTo); loadAgentTx(f.agent.id); setAgentTxOpen(true); }
       load();
     } catch (e) {
       setMsg({ type: 'error', text: e?.response?.data?.error || 'Failed to record settlement' });
@@ -192,6 +195,7 @@ export default function Agents() {
     setPaymentForm(null);
     fetchStats(agent.id, summaryFrom, summaryTo);
     loadBalance(agent.id, summaryFrom, summaryTo);
+    loadAgentTx(agent.id);
     getAgentSummary(agent.id)
       .then(r => setSettlementHistory(r.data.settlementHistory || []))
       .catch(() => setSettlementHistory([]));
@@ -867,6 +871,44 @@ export default function Agents() {
                 </table>
                 )}
               </div>
+            )}
+          </div>
+
+          {/* Agent's own transactions (deposits, payments, transfers incl. settlements) */}
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <button onClick={() => setAgentTxOpen(o => !o)}
+              style={{ background: 'none', border: 'none', color: '#e2e8f0', cursor: 'pointer', fontWeight: 600, padding: 0, fontSize: '0.95rem' }}>
+              {agentTxOpen ? '▾' : '▸'} Transactions ({agentTx.length})
+            </button>
+            {agentTxOpen && (
+              agentTx.length === 0 ? (
+                <div style={{ color: '#64748b', fontSize: '0.85rem', padding: '0.6rem 0' }}>No transactions for this agent.</div>
+              ) : (
+                <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ color: '#64748b', textAlign: 'left', fontSize: '0.8rem', borderBottom: '1px solid #2d3148' }}>
+                        <th style={{ padding: '6px 8px' }}>Date</th>
+                        <th style={{ padding: '6px 8px' }}>Type</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'right' }}>Amount</th>
+                        <th style={{ padding: '6px 8px' }}>Method</th>
+                        <th style={{ padding: '6px 8px' }}>Note</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {agentTx.map(t => (
+                        <tr key={t.id} style={{ borderBottom: '1px solid #1e2235' }}>
+                          <td style={{ padding: '6px 8px', color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDateOnly(t.transactionDate)}</td>
+                          <td style={{ padding: '6px 8px', color: '#e2e8f0' }}>{t.type}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>{fmt(t.amount)}</td>
+                          <td style={{ padding: '6px 8px', color: '#94a3b8' }}>{t.method || ''}</td>
+                          <td style={{ padding: '6px 8px', color: '#64748b' }}>{t.notes || ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
             )}
           </div>
 
