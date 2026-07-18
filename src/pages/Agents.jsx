@@ -51,6 +51,7 @@ export default function Agents() {
   const [hideInactive, setHideInactive] = useState(false);
   const [agentTx, setAgentTx] = useState([]);          // the agent's own player transactions
   const [agentTxOpen, setAgentTxOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState('dashboard'); // agent-detail tab: dashboard | players
   const loadAgentTx = (agentId) => getPlayerTransactions(agentId).then(r => setAgentTx(r.data || [])).catch(() => setAgentTx([]));
   const [settleForm, setSettleForm] = useState(null); // { agent, direction, counterpartyId, clubType, adminUser, method, amount, notes }
   const [settlePlayers, setSettlePlayers] = useState([]);
@@ -779,6 +780,19 @@ export default function Agents() {
             </div>
           </div>
 
+          {/* Detail tabs */}
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid #2d3148' }}>
+            {[['dashboard', 'Dashboard'], ['players', 'Players & Games']].map(([key, label]) => (
+              <button key={key} onClick={() => setDetailTab(key)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem 1.1rem',
+                  color: detailTab === key ? '#60a5fa' : '#64748b', fontWeight: detailTab === key ? 700 : 400, fontSize: '0.92rem',
+                  borderBottom: detailTab === key ? '2px solid #60a5fa' : '2px solid transparent', marginBottom: '-1px' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {detailTab === 'dashboard' && (<>
           {/* Running balance ledger */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
@@ -911,7 +925,9 @@ export default function Agents() {
               )
             )}
           </div>
+          </>)}
 
+          {detailTab === 'players' && (<>
           {/* Player stats */}
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -1014,6 +1030,7 @@ export default function Agents() {
               </table>
             </div>
           </div>
+          </>)}
         </div>
       )}
     </div>
