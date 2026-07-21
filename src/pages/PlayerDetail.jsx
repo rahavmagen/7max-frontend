@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent } from '../api';
+import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { getTransactionLabel } from '../utils/transactionLabel';
 import DateInput from '../components/DateInput';
@@ -20,6 +20,7 @@ export default function PlayerDetail() {
   const [newPass, setNewPass] = useState('');
   const [showNewPass, setShowNewPass] = useState(false);
   const [loginStats, setLoginStats] = useState(null);
+  const [nameHistory, setNameHistory] = useState([]);
   const [showRoleForm, setShowRoleForm] = useState(false);
   const [newRole, setNewRole] = useState('');
   const [showEditInfo, setShowEditInfo] = useState(false);
@@ -49,6 +50,7 @@ export default function PlayerDetail() {
     getPlayerTransactions(id).then(r => setTransactions(r.data)).catch(() => {});
     getPlayerResults(id).then(r => setResults(r.data)).catch(() => {});
     if (isAdmin) getLoginStats(id).then(r => setLoginStats(r.data)).catch(() => {});
+    if (isAdmin) getPlayerNameHistory(id).then(r => setNameHistory(r.data || [])).catch(() => {});
     if (isAdmin) getAgents().then(r => setAgents(r.data || [])).catch(() => {});
     getActivePlayers().then(r => setAllPlayers(r.data || [])).catch(() => {});
   };
@@ -487,6 +489,19 @@ export default function PlayerDetail() {
               <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>CLUB ID</div>
               <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
             </div>
+            {isAdmin && nameHistory.length > 0 && (
+              <div>
+                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>PREVIOUS NAMES</div>
+                <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                  {nameHistory.map(h => (
+                    <div key={h.id} title={h.source || ''}>
+                      {h.oldUsername} <span style={{ color: '#475569' }}>→ {h.newUsername}</span>
+                      <span style={{ color: '#64748b', marginLeft: '0.4rem', fontSize: '0.75rem' }}>{fmtDateTime(h.changedAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {(() => {
               const agentName = player.agentId
                 ? (allPlayers.find(p => Number(p.id) === Number(player.agentId))?.username || `#${player.agentId}`)
