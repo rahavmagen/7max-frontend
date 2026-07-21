@@ -9,6 +9,7 @@ export default function AdminReports() {
   const fmt = fmtDateOnly;
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
 
   const [dateFrom, setDateFrom] = useState(monthAgo);
   const [dateTo, setDateTo] = useState(today);
@@ -21,7 +22,7 @@ export default function AdminReports() {
   const [fridayLoading, setFridayLoading] = useState(true);
   const [fridayError, setFridayError] = useState('');
 
-  const [rbDateFrom, setRbDateFrom] = useState(monthAgo);
+  const [rbDateFrom, setRbDateFrom] = useState(twoWeeksAgo);
   const [rbDateTo, setRbDateTo] = useState(today);
   const [rbRows, setRbRows] = useState(null);
   const [rbLoading, setRbLoading] = useState(false);
