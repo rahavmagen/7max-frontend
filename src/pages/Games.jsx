@@ -10,7 +10,7 @@ export default function Games() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [shabbatRake, setShabbatRake] = useState(null);
-  const [dateFrom, setDateFrom] = useState('');
+  const [dateFrom, setDateFrom] = useState(() => new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
   const [dateTo, setDateTo] = useState('');
   const [costMin, setCostMin] = useState('');
   const [costMax, setCostMax] = useState('');
