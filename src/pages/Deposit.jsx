@@ -59,7 +59,7 @@ export default function Deposit() {
   }, []);
 
 
-  const [appUrl, setAppUrl] = useState(null); // deep-link for native app button
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   // After opening the KashCash app (bottom sheet overlay), the browser tab is never
   // hidden so events don't fire. Poll deposit history until the KashCash webhook
@@ -93,14 +93,30 @@ export default function Deposit() {
     setLoading(true);
     updateStatus(null);
     setIframeUrl(null);
-    setAppUrl(null);
     paymentHandledRef.current = false;
     try {
       const res = await initiateKashcashDeposit(num);
       const { iframeUrl: url, appPaymentIntentUrl, transactionId } = res.data;
       pendingTxIdRef.current = transactionId;
-      setIframeUrl(url);
-      if (appPaymentIntentUrl) setAppUrl({ url: appPaymentIntentUrl, txId: transactionId });
+
+      if (isMobile && appPaymentIntentUrl) {
+        // Hand off to the KashCash app directly - no barcode shown first. The tab
+        // won't reliably get focus/message events while the app is in front, so
+        // start polling right away.
+        updateStatus('processing');
+        pollForDeposit(transactionId);
+        window.location.href = appPaymentIntentUrl;
+        // If the tab is still visible shortly after, the app never took over
+        // (not installed, or the OS blocked the handoff) - fall back to the barcode.
+        setTimeout(() => {
+          if (document.visibilityState === 'visible' && !paymentHandledRef.current) {
+            updateStatus(null);
+            setIframeUrl(url);
+          }
+        }, 1800);
+      } else {
+        setIframeUrl(url);
+      }
     } catch {
       updateStatus('error');
     }
@@ -314,31 +330,12 @@ export default function Deposit() {
 
       </div>{/* end flex row */}
 
-      {appUrl && (
-        <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
-          <a
-            href={appUrl.url}
-            onClick={() => { updateStatus('processing'); pollForDeposit(appUrl.txId); }}
-            style={{
-              display: 'block', width: '100%', padding: '12px 24px', textAlign: 'center',
-              background: '#2563eb', color: '#fff', borderRadius: 8, fontWeight: 700,
-              fontSize: '1rem', textDecoration: 'none', boxSizing: 'border-box',
-            }}
-          >
-            📱 Open KashCash App
-          </a>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', textAlign: 'center', marginTop: 6 }}>
-            Tap to pay in the KashCash app — or scan the QR code below
-          </p>
-        </div>
-      )}
-
       {iframeUrl && (
         <div style={{ margin: '0 0 1rem 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
             <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Complete your payment</span>
             <button
-              onClick={() => { setIframeUrl(null); setAppUrl(null); updateStatus(null); }}
+              onClick={() => { setIframeUrl(null); updateStatus(null); }}
               style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
             >
               Cancel
