@@ -48,7 +48,7 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools'];
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools', '/player-stats', '/inactive-players'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -78,13 +78,15 @@ function AccountingDropdown() {
           <NavLink to="/player-validation">Validation</NavLink>
           <NavLink to="/admin-expenses">Expenses</NavLink>
           <NavLink to="/tools">Tools</NavLink>
+          <NavLink to="/player-stats">Player Stats</NavLink>
+          <NavLink to="/inactive-players">Inactive Players</NavLink>
         </div>
       )}
     </div>
   );
 }
 
-const UNUSED_PATHS = ['/bring-a-friend', '/import', '/lesson', '/league'];
+const UNUSED_PATHS = ['/bring-a-friend', '/import', '/lesson', '/league', '/ticket-assets'];
 
 function UnusedDropdown() {
   const [open, setOpen] = useState(false);
@@ -112,6 +114,7 @@ function UnusedDropdown() {
           <NavLink to="/import">Import Players</NavLink>
           <NavLink to="/lesson">אימון קאש</NavLink>
           <NavLink to="/league">League</NavLink>
+          <NavLink to="/ticket-assets">Tickets</NavLink>
         </div>
       )}
     </div>
@@ -177,13 +180,10 @@ function AppRoutes() {
               <NavLink to="/balance-report">התחשבנות</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
               <NavLink to="/club-wallets">Club Wallets</NavLink>
-              <NavLink to="/ticket-assets">Tickets</NavLink>
               <AccountingDropdown />
               <NavLink to="/agents">Agents</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
-              <NavLink to="/player-stats">Player Stats</NavLink>
-              <NavLink to="/inactive-players">Inactive Players</NavLink>
               <NavLink to="/deposit">Deposit KashCash</NavLink>
               <NavLink to="/open-requests" style={{ position: 'relative' }}>
                 Open Requests
