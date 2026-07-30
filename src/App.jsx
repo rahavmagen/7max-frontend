@@ -122,6 +122,59 @@ function UnusedDropdown() {
   );
 }
 
+const KASHCASH_PATHS = ['/deposit', '/open-requests'];
+
+function KashcashDropdown({ pending }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  const location = useLocation();
+  const isActive = KASHCASH_PATHS.some(p => location.pathname.startsWith(p));
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="nav-dropdown" ref={ref}>
+      <span
+        className={`nav-dropdown-trigger${open ? ' open' : ''}${isActive ? ' active' : ''}`}
+        onClick={() => setOpen(o => !o)}
+        style={{ position: 'relative' }}
+      >
+        KashCash ▾
+        {pending > 0 && (
+          <span style={{
+            position: 'absolute', top: -4, right: -10,
+            background: '#3b82f6', color: '#fff',
+            borderRadius: '50%', fontSize: '0.65rem', fontWeight: 700,
+            minWidth: 16, height: 16, display: 'inline-flex',
+            alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+          }}>{pending}</span>
+        )}
+      </span>
+      {open && (
+        <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
+          <NavLink to="/deposit">Deposit KashCash</NavLink>
+          <NavLink to="/open-requests" style={{ position: 'relative' }}>
+            Open Requests
+            {pending > 0 && (
+              <span style={{
+                position: 'absolute', top: -2, right: -14,
+                background: '#3b82f6', color: '#fff',
+                borderRadius: '50%', fontSize: '0.65rem', fontWeight: 700,
+                minWidth: 16, height: 16, display: 'inline-flex',
+                alignItems: 'center', justifyContent: 'center', padding: '0 3px',
+              }}>{pending}</span>
+            )}
+          </NavLink>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlayerDefaultRedirect({ auth }) {
   const pending = sessionStorage.getItem('redirectAfterLogin');
   if (pending) {
@@ -184,19 +237,7 @@ function AppRoutes() {
               <NavLink to="/agents">Agents</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
-              <NavLink to="/deposit">Deposit KashCash</NavLink>
-              <NavLink to="/open-requests" style={{ position: 'relative' }}>
-                Open Requests
-                {kashcashPending > 0 && (
-                  <span style={{
-                    position: 'absolute', top: -4, right: -10,
-                    background: '#3b82f6', color: '#fff',
-                    borderRadius: '50%', fontSize: '0.65rem', fontWeight: 700,
-                    minWidth: 16, height: 16, display: 'inline-flex',
-                    alignItems: 'center', justifyContent: 'center', padding: '0 3px',
-                  }}>{kashcashPending}</span>
-                )}
-              </NavLink>
+              <KashcashDropdown pending={kashcashPending} />
               <UnusedDropdown />
             </>
           )}
