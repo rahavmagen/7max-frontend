@@ -84,6 +84,40 @@ function AccountingDropdown() {
   );
 }
 
+const UNUSED_PATHS = ['/bring-a-friend', '/import', '/lesson', '/league'];
+
+function UnusedDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  const location = useLocation();
+  const isActive = UNUSED_PATHS.some(p => location.pathname.startsWith(p));
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="nav-dropdown" ref={ref}>
+      <span
+        className={`nav-dropdown-trigger${open ? ' open' : ''}${isActive ? ' active' : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        Unused ▾
+      </span>
+      {open && (
+        <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
+          <NavLink to="/bring-a-friend">Bring a Friend</NavLink>
+          <NavLink to="/import">Import Players</NavLink>
+          <NavLink to="/lesson">אימון קאש</NavLink>
+          <NavLink to="/league">League</NavLink>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlayerDefaultRedirect({ auth }) {
   const pending = sessionStorage.getItem('redirectAfterLogin');
   if (pending) {
@@ -138,9 +172,7 @@ function AppRoutes() {
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
               <NavLink to="/upload">Upload Report</NavLink>
               <NavLink to="/games">Games</NavLink>
-              <NavLink to="/import">Import Players</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
-              <NavLink to="/bring-a-friend">Bring a Friend</NavLink>
               <NavLink to="/transfers">Transfers</NavLink>
               <NavLink to="/balance-report">התחשבנות</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
@@ -148,8 +180,6 @@ function AppRoutes() {
               <NavLink to="/ticket-assets">Tickets</NavLink>
               <AccountingDropdown />
               <NavLink to="/agents">Agents</NavLink>
-              <NavLink to="/lesson">אימון קאש</NavLink>
-              <NavLink to="/league">League</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
               <NavLink to="/player-stats">Player Stats</NavLink>
@@ -167,6 +197,7 @@ function AppRoutes() {
                   }}>{kashcashPending}</span>
                 )}
               </NavLink>
+              <UnusedDropdown />
             </>
           )}
           {isPlayer && (
