@@ -44,7 +44,6 @@ export default function Transfers() {
   const [creditPlayerId, setCreditPlayerId] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [creditNotes, setCreditNotes] = useState('');
-  const [noChipChange, setNoChipChange] = useState(false);
 
   // Unified Promotion form
   const [promoSubType, setPromoSubType] = useState('chipPromo');
@@ -106,9 +105,9 @@ export default function Transfers() {
     }
     setSubmitting(true);
     try {
-      await updateCredit(creditPlayerId, delta, creditNotes || null, noChipChange);
+      await updateCredit(creditPlayerId, delta, creditNotes || null);
       setMsg({ type: 'success', text: 'Credit updated successfully' });
-      setCreditPlayerId(''); setCreditAmount(''); setCreditNotes(''); setNoChipChange(false);
+      setCreditPlayerId(''); setCreditAmount(''); setCreditNotes('');
       load();
     } catch {
       setMsg({ type: 'error', text: 'Failed to update credit' });
@@ -143,7 +142,7 @@ export default function Transfers() {
           amount: Number(promoAmount),
           method: 'OTHER',
           notes: promoNotes || null,
-          pendingConfirmation: true,
+          pendingConfirmation: false,
           sourceRef: 'SCREEN:CHIP_PROMO',
         });
         setMsg({ type: 'success', text: 'Rakeback recorded' });
@@ -367,18 +366,6 @@ export default function Transfers() {
                 <input type="text" value={creditNotes} onChange={e => setCreditNotes(e.target.value)} placeholder="Optional" />
               </div>
             </div>
-            <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <input
-                type="checkbox"
-                id="noChipChange"
-                checked={noChipChange}
-                onChange={e => setNoChipChange(e.target.checked)}
-                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#f59e0b' }}
-              />
-              <label htmlFor="noChipChange" style={{ cursor: 'pointer', color: noChipChange ? '#f59e0b' : '#94a3b8', fontSize: '0.875rem', userSelect: 'none' }}>
-                No chip change (bookkeeping only — will not appear in pending)
-              </label>
-            </div>
             <button type="submit" className="btn btn-primary" disabled={submitting || !creditPlayerId}>
               {submitting ? 'Saving...' : 'Save Credit'}
             </button>
@@ -414,7 +401,7 @@ export default function Transfers() {
             ))}
           </div>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            {promoSubType === 'chipPromo' && 'Record a rakeback payment (chips) to a player. Goes to pending for XLS matching.'}
+            {promoSubType === 'chipPromo' && 'Record a rakeback payment (chips) to a player.'}
             {promoSubType === 'writeOff'  && "Forgive a player's negative balance. Deducted from club profit as a promotion expense."}
             {promoSubType === 'wheel'     && 'Record a wheel expense for a player. Chip count is updated only via XLS upload.'}
           </p>
