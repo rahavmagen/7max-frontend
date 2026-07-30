@@ -48,7 +48,7 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools', '/player-stats', '/inactive-players', '/balance-report'];
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools', '/player-stats', '/inactive-players', '/balance-report', '/upload'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -78,6 +78,7 @@ function AccountingDropdown() {
           <NavLink to="/player-validation">Validation</NavLink>
           <NavLink to="/admin-expenses">Expenses</NavLink>
           <NavLink to="/tools">Tools</NavLink>
+          <NavLink to="/upload">Upload Report</NavLink>
           <NavLink to="/player-stats">Player Stats</NavLink>
           <NavLink to="/inactive-players">Inactive Players</NavLink>
           <NavLink to="/balance-report">התחשבנות</NavLink>
@@ -227,7 +228,6 @@ function AppRoutes() {
             <>
               <NavLink to="/" end>Dashboard</NavLink>
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
-              <NavLink to="/upload">Upload Report</NavLink>
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
               <NavLink to="/transfers">Transfers</NavLink>
