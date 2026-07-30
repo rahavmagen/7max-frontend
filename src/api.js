@@ -67,7 +67,7 @@ export const getBalanceSheet = (from, to) => {
   return api.get('/reports/balance-sheet', { params });
 };
 export const resetAllData = () => api.post('/import/wipe');
-export const getGameSessions = () => api.get('/reports/sessions');
+export const getGameSessions = (params) => api.get('/reports/sessions', { params });
 export const getSessionResults = (id) => api.get(`/reports/sessions/${id}/results`);
 export const comparePlayersWithXls = (file) => {
   const form = new FormData();

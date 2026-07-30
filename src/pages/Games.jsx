@@ -30,26 +30,29 @@ export default function Games() {
     });
   };
 
+  // Date range drives the server fetch (it's what controls how much data comes back,
+  // and therefore how long the page takes to load) - cost/type/hidden-name filters stay
+  // client-side since they only narrow an already date-bounded, fast-to-load result set.
   useEffect(() => {
-    getGameSessions().then(r => {
+    getGameSessions({ from: dateFrom || undefined, to: dateTo || undefined }).then(r => {
       setSessions(r.data);
       setLoading(false);
     });
+  }, [dateFrom, dateTo]);
+
+  useEffect(() => {
     getShabatRakeSummary().then(r => setShabbatRake(r.data)).catch(() => {});
   }, []);
 
   const preFiltered = useMemo(() => {
     return sessions.filter(s => {
-      const date = s.startTime ? s.startTime.substring(0, 10) : '';
       const cost = s.entryFee ? Number(s.entryFee) : 0;
-      if (dateFrom && date < dateFrom) return false;
-      if (dateTo && date > dateTo) return false;
       if (costMin !== '' && cost < Number(costMin)) return false;
       if (costMax !== '' && cost > Number(costMax)) return false;
       if (gameTypeFilter && s.gameType !== gameTypeFilter) return false;
       return true;
     });
-  }, [sessions, dateFrom, dateTo, costMin, costMax, gameTypeFilter]);
+  }, [sessions, costMin, costMax, gameTypeFilter]);
 
   const uniqueNames = useMemo(() => [...new Set(preFiltered.map(s => s.tableName).filter(Boolean))].sort(), [preFiltered]);
 
