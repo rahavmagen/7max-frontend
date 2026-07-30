@@ -48,7 +48,7 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools', '/player-stats', '/inactive-players'];
+const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools', '/player-stats', '/inactive-players', '/balance-report'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -80,6 +80,7 @@ function AccountingDropdown() {
           <NavLink to="/tools">Tools</NavLink>
           <NavLink to="/player-stats">Player Stats</NavLink>
           <NavLink to="/inactive-players">Inactive Players</NavLink>
+          <NavLink to="/balance-report">התחשבנות</NavLink>
         </div>
       )}
     </div>
@@ -177,7 +178,6 @@ function AppRoutes() {
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/add-player">Add Player</NavLink>
               <NavLink to="/transfers">Transfers</NavLink>
-              <NavLink to="/balance-report">התחשבנות</NavLink>
               <NavLink to="/total-profit">Total Profit</NavLink>
               <NavLink to="/club-wallets">Club Wallets</NavLink>
               <AccountingDropdown />
