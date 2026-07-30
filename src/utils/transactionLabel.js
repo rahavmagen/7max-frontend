@@ -13,5 +13,6 @@ export function getTransactionLabel(type, sourceRef) {
   if (type === 'CREDIT')    return isTransferSource ? 'Transfer' : 'Send Chips';
   if (type === 'DEPOSIT')   return 'Deposit';
   if (type === 'WITHDRAWAL') return 'Withdrawal';
+  if (type === 'CHIP_PROMO') return 'Rakeback';
   return type;
 }

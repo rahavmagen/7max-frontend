@@ -484,13 +484,13 @@ export default function AdminExpenses() {
         </div>
       )}
 
-      {/* Wheel & Chip Promo */}
+      {/* Wheel & Rakeback */}
       {(wheelEntries.length > 0 || chipPromoEntries.length > 0) && (
         <div className="card" style={{ marginBottom: '1rem', borderColor: '#d97706', opacity: 0.85 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__wheelpromo')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#fbbf24', fontSize: '1.05rem' }}>🎡 Wheel & Chip Promo</strong>
+              <strong style={{ color: '#fbbf24', fontSize: '1.05rem' }}>🎡 Wheel & Rakeback</strong>
               <span style={{ fontSize: '0.72rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{wheelEntries.length + chipPromoEntries.length} entries</span>
             </div>
@@ -498,7 +498,7 @@ export default function AdminExpenses() {
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
                 Wheel: <span style={{ color: '#fb923c' }}>{fmt(wheelTotal)}</span>
                 {' · '}
-                Chip Promo: <span style={{ color: '#fbbf24' }}>{fmt(chipPromoTotal)}</span>
+                Rakeback: <span style={{ color: '#fbbf24' }}>{fmt(chipPromoTotal)}</span>
               </span>
               <strong style={{ color: '#f59e0b', fontSize: '1.1rem' }}>{fmt(wheelPromoTotal)}</strong>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__wheelpromo'] ? '▲' : '▼'}</span>
@@ -536,7 +536,7 @@ export default function AdminExpenses() {
                     <tr key={`chip-${entry.id}`}>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
-                      <td><span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Chip Promo</span></td>
+                      <td><span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Rakeback</span></td>
                       <td style={{ color: '#fbbf24', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                       <td></td>

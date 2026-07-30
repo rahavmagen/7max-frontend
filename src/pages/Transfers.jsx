@@ -18,7 +18,7 @@ const TYPE_BADGE = {
   TRANSFER:      { bg: '#1e3a5f', color: '#60a5fa', label: 'Transfer' },
   CREDIT:        { bg: '#3b1f5e', color: '#c084fc', label: 'Manual Credit' },
   PROMOTION:     { bg: '#14532d', color: '#4ade80', label: 'Promotion' },
-  CHIP_PROMO:    { bg: '#3b2a00', color: '#fbbf24', label: '🎁 Chip Promo' },
+  CHIP_PROMO:    { bg: '#3b2a00', color: '#fbbf24', label: '💰 Rakeback' },
   WHEEL_EXPENSE: { bg: '#7c2d12', color: '#fb923c', label: 'גלגל (Wheel)' },
   XLS_UNMATCHED:      { bg: '#422006', color: '#fbbf24', label: '⚠ XLS Unmatched' },
   EXPENSE_REPAYMENT:  { bg: '#166534', color: '#22c55e', label: '💸 Paid Expense' },
@@ -146,7 +146,7 @@ export default function Transfers() {
           pendingConfirmation: true,
           sourceRef: 'SCREEN:CHIP_PROMO',
         });
-        setMsg({ type: 'success', text: 'Chip promo recorded' });
+        setMsg({ type: 'success', text: 'Rakeback recorded' });
       }
       setPromoPlayerId(''); setPromoAmount(''); setPromoNotes('');
       load();
@@ -393,7 +393,7 @@ export default function Transfers() {
           {/* Sub-type selector */}
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
             {[
-              { key: 'chipPromo', label: '🎁 Chip Promo' },
+              { key: 'chipPromo', label: '💰 Rakeback' },
               { key: 'writeOff',  label: '✏️ Write Off' },
               { key: 'wheel',     label: '🎡 Wheel' },
             ].map(({ key, label }) => (
@@ -414,7 +414,7 @@ export default function Transfers() {
             ))}
           </div>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            {promoSubType === 'chipPromo' && 'Record chips given to a player (rakeback, bonus, etc.). Goes to pending for XLS matching.'}
+            {promoSubType === 'chipPromo' && 'Record a rakeback payment (chips) to a player. Goes to pending for XLS matching.'}
             {promoSubType === 'writeOff'  && "Forgive a player's negative balance. Deducted from club profit as a promotion expense."}
             {promoSubType === 'wheel'     && 'Record a wheel expense for a player. Chip count is updated only via XLS upload.'}
           </p>
