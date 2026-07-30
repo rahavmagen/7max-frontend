@@ -17,7 +17,7 @@ const gameTypeColors = {
 const gameTypeStyle = (type) => gameTypeColors[type] || { background: '#2a1e3a', color: '#c084fc' };
 
 export default function AgentPlayerRow({ player, showBalance, expanded, onToggle, checked, onToggleFlag }) {
-  const colCount = showBalance ? 6 : 5;
+  const colCount = showBalance ? 7 : 6;
   const games = player.games || [];
   const totals = games.reduce((acc, g) => ({
     buyIn: acc.buyIn + Number(g.buyIn || 0),
@@ -39,6 +39,7 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
         {showBalance && (
           <td style={{ padding: '8px', textAlign: 'right', color: Number(player.balance) < 0 ? '#f87171' : '#4ade80', fontWeight: 600 }}>{fmt(player.balance)}</td>
         )}
+        <td style={{ padding: '8px', textAlign: 'right', color: '#e2e8f0', fontWeight: 600 }}>{fmt(player.currentChips)}</td>
         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{player.gameCount}</td>
         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{fmt(player.totalRake)}</td>
         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 600 }}>{fmt(player.agentShare)}</td>
