@@ -165,7 +165,7 @@ export default function TotalProfit() {
   return (
     <div>
       <div className="page-header">
-        <h1>Total Profit</h1>
+        <h1>Balance Sheet</h1>
         {summary?.lastUpdated && (
           <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
             Last updated: {fmtDateTime(summary.lastUpdated)}

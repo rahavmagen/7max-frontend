@@ -22,6 +22,7 @@ import BalanceReport from './pages/BalanceReport';
 import Transfers from './pages/Transfers';
 import ClubIncome from './pages/ClubIncome';
 import TotalProfit from './pages/TotalProfit';
+import PnL from './pages/PnL';
 import Games from './pages/Games';
 import GameResults from './pages/GameResults';
 import ActivePlayers from './pages/ActivePlayers';
@@ -48,7 +49,46 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const ACCOUNTING_PATHS = ['/club-income', '/admin-reports', '/chip-balance', '/player-validation', '/admin-expenses', '/tools', '/player-stats', '/inactive-players', '/balance-report', '/upload', '/add-player'];
+const UTILS_PATHS = ['/admin-reports', '/chip-balance', '/player-validation', '/tools', '/player-stats', '/inactive-players', '/balance-report', '/upload', '/add-player'];
+
+function UtilsDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  const location = useLocation();
+  const isActive = UTILS_PATHS.some(p => location.pathname.startsWith(p));
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="nav-dropdown" ref={ref}>
+      <span
+        className={`nav-dropdown-trigger${open ? ' open' : ''}${isActive ? ' active' : ''}`}
+        onClick={() => setOpen(o => !o)}
+      >
+        Utils ▾
+      </span>
+      {open && (
+        <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
+          <NavLink to="/admin-reports">Reports</NavLink>
+          <NavLink to="/chip-balance">Balance</NavLink>
+          <NavLink to="/player-validation">Validation</NavLink>
+          <NavLink to="/tools">Tools</NavLink>
+          <NavLink to="/upload">Upload Report</NavLink>
+          <NavLink to="/add-player">Add Player</NavLink>
+          <NavLink to="/player-stats">Player Stats</NavLink>
+          <NavLink to="/inactive-players">Inactive Players</NavLink>
+          <NavLink to="/balance-report">התחשבנות</NavLink>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const ACCOUNTING_PATHS = ['/total-profit', '/pnl', '/club-income', '/admin-expenses', '/club-wallets'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -68,21 +108,15 @@ function AccountingDropdown() {
         className={`nav-dropdown-trigger${open ? ' open' : ''}${isActive ? ' active' : ''}`}
         onClick={() => setOpen(o => !o)}
       >
-        Utils ▾
+        Accounting ▾
       </span>
       {open && (
         <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
+          <NavLink to="/total-profit">Balance Sheet</NavLink>
+          <NavLink to="/pnl">P&amp;L</NavLink>
           <NavLink to="/club-income">Club Income</NavLink>
-          <NavLink to="/admin-reports">Reports</NavLink>
-          <NavLink to="/chip-balance">Balance</NavLink>
-          <NavLink to="/player-validation">Validation</NavLink>
           <NavLink to="/admin-expenses">Expenses</NavLink>
-          <NavLink to="/tools">Tools</NavLink>
-          <NavLink to="/upload">Upload Report</NavLink>
-          <NavLink to="/add-player">Add Player</NavLink>
-          <NavLink to="/player-stats">Player Stats</NavLink>
-          <NavLink to="/inactive-players">Inactive Players</NavLink>
-          <NavLink to="/balance-report">התחשבנות</NavLink>
+          <NavLink to="/club-wallets">Club Wallets</NavLink>
         </div>
       )}
     </div>
@@ -231,9 +265,8 @@ function AppRoutes() {
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/transfers">Transfers</NavLink>
-              <NavLink to="/total-profit">Total Profit</NavLink>
-              <NavLink to="/club-wallets">Club Wallets</NavLink>
               <AccountingDropdown />
+              <UtilsDropdown />
               <NavLink to="/agents">Agents</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
@@ -288,6 +321,7 @@ function AppRoutes() {
               <Route path="/balance-report" element={<BalanceReport />} />
               <Route path="/club-income" element={<ClubIncome />} />
               <Route path="/total-profit" element={<TotalProfit />} />
+              <Route path="/pnl" element={<PnL />} />
               <Route path="/club-wallets" element={<ClubWallets />} />
               <Route path="/ticket-assets" element={<TicketAssets />} />
               <Route path="/messages" element={<WhatsAppMessages />} />

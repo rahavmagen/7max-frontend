@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getIncomeReport } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateTime as fmtDisplay } from '../utils/dates';
@@ -12,11 +13,12 @@ const getDefaultRange = () => {
 };
 
 export default function ClubIncome() {
+  const [searchParams] = useSearchParams();
   const defaultRange = getDefaultRange();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [dateFrom, setDateFrom] = useState(defaultRange.from);
-  const [dateTo, setDateTo] = useState(defaultRange.to);
+  const [dateFrom, setDateFrom] = useState(searchParams.get('from') || defaultRange.from);
+  const [dateTo, setDateTo] = useState(searchParams.get('to') || defaultRange.to);
   const [gameTypeFilter, setGameTypeFilter] = useState('ALL');
 
   const load = async (from, to) => {
@@ -33,7 +35,7 @@ export default function ClubIncome() {
     setLoading(false);
   };
 
-  useEffect(() => { load(defaultRange.from, defaultRange.to); }, []);
+  useEffect(() => { load(dateFrom, dateTo); }, []);
 
   const gameTypes = useMemo(() => {
     const types = [...new Set(rows.map(r => r.gameType).filter(Boolean))].sort();
