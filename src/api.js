@@ -57,6 +57,7 @@ export const getChipBalance = (since) => api.get('/reports/admin/chip-balance', 
 export const getPlayerValidation = (since) => api.get('/reports/admin/player-validation', { params: since ? { since } : {} });
 export const addWheelExpense = (id, amount, notes) => api.post(`/players/${id}/wheel-expense`, { amount, notes });
 export const getIncomeReport = (params) => api.get('/reports/admin/income', { params });
+export const getPnlExpenses = (params) => api.get('/reports/admin/pnl-expenses', { params });
 export const cleanupHebrewPlayers = () => api.delete('/players/cleanup-hebrew');
 export const getProfitSummary = () => api.get('/import/profit-summary');
 export const getBankHistory = () => api.get('/transfers/bank-history');

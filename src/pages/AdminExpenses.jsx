@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, updateClubExpense, deleteClubExpense, payAdminExpense, payClubExpense, getBankAccounts, getAdminUsers } from '../api';
 import { fmtDateOnly, fmtDateTime } from '../utils/dates';
 
 export default function AdminExpenses() {
+  const [searchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState(null);
-  const [expandedAdmins, setExpandedAdmins] = useState({});
+  const [expandedAdmins, setExpandedAdmins] = useState(() => {
+    const open = searchParams.get('open');
+    return open ? { [`__${open}`]: true } : {};
+  });
   const [promotions, setPromotions] = useState(null);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [adminUsers, setAdminUsers] = useState([]);
@@ -54,6 +59,13 @@ export default function AdminExpenses() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    const open = searchParams.get('open');
+    if (!open || loading) return;
+    const el = document.getElementById(`section-${open}`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [loading, searchParams]);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -284,7 +296,7 @@ export default function AdminExpenses() {
 
       {/* Unified Paid section */}
       {paid.filter(e => e.expenseType !== 'AGENT').length > 0 && (
-        <div className="card" style={{ marginBottom: '1rem' }}>
+        <div id="section-paid" className="card" style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__paid')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -486,7 +498,7 @@ export default function AdminExpenses() {
 
       {/* Wheel & Rakeback */}
       {(wheelEntries.length > 0 || chipPromoEntries.length > 0) && (
-        <div className="card" style={{ marginBottom: '1rem', borderColor: '#d97706', opacity: 0.85 }}>
+        <div id="section-wheelpromo" className="card" style={{ marginBottom: '1rem', borderColor: '#d97706', opacity: 0.85 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__wheelpromo')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -551,7 +563,7 @@ export default function AdminExpenses() {
 
       {/* Write-offs */}
       {writeOffEntries.length > 0 && (
-        <div className="card" style={{ marginBottom: '1rem', borderColor: '#0891b2', opacity: 0.85 }}>
+        <div id="section-writeoffs" className="card" style={{ marginBottom: '1rem', borderColor: '#0891b2', opacity: 0.85 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__writeoffs')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
