@@ -27,6 +27,7 @@ export default function AdminExpenses() {
   const [rangeFrom, setRangeFrom] = useState(() => searchParams.get('from') || '');
   const [rangeTo, setRangeTo] = useState(() => searchParams.get('to') || '');
   const [clubExpensePaidFrom, setClubExpensePaidFrom] = useState('');
+  const [agentFeeFilter, setAgentFeeFilter] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -142,6 +143,8 @@ export default function AdminExpenses() {
     ...allAdmins.flatMap(a => (a.entries || []).filter(e => e.expenseType === 'AGENT').map(e => ({ ...e, settled: false, who: a.adminUsername }))),
     ...paid.filter(e => e.expenseType === 'AGENT'),
   ];
+  const agentFeeOptions = [...new Set(agentFees.map(e => e.who).filter(Boolean))].sort();
+  const displayedAgentFees = agentFeeFilter ? agentFees.filter(e => e.who === agentFeeFilter) : agentFees;
   // Only show non-AGENT expenses in the main admin sections
   const admins = allAdmins
     .map(a => ({ ...a, entries: (a.entries || []).filter(e => e.expenseType !== 'AGENT') }))
@@ -362,117 +365,59 @@ export default function AdminExpenses() {
       )}
 
 
-      {/* Agent Fees Section */}
+      {/* Agent Fees */}
       {agentFees.length > 0 && (() => {
-        // Group agent fees by agent (who)
-        const byAgent = {};
-        agentFees.forEach(e => {
-          const key = e.who || 'Unknown';
-          if (!byAgent[key]) byAgent[key] = [];
-          byAgent[key].push(e);
-        });
-        return Object.entries(byAgent).map(([agentName, entries]) => {
-          const agentTotal = entries.reduce((s, e) => s + Number(e.amount || 0), 0);
-          const expandKey = `__agent_${agentName}`;
-          const isPayOpen = (e) => payForm?.entryId === e.id;
-          return (
-            <div key={agentName} className="card" style={{ marginBottom: '1rem', borderColor: '#4ade8033' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                onClick={() => toggleExpand(expandKey)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>{agentName}</strong>
-                  <span style={{ fontSize: '0.72rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 7px' }}>Agent Fee</span>
-                  <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{entries.length} {entries.length === 1 ? 'entry' : 'entries'}</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(agentTotal)}</strong>
-                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins[expandKey] ? '▲' : '▼'}</span>
-                </div>
+        const displayedAgentFeesTotal = displayedAgentFees.reduce((s, e) => s + Number(e.amount || 0), 0);
+        return (
+          <div id="section-agentfees" className="card" style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => toggleExpand('__agentfees')}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>Agent Fees</strong>
+                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{displayedAgentFees.length} entries</span>
               </div>
-
-              {expandedAdmins[expandKey] && (
-                <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
-                  <table style={{ width: '100%' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
-                        <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
-                        <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
-                        <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Status</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {entries.map(entry => (
-                        <>
-                          <tr key={`agent-fee-${entry.id}`}>
-                            <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
-                              {entry.expenseDate || '—'}
-                            </td>
-                            <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
-                            <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
-                            <td>
-                              {entry.settled || entry.settledAt ? (
-                                <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>
-                                  Paid {entry.settledAt || ''}
-                                </span>
-                              ) : (
-                                <span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Pending</span>
-                              )}
-                            </td>
-                            <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                              {!(entry.settled || entry.settledAt) && (
-                                <button
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #4ade80', color: '#4ade80', background: 'transparent', cursor: 'pointer' }}
-                                  onClick={() => setPayForm(isPayOpen(entry) ? null : { entryId: entry.id, entryType: 'ADMIN_EXPENSE', source: 'admin', adminUsername: '', bankAccountId: '' })}
-                                >
-                                  {isPayOpen(entry) ? 'Cancel' : 'Pay'}
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                          {isPayOpen(entry) && (
-                            <tr key={`pay-agent-${entry.id}`}>
-                              <td colSpan={5} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                                  <div>
-                                    <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Paid from</label>
-                                    <select value={payForm.source} onChange={e => {
-                                      const src = e.target.value;
-                                      setPayForm(f => ({ ...f, source: src, adminUsername: '', bankAccountId: src === 'bank' && bankAccounts.length > 0 ? bankAccounts[0].id : '' }));
-                                    }} style={inputStyle}>
-                                      <option value="admin">Admin wallet</option>
-                                      <option value="bank">Bank account</option>
-                                    </select>
-                                  </div>
-                                  {payForm.source === 'admin' && (
-                                    <div>
-                                      <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Admin</label>
-                                      <select value={payForm.adminUsername} onChange={e => setPayForm(f => ({ ...f, adminUsername: e.target.value }))} style={inputStyle}>
-                                        <option value="">Select admin...</option>
-                                        {adminUsers.map(u => { const name = typeof u === 'string' ? u : u.username; return <option key={name} value={name}>{name}</option>; })}
-                                      </select>
-                                    </div>
-                                  )}
-                                  <button onClick={handleConfirmPay} disabled={paying || (payForm.source === 'admin' && !payForm.adminUsername)}
-                                    style={{ padding: '5px 14px', borderRadius: '5px', background: '#166534', border: 'none', color: '#4ade80', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>
-                                    {paying ? '...' : 'Confirm Pay'}
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(agentFeeFilter ? displayedAgentFeesTotal : agentFeesTotal)}</strong>
+                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__agentfees'] ? '▲' : '▼'}</span>
+              </div>
             </div>
-          );
-        });
-      })()}
 
+            {expandedAdmins['__agentfees'] && (
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }} onClick={e => e.stopPropagation()}>
+                  <label style={{ color: '#64748b', fontSize: '0.82rem' }}>Agent:</label>
+                  <select value={agentFeeFilter} onChange={e => setAgentFeeFilter(e.target.value)} style={inputStyle}>
+                    <option value="">All</option>
+                    {agentFeeOptions.map(name => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                </div>
+                <table style={{ width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Agent</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                      <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedAgentFees.map(entry => (
+                      <tr key={`agent-fee-${entry.id}`}>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
+                          {entry.expenseDate || '—'}
+                        </td>
+                        <td style={{ color: '#a5b4fc' }}>{entry.who || '—'}</td>
+                        <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Wheel */}
       {wheelEntries.length > 0 && (
@@ -481,7 +426,6 @@ export default function AdminExpenses() {
             onClick={() => toggleExpand('__wheel')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>🎡 Wheel</strong>
-              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{wheelEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -527,7 +471,6 @@ export default function AdminExpenses() {
             onClick={() => toggleExpand('__rakeback')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>💰 Rakeback</strong>
-              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{chipPromoEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -569,7 +512,6 @@ export default function AdminExpenses() {
             onClick={() => toggleExpand('__playergifts')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>🎁 Player Gifts</strong>
-              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{playerGiftEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -611,7 +553,6 @@ export default function AdminExpenses() {
             onClick={() => toggleExpand('__writeoffs')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✏️ Write-offs</strong>
-              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{writeOffEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

@@ -148,7 +148,7 @@ export const getAgents = (params) => api.get('/agents', { params });
 export const getAgentSummary = (id) => api.get(`/agents/${id}/summary`);
 export const getAgentBreakdown = (id, params) => api.get(`/agents/${id}/breakdown`, { params });
 export const getAgentPlayerStats = (id, params) => api.get(`/agents/${id}/player-stats`, { params });
-export const settleAgent = (id) => api.post(`/agents/${id}/settle`);
+export const settleAgent = (id, amount) => api.post(`/agents/${id}/settle`, amount != null ? { amount } : {});
 export const setAgentRakePercentage = (id, rakePercentage) => api.patch(`/agents/${id}/rake-percentage`, { rakePercentage });
 export const setAgentClubManaged = (id, clubManaged) => api.patch(`/agents/${id}/club-managed`, { clubManaged });
 export const resyncAgents = () => api.post('/reports/admin/resync-agents');
