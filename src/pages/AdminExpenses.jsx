@@ -115,9 +115,24 @@ export default function AdminExpenses() {
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
-  const allAdmins = data?.admins || [];
-  const grandTotal = data?.grandTotal || 0;
-  const paid = data?.paid || [];
+  // Optional date range from the URL (e.g. arriving from the P&L page) - filters entries by
+  // their own date rather than relying on server-computed totals, which are always all-time.
+  const rangeFrom = searchParams.get('from');
+  const rangeTo = searchParams.get('to');
+  const inRange = (dateStr) => {
+    if (!rangeFrom && !rangeTo) return true;
+    const d = (dateStr || '').substring(0, 10);
+    if (!d) return false;
+    if (rangeFrom && d < rangeFrom) return false;
+    if (rangeTo && d > rangeTo) return false;
+    return true;
+  };
+
+  const allAdmins = (data?.admins || []).map(a => {
+    const entries = (a.entries || []).filter(e => inRange(e.expenseDate));
+    return { ...a, entries, total: entries.reduce((s, e) => s + Number(e.amount || 0), 0) };
+  });
+  const paid = (data?.paid || []).filter(e => inRange(e.expenseDate));
   // Agent fees: unsettled AGENT expenses from admin groups + settled AGENT expenses from paid list
   const agentFees = [
     ...allAdmins.flatMap(a => (a.entries || []).filter(e => e.expenseType === 'AGENT').map(e => ({ ...e, settled: false, who: a.adminUsername }))),
@@ -134,10 +149,10 @@ export default function AdminExpenses() {
   const wheelEntries = wheelAdmin?.entries || [];
   const wheelTotal = Number(wheelAdmin?.total || 0);
 
-  const chipPromoEntries = promotions?.entries?.filter(e => e.type === 'CHIP_PROMO') || [];
-  const writeOffEntries = promotions?.entries?.filter(e => e.type === 'PROMOTION') || [];
-  const chipPromoTotal = Number(promotions?.chipPromoTotal || 0);
-  const writeOffTotal = Number(promotions?.writeOffTotal || 0);
+  const chipPromoEntries = (promotions?.entries || []).filter(e => e.type === 'CHIP_PROMO' && inRange(e.transactionDate));
+  const writeOffEntries = (promotions?.entries || []).filter(e => e.type === 'PROMOTION' && inRange(e.transactionDate));
+  const chipPromoTotal = chipPromoEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const writeOffTotal = writeOffEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const wheelPromoTotal = wheelTotal + chipPromoTotal;
 
   const agentFeesTotal = agentFees.reduce((s, e) => s + Number(e.amount || 0), 0);

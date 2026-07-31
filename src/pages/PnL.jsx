@@ -104,17 +104,21 @@ export default function PnL() {
                 <td style={{ textAlign: 'right', color: '#22c55e', fontWeight: 600 }}>{fmt(income)}</td>
               </tr>
 
-              {expenseLines.map(line => (
-                <tr
-                  key={line.label}
-                  onClick={() => goTo(line.open ? `/admin-expenses?open=${line.open}` : '/admin-expenses')}
-                  style={{ cursor: 'pointer' }}
-                  title="Open Expenses"
-                >
-                  <td style={{ color: '#e2e8f0' }}>{line.label}</td>
-                  <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(line.amount)}</td>
-                </tr>
-              ))}
+              {expenseLines.map(line => {
+                const params = new URLSearchParams({ from: dateFrom, to: dateTo });
+                if (line.open) params.set('open', line.open);
+                return (
+                  <tr
+                    key={line.label}
+                    onClick={() => goTo(`/admin-expenses?${params.toString()}`)}
+                    style={{ cursor: 'pointer' }}
+                    title="Open Expenses for this date range"
+                  >
+                    <td style={{ color: '#e2e8f0' }}>{line.label}</td>
+                    <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(line.amount)}</td>
+                  </tr>
+                );
+              })}
 
               <tr onClick={() => setShabatOpen(o => !o)} style={{ cursor: 'pointer' }}>
                 <td style={{ color: '#e2e8f0' }}>
