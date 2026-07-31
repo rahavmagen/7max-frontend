@@ -60,12 +60,17 @@ export default function Agents() {
   const [settleSaving, setSettleSaving] = useState(false);
 
   const openSettle = (agent) => {
-    // Default to the "Agent Rake" figure shown on the page for this agent, editable from there.
-    const pageRake = Number(agent.agentRake || 0);
-    setSettleForm({ agent, direction: 'agentPays', counterpartyId: '', clubType: '', adminUser: '', method: 'CASH', amount: '', notes: '', agentRake: pageRake > 0 ? String(pageRake) : '' });
+    setSettleForm({ agent, direction: 'agentPays', counterpartyId: '', clubType: '', adminUser: '', method: 'CASH', amount: '', notes: '', agentRake: '' });
     if (settlePlayers.length === 0) getPlayers().then(r => setSettlePlayers(r.data || [])).catch(() => {});
     if (settleBanks.length === 0) getBankAccounts().then(r => setSettleBanks(r.data || [])).catch(() => {});
     if (settleAdmins.length === 0) getAdminUsers().then(r => setSettleAdmins(r.data || [])).catch(() => {});
+    // Pre-fill from the real unsettled backlog (what settleAgent can actually act on), not the
+    // period-projected "Agent Rake" column, which ignores settlement status and can be non-zero
+    // even when nothing is actually left to settle.
+    getAgentSummary(agent.id).then(r => {
+      const pending = Number(r.data?.pendingBalance || 0);
+      setSettleForm(f => (f && f.agent.id === agent.id) ? { ...f, agentRake: pending > 0 ? String(pending) : '' } : f);
+    }).catch(() => {});
   };
 
   // Resolve the counterparty into a transfer party (player / bank account / admin wallet).

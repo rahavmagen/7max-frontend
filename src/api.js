@@ -149,6 +149,7 @@ export const getAgentSummary = (id) => api.get(`/agents/${id}/summary`);
 export const getAgentBreakdown = (id, params) => api.get(`/agents/${id}/breakdown`, { params });
 export const getAgentPlayerStats = (id, params) => api.get(`/agents/${id}/player-stats`, { params });
 export const settleAgent = (id, amount) => api.post(`/agents/${id}/settle`, amount != null ? { amount } : {});
+export const addAgentRakeExpense = (id, amount, notes) => api.post(`/agents/${id}/rake-expense`, { amount, notes: notes || null });
 export const setAgentRakePercentage = (id, rakePercentage) => api.patch(`/agents/${id}/rake-percentage`, { rakePercentage });
 export const setAgentClubManaged = (id, clubManaged) => api.patch(`/agents/${id}/club-managed`, { clubManaged });
 export const resyncAgents = () => api.post('/reports/admin/resync-agents');

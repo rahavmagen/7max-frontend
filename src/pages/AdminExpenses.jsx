@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, updateClubExpense, deleteClubExpense, payAdminExpense, payClubExpense, getBankAccounts, getAdminUsers } from '../api';
-import { fmtDateOnly } from '../utils/dates';
+import { fmtDateTime } from '../utils/dates';
 import DateInput from '../components/DateInput';
 
 export default function AdminExpenses() {
@@ -124,6 +124,14 @@ export default function AdminExpenses() {
 
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
+  // Newest first, by exact creation timestamp; falls back to the date-only field for rows
+  // recorded before createdAt was tracked (import-sourced rows, etc).
+  const sortByCreatedAtDesc = (list) => [...list].sort((a, b) => {
+    const av = a.createdAt || a.expenseDate || a.transactionDate || '';
+    const bv = b.createdAt || b.expenseDate || b.transactionDate || '';
+    return bv.localeCompare(av);
+  });
+
   const inRange = (dateStr) => {
     if (!rangeFrom && !rangeTo) return true;
     const d = (dateStr || '').substring(0, 10);
@@ -144,7 +152,7 @@ export default function AdminExpenses() {
     ...paid.filter(e => e.expenseType === 'AGENT'),
   ];
   const agentFeeOptions = [...new Set(agentFees.map(e => e.who).filter(Boolean))].sort();
-  const displayedAgentFees = agentFeeFilter ? agentFees.filter(e => e.who === agentFeeFilter) : agentFees;
+  const displayedAgentFees = sortByCreatedAtDesc(agentFeeFilter ? agentFees.filter(e => e.who === agentFeeFilter) : agentFees);
   // Only show non-AGENT expenses in the main admin sections
   const admins = allAdmins
     .map(a => ({ ...a, entries: (a.entries || []).filter(e => e.expenseType !== 'AGENT') }))
@@ -154,12 +162,12 @@ export default function AdminExpenses() {
 
   const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
   const clubAdmins = admins.filter(a => a.adminUsername !== 'Wheel');
-  const wheelEntries = wheelAdmin?.entries || [];
+  const wheelEntries = sortByCreatedAtDesc(wheelAdmin?.entries || []);
   const wheelTotal = Number(wheelAdmin?.total || 0);
 
-  const chipPromoEntries = (promotions?.entries || []).filter(e => e.type === 'CHIP_PROMO' && inRange(e.transactionDate));
-  const playerGiftEntries = (promotions?.entries || []).filter(e => e.type === 'PLAYER_GIFT' && inRange(e.transactionDate));
-  const writeOffEntries = (promotions?.entries || []).filter(e => e.type === 'PROMOTION' && inRange(e.transactionDate));
+  const chipPromoEntries = sortByCreatedAtDesc((promotions?.entries || []).filter(e => e.type === 'CHIP_PROMO' && inRange(e.transactionDate)));
+  const playerGiftEntries = sortByCreatedAtDesc((promotions?.entries || []).filter(e => e.type === 'PLAYER_GIFT' && inRange(e.transactionDate)));
+  const writeOffEntries = sortByCreatedAtDesc((promotions?.entries || []).filter(e => e.type === 'PROMOTION' && inRange(e.transactionDate)));
   const chipPromoTotal = chipPromoEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const playerGiftTotal = playerGiftEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const writeOffTotal = writeOffEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -178,7 +186,7 @@ export default function AdminExpenses() {
   // "Paid From" filter is scoped to the Club Expenses section only - it narrows what's displayed
   // there without affecting the other sections.
   const paidFromOptions = [...new Set(allExpenses.map(e => e.who).filter(Boolean))].sort();
-  const displayedExpenses = clubExpensePaidFrom ? allExpenses.filter(e => e.who === clubExpensePaidFrom) : allExpenses;
+  const displayedExpenses = sortByCreatedAtDesc(clubExpensePaidFrom ? allExpenses.filter(e => e.who === clubExpensePaidFrom) : allExpenses);
   const displayedExpensesTotal = displayedExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const agentFeesTotal = agentFees.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -287,8 +295,8 @@ export default function AdminExpenses() {
                             </td>
                           ) : (
                             <>
-                              <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
-                                {fmtDateOnly(entry.expenseDate)}
+                              <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem', whiteSpace: 'nowrap' }}>
+                                {fmtDateTime(entry.createdAt || entry.expenseDate)}
                               </td>
                               <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{entry.who || '—'}</td>
                               <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
@@ -403,8 +411,8 @@ export default function AdminExpenses() {
                   <tbody>
                     {displayedAgentFees.map(entry => (
                       <tr key={`agent-fee-${entry.id}`}>
-                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
-                          {entry.expenseDate || '—'}
+                        <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem', whiteSpace: 'nowrap' }}>
+                          {fmtDateTime(entry.createdAt || entry.expenseDate)}
                         </td>
                         <td style={{ color: '#a5b4fc' }}>{entry.who || '—'}</td>
                         <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
@@ -447,7 +455,7 @@ export default function AdminExpenses() {
                 <tbody>
                   {wheelEntries.map(entry => (
                     <tr key={`wheel-${entry.id}`}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.expenseDate || '—'}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', whiteSpace: 'nowrap' }}>{fmtDateTime(entry.createdAt || entry.expenseDate)}</td>
                       <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                       <td style={{ textAlign: 'right' }}>
@@ -492,7 +500,7 @@ export default function AdminExpenses() {
                 <tbody>
                   {chipPromoEntries.map(entry => (
                     <tr key={`chip-${entry.id}`}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', whiteSpace: 'nowrap' }}>{fmtDateTime(entry.createdAt || entry.transactionDate)}</td>
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
                       <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
@@ -533,7 +541,7 @@ export default function AdminExpenses() {
                 <tbody>
                   {playerGiftEntries.map(entry => (
                     <tr key={`gift-${entry.id}`}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', whiteSpace: 'nowrap' }}>{fmtDateTime(entry.createdAt || entry.transactionDate)}</td>
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
                       <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
@@ -574,7 +582,7 @@ export default function AdminExpenses() {
                 <tbody>
                   {writeOffEntries.map(entry => (
                     <tr key={entry.id}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', whiteSpace: 'nowrap' }}>{fmtDateTime(entry.createdAt || entry.transactionDate)}</td>
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
                       <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>

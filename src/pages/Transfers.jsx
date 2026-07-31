@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, createClubExpense } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, createClubExpense, addAgentRakeExpense } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateOnly } from '../utils/dates';
 import PlayerSelect from '../components/PlayerSelect';
@@ -58,6 +58,11 @@ export default function Transfers() {
 
   // Club expense form
   const [clubExpForm, setClubExpForm] = useState({ amount: '', description: '', expenseDate: new Date().toISOString().slice(0,10), paidBy: 'ADMIN', adminUser: auth?.username || '', bankAccountId: '' });
+
+  // Agent rake form
+  const [agentRakeAgentId, setAgentRakeAgentId] = useState('');
+  const [agentRakeAmount, setAgentRakeAmount] = useState('');
+  const [agentRakeNotes, setAgentRakeNotes] = useState('');
 
   // Transfer form
   const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '', toExternalName: '' });
@@ -218,6 +223,26 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
+  // Agent rake submit — records a manual Club Expense for the chosen agent, independent of
+  // unsettled game results (e.g. a correction or one-off amount).
+  const handleAgentRakeSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(agentRakeAmount);
+    if (!agentRakeAgentId || isNaN(amount) || amount <= 0) {
+      setMsg({ type: 'error', text: 'Select an agent and enter a positive amount' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await addAgentRakeExpense(agentRakeAgentId, amount, agentRakeNotes || null);
+      setMsg({ type: 'success', text: 'Agent rake expense recorded' });
+      setAgentRakeAgentId(''); setAgentRakeAmount(''); setAgentRakeNotes('');
+    } catch (err) {
+      setMsg({ type: 'error', text: err?.response?.data?.error || 'Failed to record agent rake' });
+    }
+    setSubmitting(false);
+  };
+
   const resolveParty = (id) => {
     if (!id || id === 'CLUB' || id === 'EXTERNAL') return { playerId: null, bankAccountId: null };
     if (typeof id === 'string' && id.startsWith('BANK_')) return { playerId: null, bankAccountId: parseInt(id.slice(5)) };
@@ -355,6 +380,9 @@ export default function Transfers() {
         </button>
         <button className={`btn ${activeForm === 'clubExpense' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('clubExpense')}>
           🧾 Club Expense
+        </button>
+        <button className={`btn ${activeForm === 'agentRake' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('agentRake')}>
+          🧮 Agent Rake
         </button>
       </div>
 
@@ -520,6 +548,34 @@ export default function Transfers() {
                 </button>
               </div>
             )}
+          </form>
+        </div>
+      )}
+
+      {/* Agent Rake Form */}
+      {activeForm === 'agentRake' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#6366f1' }}>
+          <h2 style={{ color: '#6366f1' }}>🧮 Agent Rake</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Manually record a rake amount for an agent as a Club Expense, independent of unsettled games
+            (e.g. a correction or one-off figure). This does not mark any games as settled.
+          </p>
+          <form onSubmit={handleAgentRakeSubmit}>
+            <div className="form-row">
+              <PlayerSelect label="Agent" value={agentRakeAgentId} onChange={setAgentRakeAgentId} players={players.filter(p => p.isAgent)} />
+              <div className="form-group">
+                <label>Amount (₪) *</label>
+                <input type="number" min="0.01" step="0.01" required value={agentRakeAmount}
+                  onChange={e => setAgentRakeAmount(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={agentRakeNotes} onChange={e => setAgentRakeNotes(e.target.value)} placeholder="Optional" />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={submitting || !agentRakeAgentId}>
+              {submitting ? 'Saving...' : 'Save Agent Rake'}
+            </button>
           </form>
         </div>
       )}
