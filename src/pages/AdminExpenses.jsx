@@ -480,12 +480,12 @@ export default function AdminExpenses() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__wheel')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#fb923c', fontSize: '1.05rem' }}>🎡 Wheel</strong>
-              <span style={{ fontSize: '0.72rem', background: '#431407', color: '#fb923c', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>🎡 Wheel</strong>
+              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{wheelEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#fb923c', fontSize: '1.1rem' }}>{fmt(wheelTotal)}</strong>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(wheelTotal)}</strong>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__wheel'] ? '▲' : '▼'}</span>
             </div>
           </div>
@@ -504,7 +504,7 @@ export default function AdminExpenses() {
                   {wheelEntries.map(entry => (
                     <tr key={`wheel-${entry.id}`}>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.expenseDate || '—'}</td>
-                      <td style={{ color: '#fb923c', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="btn btn-secondary"
@@ -526,12 +526,12 @@ export default function AdminExpenses() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__rakeback')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#fbbf24', fontSize: '1.05rem' }}>💰 Rakeback</strong>
-              <span style={{ fontSize: '0.72rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>💰 Rakeback</strong>
+              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{chipPromoEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#fbbf24', fontSize: '1.1rem' }}>{fmt(chipPromoTotal)}</strong>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(chipPromoTotal)}</strong>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__rakeback'] ? '▲' : '▼'}</span>
             </div>
           </div>
@@ -551,7 +551,7 @@ export default function AdminExpenses() {
                     <tr key={`chip-${entry.id}`}>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
-                      <td style={{ color: '#fbbf24', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                     </tr>
                   ))}
@@ -568,12 +568,12 @@ export default function AdminExpenses() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__playergifts')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#fb7185', fontSize: '1.05rem' }}>🎁 Player Gifts</strong>
-              <span style={{ fontSize: '0.72rem', background: '#3b1400', color: '#fb7185', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>🎁 Player Gifts</strong>
+              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{playerGiftEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#fb7185', fontSize: '1.1rem' }}>{fmt(playerGiftTotal)}</strong>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(playerGiftTotal)}</strong>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__playergifts'] ? '▲' : '▼'}</span>
             </div>
           </div>
@@ -593,7 +593,7 @@ export default function AdminExpenses() {
                     <tr key={`gift-${entry.id}`}>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
-                      <td style={{ color: '#fb7185', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                     </tr>
                   ))}
@@ -610,12 +610,12 @@ export default function AdminExpenses() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__writeoffs')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#22d3ee', fontSize: '1.05rem' }}>✏️ Write-offs</strong>
-              <span style={{ fontSize: '0.72rem', background: '#0c2232', color: '#22d3ee', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✏️ Write-offs</strong>
+              <span style={{ fontSize: '0.72rem', background: '#3f1d1d', color: '#ef4444', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
               <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{writeOffEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#22d3ee', fontSize: '1.1rem' }}>{fmt(writeOffTotal)}</strong>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(writeOffTotal)}</strong>
               <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__writeoffs'] ? '▲' : '▼'}</span>
             </div>
           </div>
@@ -635,7 +635,7 @@ export default function AdminExpenses() {
                     <tr key={entry.id}>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
                       <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
-                      <td style={{ textAlign: 'right', color: '#22d3ee', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                     </tr>
                   ))}
