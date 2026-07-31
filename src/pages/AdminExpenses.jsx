@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, updateClubExpense, deleteClubExpense, payAdminExpense, payClubExpense, getBankAccounts, getAdminUsers } from '../api';
-import { fmtDateOnly, fmtDateTime } from '../utils/dates';
+import { fmtDateOnly } from '../utils/dates';
 
 export default function AdminExpenses() {
   const [searchParams] = useSearchParams();
@@ -142,10 +142,8 @@ export default function AdminExpenses() {
   const admins = allAdmins
     .map(a => ({ ...a, entries: (a.entries || []).filter(e => e.expenseType !== 'AGENT') }))
     .filter(a => a.entries.length > 0);
-  const paidTotal = paid.filter(e => e.expenseType !== 'AGENT').reduce((s, e) => s + Number(e.amount || 0), 0);
   const paidAdminExpenses = paid.filter(e => e.expenseType !== 'AGENT' && e.entityType !== 'CLUB_EXPENSE');
   const paidClubExpenses = paid.filter(e => e.entityType === 'CLUB_EXPENSE');
-  const paidAdminExpensesTotal = paidAdminExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const paidClubExpensesTotal = paidClubExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
@@ -160,8 +158,16 @@ export default function AdminExpenses() {
   const wheelPromoTotal = wheelTotal + chipPromoTotal;
 
   const agentFeesTotal = agentFees.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const adminExpensesTotal = clubAdmins.reduce((s, a) => s + Number(a.total || 0), 0);
-  const totalWithPaid = adminExpensesTotal + paidTotal + agentFeesTotal;
+
+  // Unified general admin expenses: unsettled + settled, in one flat list with a "Paid By" column,
+  // since which admin fronted it doesn't change what it is - just whether it's been squared up yet.
+  const generalEntries = [
+    ...clubAdmins.flatMap(a => a.entries.filter(e => e.type !== 'CLUB_EXPENSE').map(e => ({ ...e, who: a.adminUsername, settled: false }))),
+    ...paidAdminExpenses.map(e => ({ ...e, settled: true })),
+  ];
+  const generalTotal = generalEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  const totalWithPaid = generalTotal + agentFeesTotal + paidClubExpensesTotal;
 
   const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 9px', borderRadius: '5px', fontSize: '0.82rem' };
 
@@ -174,50 +180,59 @@ export default function AdminExpenses() {
         </span>
       </div>
 
+      {(rangeFrom || rangeTo) && (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: '#1e3a5f', border: '1px solid #3b82f6', color: '#93c5fd',
+          borderRadius: '6px', padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: '0.85rem',
+        }}>
+          <span>Showing expenses from <strong>{rangeFrom ? fmtDateOnly(rangeFrom) : '…'}</strong> to <strong>{rangeTo ? fmtDateOnly(rangeTo) : '…'}</strong></span>
+          <a href="/admin-expenses" style={{ color: '#93c5fd' }}>Clear filter</a>
+        </div>
+      )}
+
       {msg && (
         <div className={`alert alert-${msg.type}`} onClick={() => setMsg(null)} style={{ marginBottom: '1rem' }}>
           {msg.text}
         </div>
       )}
 
-      {clubAdmins.length === 0 && wheelEntries.length === 0 && chipPromoEntries.length === 0 && writeOffEntries.length === 0 && (
+      {generalEntries.length === 0 && wheelEntries.length === 0 && chipPromoEntries.length === 0 && writeOffEntries.length === 0 && (
         <div className="card" style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>
           No expense records yet. Import the management XLS or add expenses from the Transfers page.
         </div>
       )}
 
-      {/* Per-admin unsettled expense groups */}
-      {clubAdmins.map(admin => (
-        <div key={admin.adminUsername} className="card" style={{ marginBottom: '1rem' }}>
+      {/* General Admin Expenses - unsettled + settled together, one row per expense with who paid it */}
+      {generalEntries.length > 0 && (
+        <div id="section-general" className="card" style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => toggleExpand(admin.adminUsername)}>
+            onClick={() => toggleExpand('__general')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>{admin.adminUsername}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>
-                {admin.entries.length} {admin.entries.length === 1 ? 'entry' : 'entries'}
-              </span>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>General Admin Expenses</strong>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{generalEntries.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(admin.total)}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins[admin.adminUsername] ? '▲' : '▼'}</span>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(generalTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__general'] ? '▲' : '▼'}</span>
             </div>
           </div>
 
-          {expandedAdmins[admin.adminUsername] && (
+          {expandedAdmins['__general'] && (
             <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
               <table style={{ width: '100%' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid By</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
                     <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Source</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem', fontSize: '0.75rem' }}>Created</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Status</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {admin.entries.map(entry => {
+                  {generalEntries.map(entry => {
                     const isPayOpen = payForm?.entryId === entry.id;
                     return (
                       <>
@@ -241,40 +256,42 @@ export default function AdminExpenses() {
                               <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem', paddingBottom: '0.4rem' }}>
                                 {fmtDateOnly(entry.expenseDate)}
                               </td>
+                              <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{entry.who || '—'}</td>
                               <td style={{ color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
                               <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
                               <td>
-                                {entry.sourceRef === 'CLUB_EXPENSE' ? (
-                                  <span style={{ fontSize: '0.75rem', background: '#3b1f00', color: '#f59e0b', borderRadius: '4px', padding: '2px 6px' }}>Club Expense</span>
-                                ) : (entry.sourceRef === 'XLS' || (entry.sourceRef?.startsWith('XLS:') && entry.sourceRef !== 'XLS:WHEEL')) ? (
-                                  <span style={{ fontSize: '0.75rem', background: '#1e3a5f', color: '#60a5fa', borderRadius: '4px', padding: '2px 6px' }}>XLS</span>
+                                {entry.settled ? (
+                                  <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>
+                                    Paid {entry.settledAt || ''}
+                                  </span>
                                 ) : (
-                                  <span style={{ fontSize: '0.75rem', background: '#14532d', color: '#4ade80', borderRadius: '4px', padding: '2px 6px' }}>Manual</span>
+                                  <span style={{ fontSize: '0.75rem', background: '#3b2a00', color: '#fbbf24', borderRadius: '4px', padding: '2px 6px' }}>Pending</span>
                                 )}
                               </td>
-                              <td style={{ color: '#475569', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                                {entry.createdAt ? fmtDateTime(entry.createdAt) : '—'}
-                              </td>
                               <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                <button className="btn btn-secondary"
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.25rem' }}
-                                  onClick={() => setEditing({ id: entry.id, type: entry.type || 'ADMIN_EXPENSE', amount: entry.amount, notes: entry.notes })}
-                                >Edit</button>
-                                <button className="btn btn-secondary"
-                                  style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444', marginRight: '0.25rem' }}
-                                  onClick={() => handleDeleteEntry(entry)}
-                                >Delete</button>
-                                <button style={{ padding: '3px 10px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #4ade80', color: '#4ade80', background: 'transparent', cursor: 'pointer' }}
-                                  onClick={() => setPayForm(isPayOpen ? null : { entryId: entry.id, entryType: entry.type || 'ADMIN_EXPENSE', source: 'admin', adminUsername: '', bankAccountId: '' })}>
-                                  {isPayOpen ? 'Cancel' : 'Pay'}
-                                </button>
+                                {!entry.settled && (
+                                  <>
+                                    <button className="btn btn-secondary"
+                                      style={{ padding: '3px 10px', fontSize: '0.78rem', marginRight: '0.25rem' }}
+                                      onClick={() => setEditing({ id: entry.id, type: entry.type || 'ADMIN_EXPENSE', amount: entry.amount, notes: entry.notes })}
+                                    >Edit</button>
+                                    <button className="btn btn-secondary"
+                                      style={{ padding: '3px 10px', fontSize: '0.78rem', color: '#ef4444', marginRight: '0.25rem' }}
+                                      onClick={() => handleDeleteEntry(entry)}
+                                    >Delete</button>
+                                    <button style={{ padding: '3px 10px', fontSize: '0.78rem', borderRadius: '4px', border: '1px solid #4ade80', color: '#4ade80', background: 'transparent', cursor: 'pointer' }}
+                                      onClick={() => setPayForm(isPayOpen ? null : { entryId: entry.id, entryType: entry.type || 'ADMIN_EXPENSE', source: 'admin', adminUsername: '', bankAccountId: '' })}>
+                                      {isPayOpen ? 'Cancel' : 'Pay'}
+                                    </button>
+                                  </>
+                                )}
                               </td>
                             </>
                           )}
                         </tr>
                         {isPayOpen && (
                           <tr key={`pay-${entry.id}`}>
-                            <td colSpan={5} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
+                            <td colSpan={6} style={{ background: '#12151f', padding: '0.75rem 1rem' }}>
                               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                                 <div>
                                   <label style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', marginBottom: '3px' }}>Paid from</label>
@@ -306,53 +323,6 @@ export default function AdminExpenses() {
                       </>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      ))}
-
-      {/* Paid Admin Expenses (general expenses, settled) */}
-      {paidAdminExpenses.length > 0 && (
-        <div id="section-paid_admin" className="card" style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => toggleExpand('__paid_admin')}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✓ Paid — Admin Expenses</strong>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paidAdminExpenses.length} entries</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(paidAdminExpensesTotal)}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid_admin'] ? '▲' : '▼'}</span>
-            </div>
-          </div>
-          {expandedAdmins['__paid_admin'] && (
-            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
-              <table style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Who</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Description</th>
-                    <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid On</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid From</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid By</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paidAdminExpenses.map(e => (
-                    <tr key={`${e.entityType}-${e.id}`}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{e.expenseDate || '—'}</td>
-                      <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{e.who || '—'}</td>
-                      <td style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{e.notes || '—'}</td>
-                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(e.amount)}</td>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.settledAt || '—'}</td>
-                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.paidFromAdminUsername || '—'}</td>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{e.settledBy || '—'}</td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>
@@ -519,7 +489,7 @@ export default function AdminExpenses() {
       })()}
 
       {/* Grand Total */}
-      {(clubAdmins.length > 0 || paid.length > 0 || agentFees.length > 0) && (
+      {(generalEntries.length > 0 || paidClubExpenses.length > 0 || agentFees.length > 0) && (
         <div className="card" style={{ borderTopColor: '#ef4444', marginBottom: '2.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
             onClick={() => toggleExpand('__grandtotal')}>
@@ -533,22 +503,22 @@ export default function AdminExpenses() {
             <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
               <table style={{ width: '100%' }}>
                 <tbody>
-                  {clubAdmins.map(a => (
-                    <tr key={a.adminUsername}>
-                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>{a.adminUsername}</td>
-                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(a.total)}</td>
+                  {generalTotal > 0 && (
+                    <tr>
+                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>General Admin Expenses</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(generalTotal)}</td>
                     </tr>
-                  ))}
+                  )}
                   {agentFeesTotal > 0 && (
                     <tr>
                       <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>Agent Fees</td>
                       <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(agentFeesTotal)}</td>
                     </tr>
                   )}
-                  {paidTotal > 0 && (
+                  {paidClubExpensesTotal > 0 && (
                     <tr>
-                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>✓ Paid</td>
-                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(paidTotal)}</td>
+                      <td style={{ color: '#94a3b8', padding: '0.2rem 0' }}>Club Expenses</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(paidClubExpensesTotal)}</td>
                     </tr>
                   )}
                   <tr style={{ borderTop: '1px solid #334155' }}>

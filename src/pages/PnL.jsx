@@ -60,7 +60,7 @@ export default function PnL() {
   const shabatTotal = shabatEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const expenseLines = expenses ? [
-    { label: 'General Admin Expenses', amount: expenses.generalExpenses, open: 'paid_admin' },
+    { label: 'General Admin Expenses', amount: expenses.generalExpenses, open: 'general' },
     { label: 'Wheel Expenses', amount: expenses.wheelExpenses, open: 'wheelpromo' },
     { label: 'Rakeback', amount: expenses.rakeback, open: 'wheelpromo' },
     { label: 'Agent Settlements', amount: expenses.agentSettlements, open: null },
