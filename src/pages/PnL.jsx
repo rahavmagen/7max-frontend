@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getIncomeReport, getPnlExpenses, getShabatRakeHistory } from '../api';
 import DateInput from '../components/DateInput';
-import { fmtDateOnly } from '../utils/dates';
 
 const toInputDate = (d) => d.toISOString().substring(0, 10);
 
@@ -12,16 +11,32 @@ const getDefaultRange = () => {
   return { from: toInputDate(from), to: toInputDate(now) };
 };
 
+// Shared row layout so the amount column lines up in the same position across the
+// Income, Expenses, and Profit blocks even though they're separate cards.
+const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0' };
+const amountColStyle = { width: '160px', textAlign: 'right', flexShrink: 0 };
+
 export default function PnL() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const defaultRange = getDefaultRange();
-  const [dateFrom, setDateFrom] = useState(defaultRange.from);
-  const [dateTo, setDateTo] = useState(defaultRange.to);
+  const [dateFrom, setDateFromState] = useState(() => searchParams.get('from') || defaultRange.from);
+  const [dateTo, setDateToState] = useState(() => searchParams.get('to') || defaultRange.to);
   const [income, setIncome] = useState(0);
   const [expenses, setExpenses] = useState(null);
   const [shabatEntries, setShabatEntries] = useState([]);
-  const [shabatOpen, setShabatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Keep the URL in sync with the chosen dates so browser back-navigation (e.g. after jumping
+  // to Club Income or Expenses and coming back) restores the same range instead of the default.
+  const setDateFrom = (v) => {
+    setDateFromState(v);
+    setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('from', v); return p; }, { replace: true });
+  };
+  const setDateTo = (v) => {
+    setDateToState(v);
+    setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('to', v); return p; }, { replace: true });
+  };
 
   const load = async (from, to) => {
     setLoading(true);
@@ -47,7 +62,18 @@ export default function PnL() {
     setLoading(false);
   };
 
-  useEffect(() => { Promise.resolve().then(() => load(dateFrom, dateTo)); }, []);
+  useEffect(() => {
+    Promise.resolve().then(() => load(dateFrom, dateTo));
+    if (!searchParams.get('from') || !searchParams.get('to')) {
+      setSearchParams(prev => {
+        const p = new URLSearchParams(prev);
+        p.set('from', dateFrom);
+        p.set('to', dateTo);
+        return p;
+      }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -56,19 +82,24 @@ export default function PnL() {
   };
 
   const goTo = (path) => navigate(path);
+  const expensesLink = (open) => {
+    const params = new URLSearchParams({ from: dateFrom, to: dateTo });
+    if (open) params.set('open', open);
+    return `/admin-expenses?${params.toString()}`;
+  };
 
   const shabatTotal = shabatEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const expenseLines = expenses ? [
-    { label: 'General Admin Expenses', amount: expenses.generalExpenses, open: 'general' },
-    { label: 'Wheel Expenses', amount: expenses.wheelExpenses, open: 'wheelpromo' },
-    { label: 'Rakeback', amount: expenses.rakeback, open: 'wheelpromo' },
+    { label: 'Club Expenses', amount: Number(expenses.generalExpenses || 0) + Number(expenses.clubExpenses || 0), open: 'club_expenses' },
+    { label: 'Wheel Expenses', amount: expenses.wheelExpenses, open: 'wheel' },
+    { label: 'Rakeback', amount: expenses.rakeback, open: 'rakeback' },
     { label: 'Agent Settlements', amount: expenses.agentSettlements, open: null },
     { label: 'Write-offs', amount: expenses.writeOffs, open: 'writeoffs' },
-    { label: 'Club Expenses', amount: expenses.clubExpenses, open: 'paid_club' },
+    { label: 'Shabbat Rake Bonuses', amount: shabatTotal, open: 'shabat' },
   ] : [];
 
-  const totalExpenses = expenseLines.reduce((s, l) => s + Number(l.amount || 0), 0) + shabatTotal;
+  const totalExpenses = expenseLines.reduce((s, l) => s + Number(l.amount || 0), 0);
   const netProfit = income - totalExpenses;
 
   return (
@@ -86,87 +117,42 @@ export default function PnL() {
           </button>
         </div>
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Line</th>
-                <th style={{ textAlign: 'right' }}>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                onClick={() => goTo(`/club-income?from=${dateFrom}&to=${dateTo}`)}
-                style={{ cursor: 'pointer' }}
-                title="Open Club Income for this date range"
-              >
-                <td style={{ color: '#e2e8f0' }}>Income (Rake)</td>
-                <td style={{ textAlign: 'right', color: '#22c55e', fontWeight: 600 }}>{fmt(income)}</td>
-              </tr>
+        <div
+          onClick={() => goTo(`/club-income?from=${dateFrom}&to=${dateTo}`)}
+          style={{ ...rowStyle, cursor: 'pointer' }}
+          title="Open Club Income for this date range"
+        >
+          <span style={{ color: '#e2e8f0' }}>Income (Rake)</span>
+          <strong style={{ ...amountColStyle, color: '#22c55e' }}>{fmt(income)}</strong>
+        </div>
+      </div>
 
-              {expenseLines.map(line => {
-                const params = new URLSearchParams({ from: dateFrom, to: dateTo });
-                if (line.open) params.set('open', line.open);
-                return (
-                  <tr
-                    key={line.label}
-                    onClick={() => goTo(`/admin-expenses?${params.toString()}`)}
-                    style={{ cursor: 'pointer' }}
-                    title="Open Expenses for this date range"
-                  >
-                    <td style={{ color: '#e2e8f0' }}>{line.label}</td>
-                    <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(line.amount)}</td>
-                  </tr>
-                );
-              })}
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <h2 style={{ marginTop: 0, color: '#e2e8f0' }}>Expenses</h2>
 
-              <tr onClick={() => setShabatOpen(o => !o)} style={{ cursor: 'pointer' }}>
-                <td style={{ color: '#e2e8f0' }}>
-                  Shabbat Rake Bonuses <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{shabatOpen ? '▲' : '▼'}</span>
-                </td>
-                <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(shabatTotal)}</td>
-              </tr>
-              {shabatOpen && (
-                <tr>
-                  <td colSpan={2} style={{ padding: 0 }}>
-                    {shabatEntries.length === 0 ? (
-                      <div style={{ padding: '0.75rem 1rem', color: '#64748b', fontSize: '0.85rem' }}>No bonuses in this range</div>
-                    ) : (
-                      <table style={{ width: '100%' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, padding: '0.4rem 1rem' }}>Date</th>
-                            <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, padding: '0.4rem 1rem' }}>Player</th>
-                            <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, padding: '0.4rem 1rem' }}>Reason</th>
-                            <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, padding: '0.4rem 1rem' }}>Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {shabatEntries.map(e => (
-                            <tr key={e.id}>
-                              <td style={{ color: '#94a3b8', fontSize: '0.85rem', padding: '0.3rem 1rem' }}>{fmtDateOnly(e.date)}</td>
-                              <td style={{ color: '#e2e8f0', padding: '0.3rem 1rem' }}>{e.playerName || '—'}</td>
-                              <td style={{ color: '#94a3b8', fontSize: '0.85rem', padding: '0.3rem 1rem' }}>{e.reason || '—'}</td>
-                              <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600, padding: '0.3rem 1rem' }}>{fmt(e.amount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </td>
-                </tr>
-              )}
+        {expenseLines.map(line => (
+          <div
+            key={line.label}
+            onClick={() => goTo(expensesLink(line.open))}
+            style={{ ...rowStyle, cursor: 'pointer', borderBottom: '1px solid #2d3148', paddingLeft: '1.5rem' }}
+            title="Open Club Expenses for this date range"
+          >
+            <span style={{ color: '#94a3b8' }}>{line.label}</span>
+            <strong style={{ ...amountColStyle, color: '#ef4444', marginRight: '2rem' }}>{fmt(line.amount)}</strong>
+          </div>
+        ))}
 
-              <tr style={{ borderTop: '2px solid #2d3148' }}>
-                <td style={{ color: '#e2e8f0', fontWeight: 600, paddingTop: '0.75rem' }}>Total Expenses</td>
-                <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 700, paddingTop: '0.75rem' }}>{fmt(totalExpenses)}</td>
-              </tr>
-              <tr>
-                <td style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '1.05rem' }}>Net Profit</td>
-                <td style={{ textAlign: 'right', color: netProfit >= 0 ? '#22c55e' : '#ef4444', fontWeight: 700, fontSize: '1.05rem' }}>{fmt(netProfit)}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div style={{ ...rowStyle, borderTop: '2px solid #2d3148', marginTop: '0.5rem', paddingTop: '0.75rem' }}>
+          <strong style={{ color: '#e2e8f0' }}>Total Expenses</strong>
+          <strong style={{ ...amountColStyle, color: '#ef4444', fontSize: '1.05rem' }}>{fmt(totalExpenses)}</strong>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: '1.5rem' }}>
+        <h2 style={{ marginTop: 0, color: '#e2e8f0' }}>Profit</h2>
+        <div style={rowStyle}>
+          <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>Net Profit (Income − Expenses)</strong>
+          <strong style={{ ...amountColStyle, color: netProfit >= 0 ? '#22c55e' : '#ef4444', fontSize: '1.05rem' }}>{fmt(netProfit)}</strong>
         </div>
       </div>
     </div>

@@ -17,6 +17,7 @@ import Upload from './pages/Upload';
 import AddPlayer from './pages/AddPlayer';
 import Import from './pages/Import';
 import AdminReports from './pages/AdminReports';
+import Rakeback from './pages/Rakeback';
 import BalanceLog from './pages/BalanceLog';
 import BalanceReport from './pages/BalanceReport';
 import Transfers from './pages/Transfers';
@@ -49,7 +50,7 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const UTILS_PATHS = ['/admin-reports', '/chip-balance', '/player-validation', '/tools', '/player-stats', '/inactive-players', '/balance-report', '/upload', '/add-player'];
+const UTILS_PATHS = ['/admin-reports', '/rakeback', '/chip-balance', '/player-validation', '/tools', '/player-stats', '/inactive-players', '/balance-report', '/upload', '/add-player'];
 
 function UtilsDropdown() {
   const [open, setOpen] = useState(false);
@@ -74,6 +75,7 @@ function UtilsDropdown() {
       {open && (
         <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
           <NavLink to="/admin-reports">Reports</NavLink>
+          <NavLink to="/rakeback">Rakeback</NavLink>
           <NavLink to="/chip-balance">Balance</NavLink>
           <NavLink to="/player-validation">Validation</NavLink>
           <NavLink to="/tools">Tools</NavLink>
@@ -316,6 +318,7 @@ function AppRoutes() {
               <Route path="/add-player" element={<AddPlayer />} />
               <Route path="/import" element={<Import />} />
               <Route path="/admin-reports" element={<AdminReports />} />
+              <Route path="/rakeback" element={<Rakeback />} />
               <Route path="/balance-log" element={<BalanceLog />} />
               <Route path="/transfers" element={<Transfers />} />
               <Route path="/balance-report" element={<BalanceReport />} />
