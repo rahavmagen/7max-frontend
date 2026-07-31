@@ -115,7 +115,7 @@ function AccountingDropdown() {
           <NavLink to="/total-profit">Balance Sheet</NavLink>
           <NavLink to="/pnl">P&amp;L</NavLink>
           <NavLink to="/club-income">Club Income</NavLink>
-          <NavLink to="/admin-expenses">Expenses</NavLink>
+          <NavLink to="/admin-expenses">Club Expenses</NavLink>
           <NavLink to="/club-wallets">Club Wallets</NavLink>
         </div>
       )}

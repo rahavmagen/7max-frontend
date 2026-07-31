@@ -143,6 +143,10 @@ export default function AdminExpenses() {
     .map(a => ({ ...a, entries: (a.entries || []).filter(e => e.expenseType !== 'AGENT') }))
     .filter(a => a.entries.length > 0);
   const paidTotal = paid.filter(e => e.expenseType !== 'AGENT').reduce((s, e) => s + Number(e.amount || 0), 0);
+  const paidAdminExpenses = paid.filter(e => e.expenseType !== 'AGENT' && e.entityType !== 'CLUB_EXPENSE');
+  const paidClubExpenses = paid.filter(e => e.entityType === 'CLUB_EXPENSE');
+  const paidAdminExpensesTotal = paidAdminExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const paidClubExpensesTotal = paidClubExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const wheelAdmin = admins.find(a => a.adminUsername === 'Wheel');
   const clubAdmins = admins.filter(a => a.adminUsername !== 'Wheel');
@@ -164,7 +168,7 @@ export default function AdminExpenses() {
   return (
     <div>
       <div className="page-header">
-        <h1>Admin Expenses</h1>
+        <h1>Club Expenses</h1>
         <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
           Grand Total: <strong style={{ color: '#e2e8f0' }}>{fmt(totalWithPaid)}</strong>
         </span>
@@ -309,21 +313,21 @@ export default function AdminExpenses() {
         </div>
       ))}
 
-      {/* Unified Paid section */}
-      {paid.filter(e => e.expenseType !== 'AGENT').length > 0 && (
-        <div id="section-paid" className="card" style={{ marginBottom: '1rem' }}>
+      {/* Paid Admin Expenses (general expenses, settled) */}
+      {paidAdminExpenses.length > 0 && (
+        <div id="section-paid_admin" className="card" style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => toggleExpand('__paid')}>
+            onClick={() => toggleExpand('__paid_admin')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✓ Paid</strong>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paid.filter(e => e.expenseType !== 'AGENT').length} entries</span>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✓ Paid — Admin Expenses</strong>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paidAdminExpenses.length} entries</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(paidTotal)}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid'] ? '▲' : '▼'}</span>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(paidAdminExpensesTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid_admin'] ? '▲' : '▼'}</span>
             </div>
           </div>
-          {expandedAdmins['__paid'] && (
+          {expandedAdmins['__paid_admin'] && (
             <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
               <table style={{ width: '100%' }}>
                 <thead>
@@ -338,7 +342,54 @@ export default function AdminExpenses() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paid.filter(e => e.expenseType !== 'AGENT').map(e => (
+                  {paidAdminExpenses.map(e => (
+                    <tr key={`${e.entityType}-${e.id}`}>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{e.expenseDate || '—'}</td>
+                      <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{e.who || '—'}</td>
+                      <td style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{e.notes || '—'}</td>
+                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(e.amount)}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.settledAt || '—'}</td>
+                      <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{e.paidFromAdminUsername || '—'}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{e.settledBy || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Club Expenses (settled, admin- or bank-paid) */}
+      {paidClubExpenses.length > 0 && (
+        <div id="section-paid_club" className="card" style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => toggleExpand('__paid_club')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>✓ Club Expenses</strong>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{paidClubExpenses.length} entries</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(paidClubExpensesTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__paid_club'] ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          {expandedAdmins['__paid_club'] && (
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Who</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Description</th>
+                    <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid On</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid From</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Paid By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paidClubExpenses.map(e => (
                     <tr key={`${e.entityType}-${e.id}`}>
                       <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{e.expenseDate || '—'}</td>
                       <td style={{ color: '#a5b4fc', fontSize: '0.85rem' }}>{e.who || '—'}</td>

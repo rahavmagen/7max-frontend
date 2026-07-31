@@ -60,12 +60,12 @@ export default function PnL() {
   const shabatTotal = shabatEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const expenseLines = expenses ? [
-    { label: 'General Admin Expenses', amount: expenses.generalExpenses, open: 'paid' },
+    { label: 'General Admin Expenses', amount: expenses.generalExpenses, open: 'paid_admin' },
     { label: 'Wheel Expenses', amount: expenses.wheelExpenses, open: 'wheelpromo' },
     { label: 'Rakeback', amount: expenses.rakeback, open: 'wheelpromo' },
     { label: 'Agent Settlements', amount: expenses.agentSettlements, open: null },
     { label: 'Write-offs', amount: expenses.writeOffs, open: 'writeoffs' },
-    { label: 'Club Expenses', amount: expenses.clubExpenses, open: 'paid' },
+    { label: 'Club Expenses', amount: expenses.clubExpenses, open: 'paid_club' },
   ] : [];
 
   const totalExpenses = expenseLines.reduce((s, l) => s + Number(l.amount || 0), 0) + shabatTotal;
