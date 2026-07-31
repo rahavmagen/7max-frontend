@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, updateClubExpense, deleteClubExpense, payAdminExpense, payClubExpense, getBankAccounts, getAdminUsers, getShabatRakeHistory } from '../api';
+import { getAdminExpenses, deleteAdminExpense, updateAdminExpense, getPromotions, updateClubExpense, deleteClubExpense, payAdminExpense, payClubExpense, getBankAccounts, getAdminUsers } from '../api';
 import { fmtDateOnly } from '../utils/dates';
 import DateInput from '../components/DateInput';
 
@@ -17,7 +17,6 @@ export default function AdminExpenses() {
   const [promotions, setPromotions] = useState(null);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [adminUsers, setAdminUsers] = useState([]);
-  const [shabatEntries, setShabatEntries] = useState([]);
   // payForm: { entryId, entryType, source: 'admin'|'bank', adminUsername: '', bankAccountId: '' }
   const [payForm, setPayForm] = useState(null);
   const [paying, setPaying] = useState(false);
@@ -36,13 +35,11 @@ export default function AdminExpenses() {
       getPromotions(),
       getBankAccounts(),
       getAdminUsers(),
-      getShabatRakeHistory().catch(() => ({ data: [] })),
-    ]).then(([expRes, promoRes, bankRes, adminRes, shabatRes]) => {
+    ]).then(([expRes, promoRes, bankRes, adminRes]) => {
       setData(expRes.data);
       setPromotions(promoRes.data);
       setBankAccounts(bankRes.data);
       setAdminUsers(adminRes.data);
-      setShabatEntries(shabatRes.data);
       setLoading(false);
     });
   };
@@ -158,8 +155,10 @@ export default function AdminExpenses() {
   const wheelTotal = Number(wheelAdmin?.total || 0);
 
   const chipPromoEntries = (promotions?.entries || []).filter(e => e.type === 'CHIP_PROMO' && inRange(e.transactionDate));
+  const playerGiftEntries = (promotions?.entries || []).filter(e => e.type === 'PLAYER_GIFT' && inRange(e.transactionDate));
   const writeOffEntries = (promotions?.entries || []).filter(e => e.type === 'PROMOTION' && inRange(e.transactionDate));
   const chipPromoTotal = chipPromoEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const playerGiftTotal = playerGiftEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
   const writeOffTotal = writeOffEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   // Unified Club Expenses: admin-attributed (admin_expenses table) + club_expenses table entries,
@@ -181,12 +180,7 @@ export default function AdminExpenses() {
 
   const agentFeesTotal = agentFees.reduce((s, e) => s + Number(e.amount || 0), 0);
 
-  // Shabbat Rake bonuses aren't tracked as an expense/admin_expense record anywhere else, but P&L
-  // counts them in its Total Expenses - matching that number here means including them too.
-  const shabatFilteredEntries = shabatEntries.filter(e => inRange(e.date));
-  const shabatTotal = shabatFilteredEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
-
-  const pageTotal = allExpensesTotal + wheelTotal + chipPromoTotal + writeOffTotal + agentFeesTotal + shabatTotal;
+  const pageTotal = allExpensesTotal + wheelTotal + chipPromoTotal + playerGiftTotal + writeOffTotal + agentFeesTotal;
 
   const inputStyle = { background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '5px 9px', borderRadius: '5px', fontSize: '0.82rem' };
 
@@ -227,7 +221,7 @@ export default function AdminExpenses() {
         </div>
       )}
 
-      {allExpenses.length === 0 && wheelEntries.length === 0 && chipPromoEntries.length === 0 && writeOffEntries.length === 0 && (
+      {allExpenses.length === 0 && wheelEntries.length === 0 && chipPromoEntries.length === 0 && playerGiftEntries.length === 0 && writeOffEntries.length === 0 && (
         <div className="card" style={{ color: '#64748b', textAlign: 'center', padding: '2rem' }}>
           No expense records yet. Import the management XLS or add expenses from the Transfers page.
         </div>
@@ -568,6 +562,48 @@ export default function AdminExpenses() {
         </div>
       )}
 
+      {/* Player Gifts */}
+      {playerGiftEntries.length > 0 && (
+        <div id="section-playergifts" className="card" style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => toggleExpand('__playergifts')}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <strong style={{ color: '#fb7185', fontSize: '1.05rem' }}>🎁 Player Gifts</strong>
+              <span style={{ fontSize: '0.72rem', background: '#3b1400', color: '#fb7185', borderRadius: '4px', padding: '2px 7px' }}>chips only</span>
+              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{playerGiftEntries.length} entries</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <strong style={{ color: '#fb7185', fontSize: '1.1rem' }}>{fmt(playerGiftTotal)}</strong>
+              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__playergifts'] ? '▲' : '▼'}</span>
+            </div>
+          </div>
+          {expandedAdmins['__playergifts'] && (
+            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
+              <table style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
+                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {playerGiftEntries.map(entry => (
+                    <tr key={`gift-${entry.id}`}>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{entry.transactionDate || '—'}</td>
+                      <td style={{ color: '#e2e8f0' }}>{entry.playerFullName || entry.playerUsername}</td>
+                      <td style={{ color: '#fb7185', fontWeight: 600 }}>{fmt(entry.amount)}</td>
+                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Write-offs */}
       {writeOffEntries.length > 0 && (
         <div id="section-writeoffs" className="card" style={{ marginBottom: '1rem' }}>
@@ -610,46 +646,6 @@ export default function AdminExpenses() {
         </div>
       )}
 
-      {/* Shabbat Rake Bonuses */}
-      {shabatFilteredEntries.length > 0 && (
-        <div id="section-shabat" className="card" style={{ marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => toggleExpand('__shabat')}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <strong style={{ color: '#e2e8f0', fontSize: '1.05rem' }}>Shabbat Rake Bonuses</strong>
-              <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{shabatFilteredEntries.length} entries</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <strong style={{ color: '#ef4444', fontSize: '1.1rem' }}>{fmt(shabatTotal)}</strong>
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{expandedAdmins['__shabat'] ? '▲' : '▼'}</span>
-            </div>
-          </div>
-          {expandedAdmins['__shabat'] && (
-            <div style={{ marginTop: '1rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem', overflowX: 'auto' }}>
-              <table style={{ width: '100%' }}>
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Date</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Player</th>
-                    <th style={{ textAlign: 'left', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Reason</th>
-                    <th style={{ textAlign: 'right', color: '#64748b', fontWeight: 500, paddingBottom: '0.5rem' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shabatFilteredEntries.map(entry => (
-                    <tr key={entry.id}>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem', paddingTop: '0.4rem' }}>{fmtDateOnly(entry.date)}</td>
-                      <td style={{ color: '#e2e8f0' }}>{entry.playerName || '—'}</td>
-                      <td style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{entry.reason || '—'}</td>
-                      <td style={{ textAlign: 'right', color: '#ef4444', fontWeight: 600 }}>{fmt(entry.amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

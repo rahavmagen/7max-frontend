@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getIncomeReport, getPnlExpenses, getShabatRakeHistory } from '../api';
+import { getIncomeReport, getPnlExpenses } from '../api';
 import DateInput from '../components/DateInput';
 
 const toInputDate = (d) => d.toISOString().substring(0, 10);
@@ -24,7 +24,6 @@ export default function PnL() {
   const [dateTo, setDateToState] = useState(() => searchParams.get('to') || defaultRange.to);
   const [income, setIncome] = useState(0);
   const [expenses, setExpenses] = useState(null);
-  const [shabatEntries, setShabatEntries] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Keep the URL in sync with the chosen dates so browser back-navigation (e.g. after jumping
@@ -41,23 +40,16 @@ export default function PnL() {
   const load = async (from, to) => {
     setLoading(true);
     try {
-      const [incomeRes, expRes, shabatRes] = await Promise.all([
+      const [incomeRes, expRes] = await Promise.all([
         getIncomeReport({ dateFrom: from, dateTo: to }),
         getPnlExpenses({ dateFrom: from, dateTo: to }),
-        getShabatRakeHistory().catch(() => ({ data: [] })),
       ]);
       const totalRake = incomeRes.data.reduce((s, row) => s + parseFloat(row.totalRake || 0), 0);
       setIncome(totalRake);
       setExpenses(expRes.data);
-      const inRange = shabatRes.data.filter(e => {
-        const d = (e.date || '').substring(0, 10);
-        return d && d >= from && d <= to;
-      });
-      setShabatEntries(inRange);
     } catch {
       setIncome(0);
       setExpenses(null);
-      setShabatEntries([]);
     }
     setLoading(false);
   };
@@ -88,15 +80,13 @@ export default function PnL() {
     return `/admin-expenses?${params.toString()}`;
   };
 
-  const shabatTotal = shabatEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
-
   const expenseLines = expenses ? [
     { label: 'Club Expenses', amount: Number(expenses.generalExpenses || 0) + Number(expenses.clubExpenses || 0), open: 'club_expenses' },
     { label: 'Wheel Expenses', amount: expenses.wheelExpenses, open: 'wheel' },
     { label: 'Rakeback', amount: expenses.rakeback, open: 'rakeback' },
+    { label: 'Player Gifts', amount: expenses.playerGifts, open: 'playergifts' },
     { label: 'Agent Settlements', amount: expenses.agentSettlements, open: null },
     { label: 'Write-offs', amount: expenses.writeOffs, open: 'writeoffs' },
-    { label: 'Shabbat Rake Bonuses', amount: shabatTotal, open: 'shabat' },
   ] : [];
 
   const totalExpenses = expenseLines.reduce((s, l) => s + Number(l.amount || 0), 0);

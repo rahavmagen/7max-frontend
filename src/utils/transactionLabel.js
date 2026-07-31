@@ -14,5 +14,6 @@ export function getTransactionLabel(type, sourceRef) {
   if (type === 'DEPOSIT')   return 'Deposit';
   if (type === 'WITHDRAWAL') return 'Withdrawal';
   if (type === 'CHIP_PROMO') return 'Rakeback';
+  if (type === 'PLAYER_GIFT') return 'Player Gift';
   return type;
 }

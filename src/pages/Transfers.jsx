@@ -19,6 +19,7 @@ const TYPE_BADGE = {
   CREDIT:        { bg: '#3b1f5e', color: '#c084fc', label: 'Manual Credit' },
   PROMOTION:     { bg: '#14532d', color: '#4ade80', label: 'Promotion' },
   CHIP_PROMO:    { bg: '#3b2a00', color: '#fbbf24', label: '💰 Rakeback' },
+  PLAYER_GIFT:   { bg: '#3b1400', color: '#fb7185', label: '🎁 Player Gift' },
   WHEEL_EXPENSE: { bg: '#7c2d12', color: '#fb923c', label: 'גלגל (Wheel)' },
   XLS_UNMATCHED:      { bg: '#422006', color: '#fbbf24', label: '⚠ XLS Unmatched' },
   EXPENSE_REPAYMENT:  { bg: '#166534', color: '#22c55e', label: '💸 Paid Expense' },
@@ -135,6 +136,17 @@ export default function Transfers() {
           sourceRef: 'SCREEN:WRITEOFF',
         });
         setMsg({ type: 'success', text: 'Write-off recorded' });
+      } else if (promoSubType === 'playerGift') {
+        await addTransaction({
+          playerId: promoPlayerId,
+          type: 'PLAYER_GIFT',
+          amount: Number(promoAmount),
+          method: 'OTHER',
+          notes: promoNotes || null,
+          pendingConfirmation: false,
+          sourceRef: 'SCREEN:PLAYER_GIFT',
+        });
+        setMsg({ type: 'success', text: 'Player gift recorded' });
       } else {
         await addTransaction({
           playerId: promoPlayerId,
@@ -380,9 +392,10 @@ export default function Transfers() {
           {/* Sub-type selector */}
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
             {[
-              { key: 'chipPromo', label: '💰 Rakeback' },
-              { key: 'writeOff',  label: '✏️ Write Off' },
-              { key: 'wheel',     label: '🎡 Wheel' },
+              { key: 'chipPromo',  label: '💰 Rakeback' },
+              { key: 'playerGift', label: '🎁 Player Gift' },
+              { key: 'writeOff',   label: '✏️ Write Off' },
+              { key: 'wheel',      label: '🎡 Wheel' },
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -401,9 +414,10 @@ export default function Transfers() {
             ))}
           </div>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            {promoSubType === 'chipPromo' && 'Record a rakeback payment (chips) to a player.'}
-            {promoSubType === 'writeOff'  && "Forgive a player's negative balance. Deducted from club profit as a promotion expense."}
-            {promoSubType === 'wheel'     && 'Record a wheel expense for a player. Chip count is updated only via XLS upload.'}
+            {promoSubType === 'chipPromo'  && 'Record a rakeback payment (chips) to a player.'}
+            {promoSubType === 'playerGift' && 'Record a discretionary chip gift to a player, not tied to their rakeback.'}
+            {promoSubType === 'writeOff'   && "Forgive a player's negative balance. Deducted from club profit as a promotion expense."}
+            {promoSubType === 'wheel'      && 'Record a wheel expense for a player. Chip count is updated only via XLS upload.'}
           </p>
           <form onSubmit={handlePromoSubmit}>
             <div className="form-row">

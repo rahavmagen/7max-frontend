@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getHandsReport, getFridayRakeReport, getShabatRakeSummary, getShabatRakeHistory, postShabatBonus } from '../api';
+import { getHandsReport, getFridayRakeReport, getShabatRakeSummary, getShabatRakeHistory } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateOnly } from '../utils/dates';
 
@@ -23,20 +23,14 @@ export default function AdminReports() {
 
   const [shabatSummary, setShabatSummary] = useState(null);
   const [shabatHistory, setShabatHistory] = useState([]);
-  const [shabatForm, setShabatForm] = useState({ amount: '', date: '', playerName: '', reason: '' });
-  const [shabatSaving, setShabatSaving] = useState(false);
-
-  const loadShabatRake = () => {
-    getShabatRakeSummary().then(r => setShabatSummary(r.data)).catch(() => {});
-    getShabatRakeHistory().then(r => setShabatHistory(r.data)).catch(() => {});
-  };
 
   useEffect(() => {
     getFridayRakeReport()
       .then(res => setFridayRows(res.data))
       .catch(() => setFridayError('שגיאה בטעינת דוח ריק שישי'))
       .finally(() => setFridayLoading(false));
-    loadShabatRake();
+    getShabatRakeSummary().then(r => setShabatSummary(r.data)).catch(() => {});
+    getShabatRakeHistory().then(r => setShabatHistory(r.data)).catch(() => {});
   }, []);
 
   const run = async (e) => {
@@ -150,7 +144,7 @@ export default function AdminReports() {
       <div className="card" style={{ marginTop: '1.5rem' }}>
         <h2 style={{ marginTop: 0, color: '#e2e8f0' }}>ריק שבת</h2>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
-          רשום כל ריקבק שניתן לשחקן מקופת ריק השבת. הסכום מתקזז אוטומטית מהכולל.
+          מעקב היסטורי בלבד. מתנות חדשות לשחקנים נרשמות דרך Player Gift בעמוד Transfers.
         </p>
 
         {shabatSummary && (
@@ -169,47 +163,6 @@ export default function AdminReports() {
             </div>
           </div>
         )}
-
-        <p style={{ color: '#94a3b8', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem' }}>רישום ריקבק חדש</p>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: '1.25rem' }}>
-          <div className="form-group">
-            <label>סכום (₪)</label>
-            <input type="number" placeholder="0" value={shabatForm.amount}
-              onChange={e => setShabatForm(f => ({ ...f, amount: e.target.value }))}
-              style={{ width: '120px' }} />
-          </div>
-          <div className="form-group">
-            <label>שחקן</label>
-            <input type="text" placeholder="שם שחקן" value={shabatForm.playerName}
-              onChange={e => setShabatForm(f => ({ ...f, playerName: e.target.value }))}
-              style={{ width: '140px' }} />
-          </div>
-          <div className="form-group">
-            <label>תאריך</label>
-            <DateInput value={shabatForm.date} onChange={v => setShabatForm(f => ({ ...f, date: v }))} />
-          </div>
-          <div className="form-group" style={{ flex: 1, minWidth: '180px' }}>
-            <label>סיבה / הערה</label>
-            <input type="text" placeholder="לדוגמה: בונוס שישי 6.6.25" value={shabatForm.reason}
-              onChange={e => setShabatForm(f => ({ ...f, reason: e.target.value }))} />
-          </div>
-          <div className="form-group" style={{ paddingTop: '1.5rem' }}>
-            <button className="btn btn-primary"
-              disabled={!shabatForm.amount || !shabatForm.date || shabatSaving}
-              onClick={async () => {
-                setShabatSaving(true);
-                try {
-                  await postShabatBonus(shabatForm);
-                  setShabatForm({ amount: '', date: '', playerName: '', reason: '' });
-                  loadShabatRake();
-                } finally {
-                  setShabatSaving(false);
-                }
-              }}>
-              {shabatSaving ? 'שומר...' : 'שמור'}
-            </button>
-          </div>
-        </div>
 
         {shabatHistory.length > 0 && (
           <>
