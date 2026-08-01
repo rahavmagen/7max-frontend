@@ -4,7 +4,7 @@ import { getRakebackReport } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateOnly as fmt } from '../utils/dates';
 
-const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'PLO6', 'SNG', 'MTT', 'AoF', 'SPIN_GOLD'];
+const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'MTT'];
 
 export default function Rakeback() {
   const navigate = useNavigate();
@@ -17,6 +17,8 @@ export default function Rakeback() {
   const toggleRbGameType = (type) => {
     setRbGameTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
   };
+  const allRbSelected = RB_GAME_TYPES.every(t => rbGameTypes.includes(t));
+  const toggleAllRbGameTypes = () => setRbGameTypes(allRbSelected ? [] : [...RB_GAME_TYPES]);
 
   const runRakeback = async (e) => {
     e.preventDefault();
@@ -46,6 +48,10 @@ export default function Rakeback() {
           <div className="form-group" style={{ marginBottom: '1rem' }}>
             <label>סוגי משחק (ריק = ללא ריקבק)</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.25rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#e2e8f0', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
+                <input type="checkbox" checked={allRbSelected} onChange={toggleAllRbGameTypes} />
+                הכל
+              </label>
               {RB_GAME_TYPES.map(type => (
                 <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer' }}>
                   <input type="checkbox" checked={rbGameTypes.includes(type)} onChange={() => toggleRbGameType(type)} />

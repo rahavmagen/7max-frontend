@@ -100,6 +100,7 @@ export default function PlayerDetail() {
           ? parseFloat((Number(editData.rakebackPercentage) / 100).toFixed(4))
           : null,
         rakebackSince: editData.rakebackSince || null,
+        seeRakeback: editData.seeRakeback || false,
       });
       const originalAgentId = player.agentId || '';
       if (String(editData.agentId) !== String(originalAgentId)) {
@@ -253,7 +254,7 @@ export default function PlayerDetail() {
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
-              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '', rakebackPercentage: player.rakebackPercentage != null ? Math.round(player.rakebackPercentage * 100) : '', rakebackSince: player.rakebackSince || '' }); }}>
+              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '', rakebackPercentage: player.rakebackPercentage != null ? Math.round(player.rakebackPercentage * 100) : '', rakebackSince: player.rakebackSince || '', seeRakeback: player.seeRakeback || false }); }}>
                 ✏️ Edit Info
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
@@ -426,6 +427,14 @@ export default function PlayerDetail() {
                       />
                     </div>
                   </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginTop: '0.75rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={editData.seeRakeback || false}
+                      onChange={e => setEditData(d => ({ ...d, seeRakeback: e.target.checked }))}
+                    />
+                    <span>Player can see their own rakeback</span>
+                  </label>
                 </div>
               </div>
             )}
@@ -522,7 +531,7 @@ export default function PlayerDetail() {
                 </div>
               </div>
             )}
-            {player.rakebackPercentage != null && player.rakebackPercentage > 0 && (
+            {player.rakebackPercentage != null && player.rakebackPercentage > 0 && (isAdmin || player.seeRakeback) && (
               <div>
                 <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>RAKEBACK</div>
                 <div style={{ color: '#34d399' }}>
@@ -692,12 +701,12 @@ export default function PlayerDetail() {
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                   Total: <strong className={balanceClass(totalPnl)}>{fmt(totalPnl)}</strong>
                 </span>
-                {isAdmin && (
+                {(isAdmin || player.seeRakeback) && (
                   <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                     Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
                   </span>
                 )}
-                {isAdmin && (
+                {(isAdmin || player.seeRakeback) && (
                   <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
                     ריק שבת: <strong style={{ color: '#a5b4fc' }}>{fmt(shabbatRake)}</strong>
                   </span>
@@ -716,7 +725,7 @@ export default function PlayerDetail() {
                   {thSort('buyin', 'Buy-in')}
                   {thSort('prize', 'Prize')}
                   {thSort('hands', 'Hands')}
-                  {isAdmin && thSort('rake', 'Rake', { color: '#f59e0b' })}
+                  {(isAdmin || player.seeRakeback) && thSort('rake', 'Rake', { color: '#f59e0b' })}
                   {thSort('pnl', 'Profit / Loss')}
                 </tr>
               </thead>
@@ -739,7 +748,7 @@ export default function PlayerDetail() {
                     <td style={{ color: '#ef4444', whiteSpace: 'nowrap' }}>{fmt(-(r.buyIn || 0))}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmt(displayCashout)}</td>
                     <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{r.handsPlayed}</td>
-                    {isAdmin && <td style={{ color: '#f59e0b', whiteSpace: 'nowrap' }}>{fmt(r.rakePaid)}</td>}
+                    {(isAdmin || player.seeRakeback) && <td style={{ color: '#f59e0b', whiteSpace: 'nowrap' }}>{fmt(r.rakePaid)}</td>}
                     <td style={{ whiteSpace: 'nowrap' }} className={balanceClass(pnl)}><strong>{fmt(pnl)}</strong></td>
                   </tr>
                   );
