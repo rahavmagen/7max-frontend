@@ -92,6 +92,14 @@ export default function PnL() {
   const totalExpenses = expenseLines.reduce((s, l) => s + Number(l.amount || 0), 0);
   const netProfit = income - totalExpenses;
 
+  // Number of days in the chosen range (01/08 → 04/08 = 3 days) for the average-per-day line.
+  const periodDays = (() => {
+    if (!dateFrom || !dateTo) return 0;
+    const ms = new Date(dateTo).getTime() - new Date(dateFrom).getTime();
+    return Math.max(1, Math.round(ms / 86400000));
+  })();
+  const avgPerDay = periodDays > 0 ? netProfit / periodDays : 0;
+
   return (
     <div>
       <h1>P&amp;L</h1>
@@ -145,6 +153,14 @@ export default function PnL() {
           <strong style={{ ...amountColStyle, color: netProfit >= 0 ? '#22c55e' : '#ef4444', fontSize: '1.05rem' }}>{fmt(netProfit)}</strong>
         </div>
       </div>
+
+      {periodDays > 0 && (
+        <div style={{ marginTop: '0.6rem', paddingLeft: '0.5rem', color: '#64748b', fontSize: '0.8rem' }}>
+          The average net profit per day for this period is{' '}
+          <strong style={{ color: netProfit >= 0 ? '#22c55e' : '#ef4444' }}>{fmt(avgPerDay)}</strong>
+          {' '}({periodDays} day{periodDays === 1 ? '' : 's'})
+        </div>
+      )}
     </div>
   );
 }
