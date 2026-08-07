@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getIncomeReport, getPnlExpenses } from '../api';
+import { getIncomeReport, getPnlExpenses, getExpectedRakeback, setLastSettlementDate } from '../api';
 import DateInput from '../components/DateInput';
 
 const toInputDate = (d) => d.toISOString().substring(0, 10);
@@ -25,6 +25,11 @@ export default function PnL() {
   const [income, setIncome] = useState(0);
   const [expenses, setExpenses] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [expectedRakeback, setExpectedRakeback] = useState(null);
+  const [expectedRakebackOpen, setExpectedRakebackOpen] = useState(false);
+  const [editingSettlementDate, setEditingSettlementDate] = useState(false);
+  const [settlementDateDraft, setSettlementDateDraft] = useState('');
+  const [savingSettlementDate, setSavingSettlementDate] = useState(false);
 
   // Keep the URL in sync with the chosen dates so browser back-navigation (e.g. after jumping
   // to Club Income or Expenses and coming back) restores the same range instead of the default.
@@ -67,6 +72,28 @@ export default function PnL() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const loadExpectedRakeback = () => {
+    getExpectedRakeback().then(res => setExpectedRakeback(res.data)).catch(() => setExpectedRakeback(null));
+  };
+  useEffect(() => { loadExpectedRakeback(); }, []);
+
+  const startEditSettlementDate = () => {
+    setSettlementDateDraft(expectedRakeback?.lastSettlementDate || '');
+    setEditingSettlementDate(true);
+  };
+  const saveSettlementDate = async () => {
+    if (!settlementDateDraft) return;
+    setSavingSettlementDate(true);
+    try {
+      await setLastSettlementDate(settlementDateDraft);
+      setEditingSettlementDate(false);
+      loadExpectedRakeback();
+    } catch {
+      // no dedicated error banner here - the field just stays open for retry
+    }
+    setSavingSettlementDate(false);
+  };
+
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
     const num = parseFloat(n);
@@ -89,7 +116,8 @@ export default function PnL() {
     { label: 'Write-offs', amount: expenses.writeOffs, open: 'writeoffs' },
   ] : [];
 
-  const totalExpenses = expenseLines.reduce((s, l) => s + Number(l.amount || 0), 0);
+  const expectedRakebackTotal = Number(expectedRakeback?.totalExpectedRakeback || 0);
+  const totalExpenses = expenseLines.reduce((s, l) => s + Number(l.amount || 0), 0) + expectedRakebackTotal;
   const netProfit = income - totalExpenses;
 
   // Number of days in the chosen range (01/08 → 04/08 = 3 days) for the average-per-day line.
@@ -139,6 +167,88 @@ export default function PnL() {
             <strong style={{ ...amountColStyle, color: '#ef4444', marginRight: '2rem' }}>{fmt(line.amount)}</strong>
           </div>
         ))}
+
+        {expectedRakeback && (
+          <div style={{ borderBottom: '1px solid #2d3148' }}>
+            <div
+              onClick={() => setExpectedRakebackOpen(o => !o)}
+              style={{ ...rowStyle, cursor: 'pointer', paddingLeft: '1.5rem' }}
+              title="Click to see how this estimate was calculated"
+            >
+              <span style={{ color: '#94a3b8' }}>
+                {expectedRakebackOpen ? '▾' : '▸'} Expected Rakeback <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(est., not yet paid)</span>
+              </span>
+              <strong style={{ ...amountColStyle, color: '#f59e0b', marginRight: '2rem' }}>{fmt(expectedRakebackTotal)}</strong>
+            </div>
+
+            {expectedRakebackOpen && (
+              <div style={{ padding: '0.75rem 1.5rem 1rem 2.5rem', background: 'rgba(245,158,11,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
+                  <span style={{ color: '#94a3b8' }}>תאריך התחשבנות אחרון:</span>
+                  {editingSettlementDate ? (
+                    <>
+                      <DateInput value={settlementDateDraft} onChange={setSettlementDateDraft} />
+                      <button onClick={saveSettlementDate} disabled={savingSettlementDate || !settlementDateDraft} className="btn btn-primary" style={{ padding: '4px 12px', fontSize: '0.8rem' }}>
+                        {savingSettlementDate ? 'Saving…' : 'Save'}
+                      </button>
+                      <button onClick={() => setEditingSettlementDate(false)} style={{ padding: '4px 10px', fontSize: '0.8rem', background: 'transparent', border: '1px solid #2d3148', borderRadius: 6, color: '#94a3b8', cursor: 'pointer' }}>
+                        Cancel
+                      </button>
+                    </>
+                  ) : expectedRakeback.lastSettlementDate ? (
+                    <>
+                      <strong style={{ color: '#e2e8f0' }}>{new Date(expectedRakeback.lastSettlementDate).toLocaleDateString('he-IL')}</strong>
+                      <span style={{ color: '#64748b' }}>({expectedRakeback.daysSince} day{expectedRakeback.daysSince === 1 ? '' : 's'} ago)</span>
+                      <button onClick={startEditSettlementDate} style={{ padding: '2px 10px', fontSize: '0.78rem', background: 'transparent', border: '1px solid #2d3148', borderRadius: 6, color: '#a78bfa', cursor: 'pointer' }}>
+                        ✏️ Edit
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ color: '#64748b' }}>not set</span>
+                      <button onClick={startEditSettlementDate} style={{ padding: '2px 10px', fontSize: '0.78rem', background: 'transparent', border: '1px solid #2d3148', borderRadius: 6, color: '#a78bfa', cursor: 'pointer' }}>
+                        ✏️ Set it
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {expectedRakeback.lastSettlementDate && (
+                  <>
+                    {expectedRakeback.playersBreakdown?.length > 0 && (
+                      <>
+                        <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginTop: '0.5rem', marginBottom: '0.25rem' }}>Players</div>
+                        {expectedRakeback.playersBreakdown.map(row => (
+                          <div key={row.playerId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '2px 0', color: '#94a3b8' }}>
+                            <span>{row.username}{row.fullName ? ` (${row.fullName})` : ''} — ₪{Number(row.rake).toFixed(0)} rake × {(row.rakebackPercentage * 100).toFixed(0)}%</span>
+                            <strong style={{ color: '#f59e0b', marginLeft: '1rem' }}>{fmt(row.amount)}</strong>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {expectedRakeback.agentsBreakdown?.length > 0 && (
+                      <>
+                        <div style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', marginTop: '0.75rem', marginBottom: '0.25rem' }}>Agents</div>
+                        {expectedRakeback.agentsBreakdown.map(row => (
+                          <div key={row.agentId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '2px 0', color: '#94a3b8' }}>
+                            <span>{row.username}{row.fullName ? ` (${row.fullName})` : ''} — ₪{Number(row.rake).toFixed(0)} rake × {(row.rakePercentage * 100).toFixed(0)}%</span>
+                            <strong style={{ color: '#f59e0b', marginLeft: '1rem' }}>{fmt(row.amount)}</strong>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {(!expectedRakeback.playersBreakdown?.length && !expectedRakeback.agentsBreakdown?.length) && (
+                      <div style={{ color: '#64748b', fontSize: '0.85rem' }}>No rake generated by rakeback players/agents since the last settlement.</div>
+                    )}
+                    <div style={{ marginTop: '0.75rem', color: '#64748b', fontSize: '0.78rem', fontStyle: 'italic' }}>
+                      ⚠️ This is only the <em>expected</em> rakeback owed based on rake generated since the last settlement — not rakeback that has actually been paid out.
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div style={{ ...rowStyle, borderTop: '2px solid #2d3148', marginTop: '0.5rem', paddingTop: '0.75rem' }}>
           <strong style={{ color: '#e2e8f0' }}>Total Expenses</strong>

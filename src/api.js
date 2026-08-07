@@ -157,6 +157,8 @@ export const computeAgentCredit = () => api.post('/reports/admin/compute-agent-c
 export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playerId}/agent`, { agentId: agentId || null });
 export const dismissAgentFlags = (playerIds) => api.post('/agents/dismiss-flags', { playerIds });
 export const getLastSettlementDate = () => api.get('/agents/last-settlement-date');
+export const setLastSettlementDate = (date) => api.put('/agents/last-settlement-date', { date });
+export const getExpectedRakeback = () => api.get('/reports/expected-rakeback');
 export const getAgentLedgerHistory = () => api.get('/agents/ledger-history');
 export const getAgentTotalBalance = (params) => api.get('/agents/total-balance', { params });
 export const getAgentBalance = (id, params) => api.get(`/agents/${id}/balance`, { params });

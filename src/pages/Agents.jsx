@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, getAgentLedgerHistory } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, setLastSettlementDate, getAgentLedgerHistory } from '../api';
 import { getPlayers, getBankAccounts, createTransfer, getAdminUsers, getPlayerTransactions } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
@@ -196,6 +196,9 @@ export default function Agents() {
   };
 
   const [defaultedFrom, setDefaultedFrom] = useState(''); // the auto-selected last-התחשבנות date
+  const [editingSettlementDate, setEditingSettlementDate] = useState(false);
+  const [settlementDateDraft, setSettlementDateDraft] = useState('');
+  const [savingSettlementDate, setSavingSettlementDate] = useState(false);
   useEffect(() => {
     getLastSettlementDate()
       .then(r => {
@@ -205,6 +208,21 @@ export default function Agents() {
       })
       .catch(() => load('', ''));
   }, []);
+
+  const startEditSettlementDate = () => { setSettlementDateDraft(defaultedFrom || summaryFrom || ''); setEditingSettlementDate(true); };
+  const saveSettlementDate = async () => {
+    if (!settlementDateDraft) return;
+    setSavingSettlementDate(true);
+    try {
+      await setLastSettlementDate(settlementDateDraft);
+      setDefaultedFrom(settlementDateDraft);
+      setEditingSettlementDate(false);
+      applyPageDates(settlementDateDraft, summaryTo);
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to save last settlement date' });
+    }
+    setSavingSettlementDate(false);
+  };
 
   const openDetail = (agent) => {
     setSelected(agent);
@@ -506,10 +524,32 @@ export default function Agents() {
         </div>
       </div>
 
-      <div style={{ marginTop: '-0.75rem', marginBottom: '1rem', color: '#94a3b8', fontSize: '0.85rem' }}>
-        Rake &amp; P&amp;L period: <strong style={{ color: '#e2e8f0' }}>{summaryFrom ? fmtDateOnly(summaryFrom) : 'start'} – {summaryTo ? fmtDateOnly(summaryTo) : 'today'}</strong>
-        {summaryFrom && summaryFrom === defaultedFrom && <span style={{ color: '#a78bfa', marginLeft: '0.5rem' }}>(since last התחשבנות)</span>}
-        <span style={{ color: '#64748b', marginLeft: '0.75rem' }}>· amounts are from the agent's point of view (+ green = we owe agent, − red = agent owes us)</span>
+      <div style={{ marginTop: '-0.75rem', marginBottom: '1rem', color: '#94a3b8', fontSize: '0.85rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <span>
+          Rake &amp; P&amp;L period: <strong style={{ color: '#e2e8f0' }}>{summaryFrom ? fmtDateOnly(summaryFrom) : 'start'} – {summaryTo ? fmtDateOnly(summaryTo) : 'today'}</strong>
+          {summaryFrom && summaryFrom === defaultedFrom && <span style={{ color: '#a78bfa', marginLeft: '0.5rem' }}>(since last התחשבנות)</span>}
+          <span style={{ color: '#64748b', marginLeft: '0.75rem' }}>· amounts are from the agent's point of view (+ green = we owe agent, − red = agent owes us)</span>
+        </span>
+        {editingSettlementDate ? (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ color: '#64748b' }}>תאריך התחשבנות אחרון:</span>
+            <DateInput value={settlementDateDraft} onChange={setSettlementDateDraft} style={inputStyle} />
+            <button onClick={saveSettlementDate} disabled={savingSettlementDate || !settlementDateDraft}
+              style={{ padding: '4px 10px', borderRadius: '5px', border: 'none', background: '#16a34a', color: '#fff', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, opacity: (savingSettlementDate || !settlementDateDraft) ? 0.6 : 1 }}>
+              {savingSettlementDate ? 'Saving…' : 'Save'}
+            </button>
+            <button onClick={() => setEditingSettlementDate(false)}
+              style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>
+              Cancel
+            </button>
+          </span>
+        ) : (
+          <button onClick={startEditSettlementDate}
+            title="Set the system-wide תאריך התחשבנות אחרון (used as the default period start here and for the Expected Rakeback estimate on P&L)"
+            style={{ padding: '3px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#a78bfa', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
+            ✏️ Set תאריך התחשבנות אחרון
+          </button>
+        )}
       </div>
 
       {msg && (
