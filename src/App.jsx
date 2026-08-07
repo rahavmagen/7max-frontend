@@ -51,7 +51,7 @@ import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const UTILS_PATHS = ['/admin-reports', '/rakeback', '/chip-balance', '/player-validation', '/tools', '/player-stats', '/inactive-players', '/inactive-players-balance', '/balance-report', '/upload', '/add-player'];
+const UTILS_PATHS = ['/admin-reports', '/rakeback', '/chip-balance', '/player-validation', '/tools', '/player-stats', '/inactive-players-balance', '/balance-report', '/upload', '/add-player'];
 
 function UtilsDropdown() {
   const [open, setOpen] = useState(false);
@@ -83,7 +83,6 @@ function UtilsDropdown() {
           <NavLink to="/upload">Upload Report</NavLink>
           <NavLink to="/add-player">Add Player</NavLink>
           <NavLink to="/player-stats">Player Stats</NavLink>
-          <NavLink to="/inactive-players">Inactive Players</NavLink>
           <NavLink to="/inactive-players-balance">Inactive Players Balance</NavLink>
           <NavLink to="/balance-report">התחשבנות</NavLink>
         </div>
@@ -92,7 +91,7 @@ function UtilsDropdown() {
   );
 }
 
-const ACCOUNTING_PATHS = ['/total-profit', '/pnl', '/club-income', '/admin-expenses', '/club-wallets'];
+const ACCOUNTING_PATHS = ['/total-profit', '/pnl', '/club-income', '/admin-expenses', '/club-wallets', '/agents'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -121,6 +120,7 @@ function AccountingDropdown() {
           <NavLink to="/club-income">Club Income</NavLink>
           <NavLink to="/admin-expenses">Club Expenses</NavLink>
           <NavLink to="/club-wallets">Club Wallets</NavLink>
+          <NavLink to="/agents">Agents</NavLink>
         </div>
       )}
     </div>
@@ -271,7 +271,7 @@ function AppRoutes() {
               <NavLink to="/transfers">Transfers</NavLink>
               <AccountingDropdown />
               <UtilsDropdown />
-              <NavLink to="/agents">Agents</NavLink>
+              <NavLink to="/inactive-players">Inactive Players</NavLink>
               <NavLink to="/wheel">🎡 Wheel</NavLink>
               <NavLink to="/messages">💬 WhatsApp</NavLink>
               <KashcashDropdown pending={kashcashPending} />

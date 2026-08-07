@@ -181,6 +181,8 @@ export const getMyKashcashDeposits = () => api.get('/kashcash/my');
 export const getInactivePlayers = (params) => api.get('/reports/inactive-players', { params });
 export const getInactivePlayersBalance = (days) => api.get('/players/inactive-balance', { params: { days } });
 export const handleInactivePlayer = (playerId, note) => api.post(`/reports/inactive-players/${playerId}/handle`, { note });
+export const getInactiveOutreachHistory = (params) => api.get('/reports/inactive-players/history', { params });
+export const assignInactivePlayer = (playerId, adminUsername) => api.put(`/reports/inactive-players/${playerId}/assign`, { adminUsername });
 export const getInactiveReportConfig = () => api.get('/reports/inactive-report-config');
 export const saveInactiveReportConfig = (data) => api.put('/reports/inactive-report-config', data);
 export const getPlayerStats = (gameType) => api.get('/reports/player-stats', { params: gameType ? { gameType } : {} });
