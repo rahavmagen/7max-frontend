@@ -179,6 +179,7 @@ export const confirmKashcashDeposit = (id) => api.post(`/kashcash/confirm/${id}`
 export const getMyKashcashDeposits = () => api.get('/kashcash/my');
 
 export const getInactivePlayers = (params) => api.get('/reports/inactive-players', { params });
+export const getInactivePlayersBalance = (days) => api.get('/players/inactive-balance', { params: { days } });
 export const getPlayerStats = (gameType) => api.get('/reports/player-stats', { params: gameType ? { gameType } : {} });
 
 export const submitJoinRequest = (data) => api.post('/join', data);

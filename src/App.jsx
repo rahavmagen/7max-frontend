@@ -46,11 +46,12 @@ import Deposit from './pages/Deposit';
 import OpenRequests from './pages/OpenRequests';
 import JoinRequest from './pages/JoinRequest';
 import InactivePlayers from './pages/InactivePlayers';
+import InactivePlayersBalance from './pages/InactivePlayersBalance';
 import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
-const UTILS_PATHS = ['/admin-reports', '/rakeback', '/chip-balance', '/player-validation', '/tools', '/player-stats', '/inactive-players', '/balance-report', '/upload', '/add-player'];
+const UTILS_PATHS = ['/admin-reports', '/rakeback', '/chip-balance', '/player-validation', '/tools', '/player-stats', '/inactive-players', '/inactive-players-balance', '/balance-report', '/upload', '/add-player'];
 
 function UtilsDropdown() {
   const [open, setOpen] = useState(false);
@@ -83,6 +84,7 @@ function UtilsDropdown() {
           <NavLink to="/add-player">Add Player</NavLink>
           <NavLink to="/player-stats">Player Stats</NavLink>
           <NavLink to="/inactive-players">Inactive Players</NavLink>
+          <NavLink to="/inactive-players-balance">Inactive Players Balance</NavLink>
           <NavLink to="/balance-report">התחשבנות</NavLink>
         </div>
       )}
@@ -343,6 +345,7 @@ function AppRoutes() {
               <Route path="/open-requests" element={<OpenRequests />} />
               <Route path="/player-stats" element={<PlayerStats />} />
               <Route path="/inactive-players" element={<InactivePlayers />} />
+              <Route path="/inactive-players-balance" element={<InactivePlayersBalance />} />
               <Route path="/deposit" element={<Deposit />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
