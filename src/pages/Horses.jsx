@@ -135,6 +135,7 @@ function StatusTab() {
                     <tr style={{ borderTop: '1px solid var(--border)' }}>
                       <td style={td}>
                         <Link to={`/player/${r.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{r.username}</Link>
+                        {r.fullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginLeft: 6 }}>{r.fullName}</span>}
                         {r.satelliteBackedSince && <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>since {fmtDate(r.satelliteBackedSince)}</div>}
                       </td>
                       <td style={{ ...td, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Satellite Backing</td>
@@ -253,6 +254,7 @@ function TournamentHorsesSection() {
                     <tr style={{ borderTop: '1px solid var(--border)' }}>
                       <td style={td}>
                         <Link to={`/player/${r.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{r.username}</Link>
+                        {r.fullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginLeft: 6 }}>{r.fullName}</span>}
                         {r.backedSince && <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>since {fmtDate(r.backedSince)}</div>}
                       </td>
                       <td style={{ ...td, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{r.gameTypes || '—'}</td>
@@ -423,6 +425,7 @@ function AddHorseTab({ onAdded }) {
           <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1.25rem', borderTop: '1px solid var(--border)' }}>
             <div>
               <Link to={`/player/${h.id}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{h.username}</Link>
+              {h.fullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 6 }}>{h.fullName}</span>}
               {h.satelliteBacked && (
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
                   Satellite Backing{h.satelliteBackedSince ? ` · since ${fmtDate(h.satelliteBackedSince)}` : ''}
