@@ -72,24 +72,25 @@ export default function PnL() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadExpectedRakeback = () => {
-    getExpectedRakeback().then(res => setExpectedRakeback(res.data)).catch(() => setExpectedRakeback(null));
-  };
-  useEffect(() => { loadExpectedRakeback(); }, []);
+  const [settlementDateError, setSettlementDateError] = useState(null);
+  const loadExpectedRakeback = () => getExpectedRakeback().then(res => setExpectedRakeback(res.data));
+  useEffect(() => { loadExpectedRakeback().catch(() => setExpectedRakeback(null)); }, []);
 
   const startEditSettlementDate = () => {
     setSettlementDateDraft(expectedRakeback?.lastSettlementDate || '');
+    setSettlementDateError(null);
     setEditingSettlementDate(true);
   };
   const saveSettlementDate = async () => {
     if (!settlementDateDraft) return;
     setSavingSettlementDate(true);
+    setSettlementDateError(null);
     try {
       await setLastSettlementDate(settlementDateDraft);
+      await loadExpectedRakeback();
       setEditingSettlementDate(false);
-      loadExpectedRakeback();
     } catch {
-      // no dedicated error banner here - the field just stays open for retry
+      setSettlementDateError('Failed to save — please try again.');
     }
     setSavingSettlementDate(false);
   };
@@ -212,6 +213,9 @@ export default function PnL() {
                     </>
                   )}
                 </div>
+                {settlementDateError && (
+                  <div style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '-0.5rem', marginBottom: '0.75rem' }}>{settlementDateError}</div>
+                )}
 
                 {expectedRakeback.lastSettlementDate && (
                   <>
