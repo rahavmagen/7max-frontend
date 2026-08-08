@@ -1,6 +1,6 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Link } from 'react-router-dom';
-import { getSatelliteBacking, getPlayers, setPlayerHorse } from '../api';
+import { getSatelliteBacking, getPlayers, setPlayerHorse, getLastSettlementDate } from '../api';
 import DateInput from '../components/DateInput';
 import PlayerSelect from '../components/PlayerSelect';
 
@@ -52,15 +52,26 @@ function StatusTab() {
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState({});
 
-  const load = async () => {
+  const load = async (f = from, t = to) => {
     setLoading(true); setError(null);
     try {
-      const res = await getSatelliteBacking({ from, to });
+      const res = await getSatelliteBacking({ from: f, to: t });
       setRows(res.data);
     } catch { setError('Failed to load status'); }
     setLoading(false);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  // Default the range to start at the last התחשבנות (settlement) date, matching Agents / P&L.
+  useEffect(() => {
+    getLastSettlementDate()
+      .then(res => {
+        const d = res.data?.date;
+        if (d) { setFrom(d); load(d, to); }
+        else load(from, to);
+      })
+      .catch(() => load(from, to));
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, []);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '—';
