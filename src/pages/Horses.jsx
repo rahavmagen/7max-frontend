@@ -10,9 +10,9 @@ const firstOfMonth = () => { const d = new Date(); return `${d.getFullYear()}-${
 // Backing "programs" a horse can be on.
 const PROGRAMS = [
   { value: 'SATELLITE', label: 'Satellite Backing (net 50/50)' },
-  { value: 'TOURNAMENT', label: 'Tournament Horses (deficit, then 50/50)' },
+  { value: 'TOURNAMENT', label: '50/50 All Horses (deficit, then 50/50)' },
 ];
-const PROGRAM_LABEL = { SATELLITE: 'Satellite Backing', TOURNAMENT: 'Tournament Horses' };
+const PROGRAM_LABEL = { SATELLITE: 'Satellite Backing', TOURNAMENT: '50/50 All Horses' };
 const HORSE_GAME_TYPES = ['NLH', 'PLO', 'PLO4', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
 
 export default function Horses() {
@@ -197,14 +197,14 @@ function StatusTab() {
   );
 }
 
-/* ---------------- Tournament Horses: winnings vs. fronted, deficit or 50/50 split ---------------- */
+/* ---------------- 50/50 All Horses: winnings vs. fronted, deficit or 50/50 split ---------------- */
 function TournamentHorsesSection() {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
-    getTournamentHorses().then(res => setRows(res.data)).catch(() => setError('Failed to load Tournament Horses'));
+    getTournamentHorses().then(res => setRows(res.data)).catch(() => setError('Failed to load 50/50 All Horses'));
   }, []);
 
   const fmt = (n) => {
@@ -222,14 +222,14 @@ function TournamentHorsesSection() {
 
   return (
     <div style={{ marginTop: '1.5rem' }}>
-      <h3 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '0.5rem' }}>Tournament Horses</h3>
+      <h3 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '0.5rem' }}>50/50 All Horses</h3>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 0, marginBottom: '0.75rem' }}>
         Their winnings (in the game types chosen for them) must first cover everything the club has fronted (via Horses Transactions on the Transfers page) before any split happens. Once winnings exceed what's been fronted, the surplus splits 50/50.
       </p>
       {error && <div style={{ background: '#450a0a', color: '#fca5a5', border: '1px solid #dc2626', borderRadius: 8, padding: '0.75rem 1.25rem', marginBottom: '1rem' }}>{error}</div>}
       {rows && (rows.length === 0 ? (
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-          No Tournament Horses yet. Add one in the “Add Horse” tab.
+          No 50/50 All Horses yet. Add one in the “Add Horse” tab.
         </div>
       ) : (
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
@@ -430,7 +430,7 @@ function AddHorseTab({ onAdded }) {
               )}
               {h.tournamentHorseBacked && (
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
-                  Tournament Horses ({h.tournamentHorseGameTypes || '—'}){h.tournamentHorseBackedSince ? ` · since ${fmtDate(h.tournamentHorseBackedSince)}` : ''}
+                  50/50 All Horses ({h.tournamentHorseGameTypes || '—'}){h.tournamentHorseBackedSince ? ` · since ${fmtDate(h.tournamentHorseBackedSince)}` : ''}
                 </span>
               )}
             </div>

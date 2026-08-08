@@ -246,7 +246,7 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
-  // Horses Transaction submit — records a credit/loss ledger entry for a Tournament Horse.
+  // Horses Transaction submit — records a credit/loss ledger entry for a 50/50 All Horses horse.
   // Like a write-off, but summed into that horse's running deficit on the Horses page.
   const handleHorseTransactionSubmit = async (e) => {
     e.preventDefault();
@@ -610,7 +610,7 @@ export default function Transfers() {
         <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#f59e0b' }}>
           <h2 style={{ color: '#f59e0b' }}>🐎 Horses Transaction</h2>
           <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
-            Record credit given to a Tournament Horse, or a loss the club is absorbing for them. This adds to their running deficit on the Horses page — they won't get a payout share until their winnings cover it.
+            Record credit given to a 50/50 All Horses horse, or a loss the club is absorbing for them. This adds to their running deficit on the Horses page — they won't get a payout share until their winnings cover it.
           </p>
           <form onSubmit={handleHorseTransactionSubmit}>
             <div className="form-row">
