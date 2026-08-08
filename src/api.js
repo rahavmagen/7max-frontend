@@ -185,6 +185,8 @@ export const getInactivePlayersBalance = (days) => api.get('/players/inactive-ba
 export const handleInactivePlayer = (playerId, note) => api.post(`/reports/inactive-players/${playerId}/handle`, { note });
 export const getInactiveOutreachHistory = (params) => api.get('/reports/inactive-players/history', { params });
 export const assignInactivePlayer = (playerId, adminUsername) => api.put(`/reports/inactive-players/${playerId}/assign`, { adminUsername });
+export const getSatelliteBacking = (params) => api.get('/reports/satellite-backing', { params });
+export const setPlayerHorse = (id, data) => api.patch(`/players/${id}/horse`, data);
 export const getInactiveReportConfig = () => api.get('/reports/inactive-report-config');
 export const saveInactiveReportConfig = (data) => api.put('/reports/inactive-report-config', data);
 export const getPlayerStats = (gameType) => api.get('/reports/player-stats', { params: gameType ? { gameType } : {} });

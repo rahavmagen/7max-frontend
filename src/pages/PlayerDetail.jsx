@@ -101,6 +101,8 @@ export default function PlayerDetail() {
           : null,
         rakebackSince: editData.rakebackSince || null,
         seeRakeback: editData.seeRakeback || false,
+        satelliteBacked: editData.satelliteBacked || false,
+        satelliteBackedSince: editData.satelliteBackedSince || null,
       });
       const originalAgentId = player.agentId || '';
       if (String(editData.agentId) !== String(originalAgentId)) {
@@ -254,7 +256,7 @@ export default function PlayerDetail() {
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
-              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '', rakebackPercentage: player.rakebackPercentage != null ? Math.round(player.rakebackPercentage * 100) : '', rakebackSince: player.rakebackSince || '', seeRakeback: player.seeRakeback || false }); }}>
+              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '', rakebackPercentage: player.rakebackPercentage != null ? Math.round(player.rakebackPercentage * 100) : '', rakebackSince: player.rakebackSince || '', seeRakeback: player.seeRakeback || false, satelliteBacked: player.satelliteBacked || false, satelliteBackedSince: player.satelliteBackedSince || '' }); }}>
                 ✏️ Edit Info
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
@@ -435,6 +437,26 @@ export default function PlayerDetail() {
                     />
                     <span>Player can see their own rakeback</span>
                   </label>
+                </div>
+                <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>Satellite Backing (PROTOTYPE)</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginBottom: '0.75rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={editData.satelliteBacked || false}
+                      onChange={e => setEditData(d => ({ ...d, satelliteBacked: e.target.checked }))}
+                    />
+                    <span>Club backs this player's satellites</span>
+                  </label>
+                  <div>
+                    <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
+                      Backed since
+                    </label>
+                    <DateInput
+                      value={editData.satelliteBackedSince}
+                      onChange={v => setEditData(d => ({ ...d, satelliteBackedSince: v }))}
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -727,6 +749,7 @@ export default function PlayerDetail() {
                   {thSort('hands', 'Hands')}
                   {(isAdmin || player.seeRakeback) && thSort('rake', 'Rake', { color: '#f59e0b' })}
                   {thSort('pnl', 'Profit / Loss')}
+                  {isAdmin && player.satelliteBacked && <th style={{ whiteSpace: 'nowrap', color: '#4ade80' }}>Sat. Balance Effect (PROTOTYPE)</th>}
                 </tr>
               </thead>
               <tbody>
@@ -734,6 +757,14 @@ export default function PlayerDetail() {
                   const isTournament = r.session && ['MTT', 'SNG', 'AoF', 'SPIN_GOLD'].includes(r.session.gameType);
                   const displayCashout = isTournament ? (r.resultAmount || 0) : (r.cashout || 0);
                   const pnl = isTournament ? ((r.resultAmount || 0) - (r.buyIn || 0)) : (r.resultAmount || 0);
+                  // TEMP PROTOTYPE - satellite backing preview, not final. Remove before merging.
+                  // Signed like agent balances: + = club owes player (loss reimbursed), - = player owes club (win claimed back).
+                  const backedSince = player.satelliteBackedSince;
+                  const sessionDate = r.session && r.session.startTime ? r.session.startTime.substring(0, 10) : null;
+                  const afterBackedSince = !backedSince || (sessionDate && sessionDate >= backedSince);
+                  const isSatellite = player.satelliteBacked && afterBackedSince
+                    && r.session && r.session.gameType === 'MTT' && (r.buyIn || 0) > 0 && (r.buyIn || 0) < 100;
+                  const satSplit = isSatellite ? (pnl > 0 ? -(pnl / 2) : -pnl) : null;
                   return (
                   <tr key={r.id}
                     onClick={() => r.session && navigate(`/game-results/${r.session.id}`, { state: { session: r.session } })}
@@ -750,6 +781,15 @@ export default function PlayerDetail() {
                     <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{r.handsPlayed}</td>
                     {(isAdmin || player.seeRakeback) && <td style={{ color: '#f59e0b', whiteSpace: 'nowrap' }}>{fmt(r.rakePaid)}</td>}
                     <td style={{ whiteSpace: 'nowrap' }} className={balanceClass(pnl)}><strong>{fmt(pnl)}</strong></td>
+                    {isAdmin && player.satelliteBacked && (
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {isSatellite
+                          ? (satSplit === 0
+                              ? <span style={{ color: '#64748b' }}>₪0</span>
+                              : <strong style={{ color: satSplit > 0 ? '#4ade80' : '#ef4444' }}>{fmt(satSplit)}</strong>)
+                          : <span style={{ color: '#475569' }}>n/a</span>}
+                      </td>
+                    )}
                   </tr>
                   );
                 })}

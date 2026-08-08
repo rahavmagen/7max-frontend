@@ -47,6 +47,7 @@ import OpenRequests from './pages/OpenRequests';
 import JoinRequest from './pages/JoinRequest';
 import InactivePlayers from './pages/InactivePlayers';
 import InactivePlayersBalance from './pages/InactivePlayersBalance';
+import Horses from './pages/Horses';
 import PlayerStats from './pages/PlayerStats';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
@@ -91,7 +92,7 @@ function UtilsDropdown() {
   );
 }
 
-const ACCOUNTING_PATHS = ['/total-profit', '/pnl', '/club-income', '/admin-expenses', '/club-wallets', '/agents'];
+const ACCOUNTING_PATHS = ['/total-profit', '/pnl', '/club-income', '/admin-expenses', '/club-wallets', '/agents', '/horses'];
 
 function AccountingDropdown() {
   const [open, setOpen] = useState(false);
@@ -121,6 +122,7 @@ function AccountingDropdown() {
           <NavLink to="/admin-expenses">Club Expenses</NavLink>
           <NavLink to="/club-wallets">Club Wallets</NavLink>
           <NavLink to="/agents">Agents</NavLink>
+          <NavLink to="/horses">🐎 Horses</NavLink>
         </div>
       )}
     </div>
@@ -346,6 +348,7 @@ function AppRoutes() {
               <Route path="/player-stats" element={<PlayerStats />} />
               <Route path="/inactive-players" element={<InactivePlayers />} />
               <Route path="/inactive-players-balance" element={<InactivePlayersBalance />} />
+              <Route path="/horses" element={<Horses />} />
               <Route path="/deposit" element={<Deposit />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
