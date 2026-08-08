@@ -101,6 +101,7 @@ export default function Games() {
             <option value="SNG">SNG</option>
             <option value="NLH">NLH</option>
             <option value="PLO">PLO</option>
+            <option value="PLO4">PLO4</option>
             <option value="PLO5">PLO5</option>
             <option value="PLO6">PLO6</option>
             <option value="AoF">AoF</option>

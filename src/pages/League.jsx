@@ -32,6 +32,7 @@ function gameTypeBadge(gt) {
   const colors = {
     NLH:  { bg: '#3a1e1e', color: '#f87171' },
     PLO:  { bg: '#2a1e3a', color: '#c084fc' },
+    PLO4: { bg: '#2a1e3a', color: '#c084fc' },
     PLO5: { bg: '#2a1e3a', color: '#c084fc' },
     PLO6: { bg: '#2a1e3a', color: '#c084fc' },
   };
@@ -256,6 +257,7 @@ export default function League() {
                 <option value="">All</option>
                 <option value="NLH">NLH</option>
                 <option value="PLO">PLO</option>
+                <option value="PLO4">PLO4</option>
                 <option value="PLO5">PLO5</option>
                 <option value="PLO6">PLO6</option>
               </select>

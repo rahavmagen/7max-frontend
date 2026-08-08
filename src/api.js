@@ -187,6 +187,9 @@ export const getInactiveOutreachHistory = (params) => api.get('/reports/inactive
 export const assignInactivePlayer = (playerId, adminUsername) => api.put(`/reports/inactive-players/${playerId}/assign`, { adminUsername });
 export const getSatelliteBacking = (params) => api.get('/reports/satellite-backing', { params });
 export const setPlayerHorse = (id, data) => api.patch(`/players/${id}/horse`, data);
+export const getTournamentHorses = () => api.get('/reports/tournament-horses');
+export const addHorseTransaction = (id, data) => api.post(`/players/${id}/horse-transaction`, data);
+export const getHorseTransactions = (id) => api.get(`/players/${id}/horse-transactions`);
 export const getInactiveReportConfig = () => api.get('/reports/inactive-report-config');
 export const saveInactiveReportConfig = (data) => api.put('/reports/inactive-report-config', data);
 export const getPlayerStats = (gameType) => api.get('/reports/player-stats', { params: gameType ? { gameType } : {} });

@@ -7,8 +7,8 @@ import DateInput from '../components/DateInput';
 // player's real phone, so the feature can be tried safely. Set to null to send to real numbers.
 const TEST_REDIRECT_PHONE = null;
 
-const GAME_TYPES = ['', 'NLH', 'PLO', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
-const GAME_TYPE_LABELS = { '': 'All Types', NLH: 'NLH (Cash)', PLO: 'PLO', PLO5: 'PLO5', PLO6: 'PLO6', MTT: 'MTT', SNG: 'SNG', AoF: 'AoF', SPIN_GOLD: 'Spin Gold' };
+const GAME_TYPES = ['', 'NLH', 'PLO', 'PLO4', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
+const GAME_TYPE_LABELS = { '': 'All Types', NLH: 'NLH (Cash)', PLO: 'PLO', PLO4: 'PLO4', PLO5: 'PLO5', PLO6: 'PLO6', MTT: 'MTT', SNG: 'SNG', AoF: 'AoF', SPIN_GOLD: 'Spin Gold' };
 
 const inputStyle = {
   background: 'var(--bg-input)',

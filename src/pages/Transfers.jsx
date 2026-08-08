@@ -1,7 +1,7 @@
 import { Fragment, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, createClubExpense, addAgentRakeExpense } from '../api';
+import { getPlayers, updateCredit, addTransaction, createTransfer, getAllPending, confirmTransfer, confirmTransaction, updateTransfer, updateTransaction, addWheelExpense, getBankAccounts, getAdminUsers, createAdminExpense, getRecentTransactions, createClubExpense, addAgentRakeExpense, addHorseTransaction } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateOnly } from '../utils/dates';
 import PlayerSelect from '../components/PlayerSelect';
@@ -63,6 +63,9 @@ export default function Transfers() {
   const [agentRakeAgentId, setAgentRakeAgentId] = useState('');
   const [agentRakeAmount, setAgentRakeAmount] = useState('');
   const [agentRakeNotes, setAgentRakeNotes] = useState('');
+  const [horseId, setHorseId] = useState('');
+  const [horseAmount, setHorseAmount] = useState('');
+  const [horseNotes, setHorseNotes] = useState('');
 
   // Transfer form
   const [transferForm, setTransferForm] = useState({ fromId: '', toId: '', method: '', amount: '', notes: '', fromAdminUsername: '', toAdminUsername: '', fromClubType: '', toClubType: '', toExternalName: '' });
@@ -243,6 +246,26 @@ export default function Transfers() {
     setSubmitting(false);
   };
 
+  // Horses Transaction submit — records a credit/loss ledger entry for a Tournament Horse.
+  // Like a write-off, but summed into that horse's running deficit on the Horses page.
+  const handleHorseTransactionSubmit = async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(horseAmount);
+    if (!horseId || isNaN(amount)) {
+      setMsg({ type: 'error', text: 'Select a horse and enter an amount' });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await addHorseTransaction(horseId, { amount, notes: horseNotes || null });
+      setMsg({ type: 'success', text: 'Horses transaction recorded' });
+      setHorseId(''); setHorseAmount(''); setHorseNotes('');
+    } catch (err) {
+      setMsg({ type: 'error', text: err?.response?.data?.error || 'Failed to record horses transaction' });
+    }
+    setSubmitting(false);
+  };
+
   const resolveParty = (id) => {
     if (!id || id === 'CLUB' || id === 'EXTERNAL') return { playerId: null, bankAccountId: null };
     if (typeof id === 'string' && id.startsWith('BANK_')) return { playerId: null, bankAccountId: parseInt(id.slice(5)) };
@@ -383,6 +406,9 @@ export default function Transfers() {
         </button>
         <button className={`btn ${activeForm === 'agentRake' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('agentRake')}>
           🧮 Agent Rake
+        </button>
+        <button className={`btn ${activeForm === 'horseTransaction' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => toggleForm('horseTransaction')}>
+          🐎 Horses Transaction
         </button>
       </div>
 
@@ -575,6 +601,32 @@ export default function Transfers() {
             </div>
             <button type="submit" className="btn btn-primary" disabled={submitting || !agentRakeAgentId}>
               {submitting ? 'Saving...' : 'Save Agent Rake'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {activeForm === 'horseTransaction' && (
+        <div className="card" style={{ marginBottom: '1.5rem', borderColor: '#f59e0b' }}>
+          <h2 style={{ color: '#f59e0b' }}>🐎 Horses Transaction</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+            Record credit given to a Tournament Horse, or a loss the club is absorbing for them. This adds to their running deficit on the Horses page — they won't get a payout share until their winnings cover it.
+          </p>
+          <form onSubmit={handleHorseTransactionSubmit}>
+            <div className="form-row">
+              <PlayerSelect label="Horse" value={horseId} onChange={setHorseId} players={players.filter(p => p.tournamentHorseBacked)} />
+              <div className="form-group">
+                <label>Amount (₪) *</label>
+                <input type="number" step="0.01" required value={horseAmount}
+                  onChange={e => setHorseAmount(e.target.value)} placeholder="0.00" />
+              </div>
+              <div className="form-group">
+                <label>Notes</label>
+                <input type="text" value={horseNotes} onChange={e => setHorseNotes(e.target.value)} placeholder="Optional" />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary" disabled={submitting || !horseId}>
+              {submitting ? 'Saving...' : 'Save Horses Transaction'}
             </button>
           </form>
         </div>

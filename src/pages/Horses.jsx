@@ -1,17 +1,19 @@
 import { useState, useEffect, Fragment } from 'react';
 import { Link } from 'react-router-dom';
-import { getSatelliteBacking, getPlayers, setPlayerHorse, getLastSettlementDate } from '../api';
+import { getSatelliteBacking, getTournamentHorses, getPlayers, setPlayerHorse, getLastSettlementDate } from '../api';
 import DateInput from '../components/DateInput';
 import PlayerSelect from '../components/PlayerSelect';
 
 const isoDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const firstOfMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
 
-// Backing "programs" a horse can be on. Only satellite backing exists for now; more to come.
+// Backing "programs" a horse can be on.
 const PROGRAMS = [
   { value: 'SATELLITE', label: 'Satellite Backing (net 50/50)' },
+  { value: 'TOURNAMENT', label: 'Tournament Horses (deficit, then 50/50)' },
 ];
-const PROGRAM_LABEL = { SATELLITE: 'Satellite Backing' };
+const PROGRAM_LABEL = { SATELLITE: 'Satellite Backing', TOURNAMENT: 'Tournament Horses' };
+const HORSE_GAME_TYPES = ['NLH', 'PLO', 'PLO4', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
 
 export default function Horses() {
   const [tab, setTab] = useState('status');
@@ -38,7 +40,12 @@ export default function Horses() {
         ))}
       </div>
 
-      {tab === 'status' ? <StatusTab /> : <AddHorseTab onAdded={() => setTab('status')} />}
+      {tab === 'status' ? (
+        <>
+          <StatusTab />
+          <TournamentHorsesSection />
+        </>
+      ) : <AddHorseTab onAdded={() => setTab('status')} />}
     </div>
   );
 }
@@ -94,7 +101,7 @@ function StatusTab() {
         <span style={{ color: 'var(--text-muted)' }}>→</span>
         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>To:</span>
         <DateInput value={to} onChange={setTo} />
-        <button onClick={load} disabled={loading}
+        <button onClick={() => load()} disabled={loading}
           style={{ background: loading ? '#334155' : 'var(--accent)', color: loading ? '#64748b' : '#0f172a', border: 'none', borderRadius: 6, padding: '8px 22px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer' }}>
           {loading ? 'Loading…' : 'Apply'}
         </button>
@@ -190,12 +197,132 @@ function StatusTab() {
   );
 }
 
+/* ---------------- Tournament Horses: winnings vs. fronted, deficit or 50/50 split ---------------- */
+function TournamentHorsesSection() {
+  const [rows, setRows] = useState(null);
+  const [error, setError] = useState(null);
+  const [expanded, setExpanded] = useState({});
+
+  useEffect(() => {
+    getTournamentHorses().then(res => setRows(res.data)).catch(() => setError('Failed to load Tournament Horses'));
+  }, []);
+
+  const fmt = (n) => {
+    if (n === undefined || n === null) return '—';
+    const num = Number(n);
+    return (num < 0 ? '-' : '') + '₪' + Math.abs(num).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+  const color = (n) => Number(n) > 0 ? '#4ade80' : Number(n) < 0 ? '#fca5a5' : 'var(--text-muted)';
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('he-IL') : '—';
+  const toggle = (id) => setExpanded(p => ({ ...p, [id]: !p[id] }));
+  const th = { padding: '10px 14px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' };
+  const td = { padding: '10px 14px' };
+
+  if (rows === null && !error) return null;
+
+  return (
+    <div style={{ marginTop: '1.5rem' }}>
+      <h3 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '0.5rem' }}>Tournament Horses</h3>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: 0, marginBottom: '0.75rem' }}>
+        Their winnings (in the game types chosen for them) must first cover everything the club has fronted (via Horses Transactions on the Transfers page) before any split happens. Once winnings exceed what's been fronted, the surplus splits 50/50.
+      </p>
+      {error && <div style={{ background: '#450a0a', color: '#fca5a5', border: '1px solid #dc2626', borderRadius: 8, padding: '0.75rem 1.25rem', marginBottom: '1rem' }}>{error}</div>}
+      {rows && (rows.length === 0 ? (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+          No Tournament Horses yet. Add one in the “Add Horse” tab.
+        </div>
+      ) : (
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'rgba(0,0,0,0.15)' }}>
+                  <th style={th}>Horse</th>
+                  <th style={th}>Game types</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Winnings</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Fronted</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Status</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Player gets</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Club gets</th>
+                  <th style={th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(r => (
+                  <Fragment key={r.playerId}>
+                    <tr style={{ borderTop: '1px solid var(--border)' }}>
+                      <td style={td}>
+                        <Link to={`/player/${r.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{r.username}</Link>
+                        {r.backedSince && <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>since {fmtDate(r.backedSince)}</div>}
+                      </td>
+                      <td style={{ ...td, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{r.gameTypes || '—'}</td>
+                      <td style={{ ...td, textAlign: 'right', color: color(r.winnings) }}>{fmt(r.winnings)}</td>
+                      <td style={{ ...td, textAlign: 'right', color: '#fca5a5' }}>{fmt(-Math.abs(Number(r.fronted)))}</td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        {r.profitable
+                          ? <span style={{ color: '#4ade80', fontWeight: 700 }}>Profitable ({fmt(r.net)})</span>
+                          : <span style={{ color: '#fbbf24' }}>Needs {fmt(r.deficit)} more</span>}
+                      </td>
+                      <td style={{ ...td, textAlign: 'right', color: color(r.playerShare) }}>{fmt(r.playerShare)}</td>
+                      <td style={{ ...td, textAlign: 'right', fontWeight: 600, color: color(r.clubShare) }}>{fmt(r.clubShare)}</td>
+                      <td style={{ ...td, textAlign: 'right' }}>
+                        {r.breakdown && r.breakdown.length > 0 && (
+                          <button onClick={() => toggle(r.playerId)}
+                            style={{ background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                            {expanded[r.playerId] ? 'Hide' : 'Breakdown'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                    {expanded[r.playerId] && r.breakdown.map((day, di) => (
+                      <tr key={`${r.playerId}-${di}`} style={{ background: 'rgba(255,255,255,0.02)' }}>
+                        <td colSpan={8} style={{ padding: '0.5rem 1.5rem 1rem' }}>
+                          <div style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', margin: '0.5rem 0' }}>{fmtDate(day.date)}</div>
+                          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                            {day.games.length > 0 && (
+                              <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', marginBottom: 4 }}>Games (counted)</div>
+                                {day.games.map((g, i) => (
+                                  <div key={i} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', padding: '2px 0' }}>
+                                    {g.gameType} {g.tableName ? `— ${g.tableName}` : ''} <span style={{ color: color(g.amount) }}>{fmt(g.amount)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {day.transactions.length > 0 && (
+                              <div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', marginBottom: 4 }}>Horses Transactions</div>
+                                {day.transactions.map((t, i) => (
+                                  <div key={i} style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', padding: '2px 0' }}>
+                                    <span style={{ color: '#fca5a5' }}>{fmt(-Math.abs(Number(t.amount)))}</span>
+                                    {t.notes ? ` — ${t.notes}` : ''}
+                                    {t.createdBy ? <span style={{ color: 'var(--text-muted)' }}> ({t.createdBy})</span> : ''}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ---------------- Add Horse tab: enroll a player in a program + manage existing ---------------- */
 function AddHorseTab({ onAdded }) {
   const [players, setPlayers] = useState([]);
   const [playerId, setPlayerId] = useState(null);
   const [program, setProgram] = useState('SATELLITE');
   const [since, setSince] = useState(firstOfMonth());
+  const [gameTypes, setGameTypes] = useState([]);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [busyId, setBusyId] = useState(null);
@@ -203,30 +330,45 @@ function AddHorseTab({ onAdded }) {
   const loadPlayers = () => getPlayers().then(res => setPlayers(res.data || [])).catch(() => {});
   useEffect(() => { loadPlayers(); }, []);
 
-  const horses = players.filter(p => p.satelliteBacked);
+  const horses = players.filter(p => p.satelliteBacked || p.tournamentHorseBacked);
+  const toggleGameType = (t) => setGameTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+  const isEditing = program === 'TOURNAMENT' && horses.some(h => h.id === playerId && h.tournamentHorseBacked);
 
   const add = async () => {
     if (!playerId) { setMsg({ ok: false, text: 'Choose a player first.' }); return; }
+    if (program === 'TOURNAMENT' && gameTypes.length === 0) { setMsg({ ok: false, text: 'Pick at least one game type.' }); return; }
     setSaving(true); setMsg(null);
     try {
-      await setPlayerHorse(playerId, { program, since, enabled: true });
-      setMsg({ ok: true, text: 'Horse added.' });
+      const payload = { program, since, enabled: true };
+      if (program === 'TOURNAMENT') payload.gameTypes = gameTypes.join(',');
+      await setPlayerHorse(playerId, payload);
+      setMsg({ ok: true, text: isEditing ? 'Horse updated.' : 'Horse added.' });
       setPlayerId(null);
+      setGameTypes([]);
       await loadPlayers();
       if (onAdded) onAdded();
     } catch (e) {
-      setMsg({ ok: false, text: e.response?.data?.error || 'Failed to add horse.' });
+      setMsg({ ok: false, text: e.response?.data?.error || 'Failed to save horse.' });
     }
     setSaving(false);
   };
 
-  const remove = async (id) => {
+  const remove = async (id, prog) => {
     setBusyId(id);
     try {
-      await setPlayerHorse(id, { program: 'SATELLITE', enabled: false });
+      await setPlayerHorse(id, { program: prog, enabled: false });
       await loadPlayers();
     } catch { /* ignore */ }
     setBusyId(null);
+  };
+
+  const editTournament = (h) => {
+    setPlayerId(h.id);
+    setProgram('TOURNAMENT');
+    setSince(h.tournamentHorseBackedSince || firstOfMonth());
+    setGameTypes(h.tournamentHorseGameTypes ? h.tournamentHorseGameTypes.split(',').map(s => s.trim()).filter(Boolean) : []);
+    setMsg(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const fmtDate = (d) => d ? new Date(d).toLocaleDateString('he-IL') : '—';
@@ -246,6 +388,19 @@ function AddHorseTab({ onAdded }) {
             {PROGRAMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
         </div>
+        {program === 'TOURNAMENT' && (
+          <div style={{ marginBottom: '1.1rem' }}>
+            <label style={labelStyle}>Game types counted</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+              {HORSE_GAME_TYPES.map(t => (
+                <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: gameTypes.includes(t) ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={gameTypes.includes(t)} onChange={() => toggleGameType(t)} />
+                  {t}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         <div style={{ marginBottom: '1.4rem' }}>
           <label style={labelStyle}>Backed since</label>
           <DateInput value={since} onChange={setSince} />
@@ -253,7 +408,7 @@ function AddHorseTab({ onAdded }) {
         </div>
         <button onClick={add} disabled={saving}
           style={{ background: saving ? '#334155' : 'var(--accent)', color: saving ? '#64748b' : '#0f172a', border: 'none', borderRadius: 6, padding: '9px 24px', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
-          {saving ? 'Adding…' : 'Add Horse'}
+          {saving ? 'Saving…' : isEditing ? 'Save Changes' : 'Add Horse'}
         </button>
         {msg && <div style={{ marginTop: '0.8rem', color: msg.ok ? '#4ade80' : '#fca5a5', fontSize: '0.85rem' }}>{msg.text}</div>}
       </div>
@@ -268,14 +423,37 @@ function AddHorseTab({ onAdded }) {
           <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1.25rem', borderTop: '1px solid var(--border)' }}>
             <div>
               <Link to={`/player/${h.id}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{h.username}</Link>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
-                Satellite Backing{h.satelliteBackedSince ? ` · since ${fmtDate(h.satelliteBackedSince)}` : ''}
-              </span>
+              {h.satelliteBacked && (
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
+                  Satellite Backing{h.satelliteBackedSince ? ` · since ${fmtDate(h.satelliteBackedSince)}` : ''}
+                </span>
+              )}
+              {h.tournamentHorseBacked && (
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
+                  Tournament Horses ({h.tournamentHorseGameTypes || '—'}){h.tournamentHorseBackedSince ? ` · since ${fmtDate(h.tournamentHorseBackedSince)}` : ''}
+                </span>
+              )}
             </div>
-            <button onClick={() => remove(h.id)} disabled={busyId === h.id}
-              style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
-              {busyId === h.id ? '…' : 'Remove'}
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {h.satelliteBacked && (
+                <button onClick={() => remove(h.id, 'SATELLITE')} disabled={busyId === h.id}
+                  style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                  {busyId === h.id ? '…' : 'Remove Satellite'}
+                </button>
+              )}
+              {h.tournamentHorseBacked && (
+                <>
+                  <button onClick={() => editTournament(h)}
+                    style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                    ✏️ Edit
+                  </button>
+                  <button onClick={() => remove(h.id, 'TOURNAMENT')} disabled={busyId === h.id}
+                    style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                    {busyId === h.id ? '…' : 'Remove Tournament'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>
