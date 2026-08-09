@@ -5,10 +5,14 @@ import DateInput from '../components/DateInput';
 
 const toInputDate = (d) => d.toISOString().substring(0, 10);
 
+// Default range: 1st of the current month → today (built as local strings so the
+// 1st doesn't slip to the previous day via UTC conversion).
 const getDefaultRange = () => {
   const now = new Date();
-  const from = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-  return { from: toInputDate(from), to: toInputDate(now) };
+  const pad = (n) => String(n).padStart(2, '0');
+  const from = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+  const to = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return { from, to };
 };
 
 // Shared row layout so the amount column lines up in the same position across the
