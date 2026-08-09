@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminExpenses, getBalanceSheet, getPlayers, getPromotions, getProfitSummary, getTransactionRange, getTicketAssetsSummary, getWalletSummary, getAgentTotalBalance } from '../api';
+import { getAdminExpenses, getBalanceSheet, getPlayers, getPromotions, getProfitSummary, getTransactionRange, getWalletSummary, getAgentTotalBalance } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateTime } from '../utils/dates';
 
@@ -23,7 +23,6 @@ export default function TotalProfit() {
   const [showTx, setShowTx] = useState(true);
   const [unpaidExpenses, setUnpaidExpenses] = useState(0);
   const [paidExpenses, setPaidExpenses] = useState(0);
-  const [ticketAssetsFaceValue, setTicketAssetsFaceValue] = useState(0);
   const [clubWalletTotal, setClubWalletTotal] = useState(null);
   const [expenseData, setExpenseData] = useState(null);
   const [promotionsData, setPromotionsData] = useState(null);
@@ -52,10 +51,9 @@ export default function TotalProfit() {
       getPlayers(),
       getProfitSummary().catch(() => ({ data: null })),
       getAdminExpenses().catch(() => ({ data: null })),
-      getTicketAssetsSummary().catch(() => ({ data: { totalFaceValue: 0 } })),
       getWalletSummary().catch(() => ({ data: null })),
       getPromotions().catch(() => ({ data: null })),
-    ]).then(([playersRes, summaryRes, expRes, ticketRes, walletRes, promoRes]) => {
+    ]).then(([playersRes, summaryRes, expRes, walletRes, promoRes]) => {
       setPlayers(playersRes.data);
       setSummary(summaryRes.data);
       setExpenseData(expRes.data);
@@ -64,7 +62,6 @@ export default function TotalProfit() {
       const paid = expRes.data?.paid || [];
       setUnpaidExpenses(admins.filter(a => a.adminUsername !== 'Wheel').reduce((s, a) => s + Number(a.total || 0), 0));
       setPaidExpenses(paid.reduce((s, e) => s + Number(e.amount || 0), 0));
-      setTicketAssetsFaceValue(Number(ticketRes.data?.totalFaceValue || 0));
       if (walletRes.data?.clubTotal != null) setClubWalletTotal(Number(walletRes.data.clubTotal));
       setLoading(false);
     });
@@ -123,10 +120,11 @@ export default function TotalProfit() {
   const agentTotalBalance = Number(agentBal?.totalBalance || 0);
   const agentAdjustment = -agentTotalBalance;
 
-  // מאזן (net worth): Banks & Players + Credit + Tickets − Raw chips − agents net = Club Earning.
+  // מאזן (net worth): Banks & Players + Credit − Raw chips − agents net = Club Earning.
   // Debts to admins are no longer a separate line — each admin's wallet balance is now NET
   // (cash held minus what the club owes them), so it's already inside bankDeposits (clubTotal).
-  const clubEarning = bankDeposits + totalCredit + ticketAssetsFaceValue - totalChips + agentAdjustment;
+  // Ticket Assets removed — that mechanism is retired and the tickets were already sold/recorded.
+  const clubEarning = bankDeposits + totalCredit - totalChips + agentAdjustment;
   const netProfit = clubEarning;
 
   // Expense breakdown data
@@ -341,13 +339,6 @@ export default function TotalProfit() {
                 <td style={{ color: '#64748b' }}>&nbsp;&nbsp;<span style={{ fontSize: '0.8rem' }}>↳ excl. {fmt(excludedCredit)} agent-held credit (not club-managed)</span></td>
                 <td></td>
                 <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Agents' own pool — not club liability</td>
-              </tr>
-            )}
-            {ticketAssetsFaceValue > 0 && (
-              <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/ticket-assets')}>
-                <td style={{ color: '#94a3b8' }}>+ 🎟 Ticket Assets <span style={{ fontSize: '0.75rem', color: '#3b82f6' }}>↗</span></td>
-                <td className="positive"><strong>{fmt(ticketAssetsFaceValue)}</strong></td>
-                <td style={{ color: '#64748b', fontSize: '0.8rem' }}>Remaining ticket inventory at face value</td>
               </tr>
             )}
             <tr style={{ cursor: 'pointer' }} onClick={() => navigate('/club-wallets')}>
