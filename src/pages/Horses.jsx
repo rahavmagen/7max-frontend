@@ -136,7 +136,12 @@ function StatusTab() {
                       <td style={td}>
                         <Link to={`/player/${r.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{r.username}</Link>
                         {r.fullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginLeft: 6 }}>{r.fullName}</span>}
-                        {r.satelliteBackedSince && <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>since {fmtDate(r.satelliteBackedSince)}</div>}
+                        {r.satelliteBackedSince && (
+                          <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                            since {fmtDate(r.satelliteBackedSince)}
+                            {r.satelliteBackedUntil && <span style={{ color: '#fbbf24' }}> · ends {fmtDate(r.satelliteBackedUntil)}</span>}
+                          </div>
+                        )}
                       </td>
                       <td style={{ ...td, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Satellite Backing</td>
                       <td style={{ ...td, textAlign: 'right', color: '#fca5a5' }}>{fmt(-Math.abs(Number(r.satCost)))}</td>
@@ -255,7 +260,12 @@ function TournamentHorsesSection() {
                       <td style={td}>
                         <Link to={`/player/${r.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{r.username}</Link>
                         {r.fullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginLeft: 6 }}>{r.fullName}</span>}
-                        {r.backedSince && <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>since {fmtDate(r.backedSince)}</div>}
+                        {r.backedSince && (
+                          <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                            since {fmtDate(r.backedSince)}
+                            {r.backedUntil && <span style={{ color: '#fbbf24' }}> · ends {fmtDate(r.backedUntil)}</span>}
+                          </div>
+                        )}
                       </td>
                       <td style={{ ...td, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{r.gameTypes || '—'}</td>
                       <td style={{ ...td, textAlign: 'right', color: color(r.winnings) }}>{fmt(r.winnings)}</td>
@@ -328,6 +338,8 @@ function AddHorseTab({ onAdded }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [endDateFor, setEndDateFor] = useState(null); // `${id}:${prog}` while the end-date picker is open
+  const [endDateValue, setEndDateValue] = useState(isoDate(new Date()));
 
   const loadPlayers = () => getPlayers().then(res => setPlayers(res.data || [])).catch(() => {});
   useEffect(() => { loadPlayers(); }, []);
@@ -360,6 +372,21 @@ function AddHorseTab({ onAdded }) {
     try {
       await setPlayerHorse(id, { program: prog, enabled: false });
       await loadPlayers();
+    } catch { /* ignore */ }
+    setBusyId(null);
+  };
+
+  const openEndDate = (id, prog) => {
+    setEndDateFor(`${id}:${prog}`);
+    setEndDateValue(isoDate(new Date()));
+  };
+
+  const confirmEndDate = async (id, prog) => {
+    setBusyId(id);
+    try {
+      await setPlayerHorse(id, { program: prog, enabled: false, until: endDateValue });
+      await loadPlayers();
+      setEndDateFor(null);
     } catch { /* ignore */ }
     setBusyId(null);
   };
@@ -422,41 +449,69 @@ function AddHorseTab({ onAdded }) {
         {horses.length === 0 ? (
           <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>No horses enrolled yet.</div>
         ) : horses.map(h => (
-          <div key={h.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.7rem 1.25rem', borderTop: '1px solid var(--border)' }}>
-            <div>
-              <Link to={`/player/${h.id}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{h.username}</Link>
-              {h.fullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 6 }}>{h.fullName}</span>}
-              {h.satelliteBacked && (
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
-                  Satellite Backing{h.satelliteBackedSince ? ` · since ${fmtDate(h.satelliteBackedSince)}` : ''}
-                </span>
-              )}
-              {h.tournamentHorseBacked && (
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
-                  50/50 All Horses ({h.tournamentHorseGameTypes || '—'}){h.tournamentHorseBackedSince ? ` · since ${fmtDate(h.tournamentHorseBackedSince)}` : ''}
-                </span>
-              )}
+          <div key={h.id} style={{ padding: '0.7rem 1.25rem', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <Link to={`/player/${h.id}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{h.username}</Link>
+                {h.fullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 6 }}>{h.fullName}</span>}
+                {h.satelliteBacked && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
+                    Satellite Backing{h.satelliteBackedSince ? ` · since ${fmtDate(h.satelliteBackedSince)}` : ''}
+                    {h.satelliteBackedUntil ? <span style={{ color: '#fbbf24' }}> · ends {fmtDate(h.satelliteBackedUntil)}</span> : ''}
+                  </span>
+                )}
+                {h.tournamentHorseBacked && (
+                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginLeft: 10 }}>
+                    50/50 All Horses ({h.tournamentHorseGameTypes || '—'}){h.tournamentHorseBackedSince ? ` · since ${fmtDate(h.tournamentHorseBackedSince)}` : ''}
+                    {h.tournamentHorseBackedUntil ? <span style={{ color: '#fbbf24' }}> · ends {fmtDate(h.tournamentHorseBackedUntil)}</span> : ''}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {h.satelliteBacked && (
+                  <>
+                    <button onClick={() => openEndDate(h.id, 'SATELLITE')}
+                      style={{ background: 'transparent', color: '#fbbf24', border: '1px solid #7a5b0e', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                      📅 Set End Date
+                    </button>
+                    <button onClick={() => remove(h.id, 'SATELLITE')} disabled={busyId === h.id}
+                      style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                      {busyId === h.id ? '…' : 'Remove Satellite'}
+                    </button>
+                  </>
+                )}
+                {h.tournamentHorseBacked && (
+                  <>
+                    <button onClick={() => editTournament(h)}
+                      style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                      ✏️ Edit
+                    </button>
+                    <button onClick={() => openEndDate(h.id, 'TOURNAMENT')}
+                      style={{ background: 'transparent', color: '#fbbf24', border: '1px solid #7a5b0e', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                      📅 Set End Date
+                    </button>
+                    <button onClick={() => remove(h.id, 'TOURNAMENT')} disabled={busyId === h.id}
+                      style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                      {busyId === h.id ? '…' : 'Remove Tournament'}
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              {h.satelliteBacked && (
-                <button onClick={() => remove(h.id, 'SATELLITE')} disabled={busyId === h.id}
-                  style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
-                  {busyId === h.id ? '…' : 'Remove Satellite'}
+            {(endDateFor === `${h.id}:SATELLITE` || endDateFor === `${h.id}:TOURNAMENT`) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.6rem', padding: '0.6rem', background: 'rgba(251,191,36,0.08)', border: '1px solid #7a5b0e', borderRadius: 6 }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Games from this date onward stop counting:</span>
+                <DateInput value={endDateValue} onChange={setEndDateValue} />
+                <button onClick={() => confirmEndDate(h.id, endDateFor.endsWith('SATELLITE') ? 'SATELLITE' : 'TOURNAMENT')} disabled={busyId === h.id}
+                  style={{ background: 'var(--accent)', color: '#0f172a', border: 'none', borderRadius: 6, padding: '5px 14px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem' }}>
+                  {busyId === h.id ? '…' : 'Confirm'}
                 </button>
-              )}
-              {h.tournamentHorseBacked && (
-                <>
-                  <button onClick={() => editTournament(h)}
-                    style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
-                    ✏️ Edit
-                  </button>
-                  <button onClick={() => remove(h.id, 'TOURNAMENT')} disabled={busyId === h.id}
-                    style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
-                    {busyId === h.id ? '…' : 'Remove Tournament'}
-                  </button>
-                </>
-              )}
-            </div>
+                <button onClick={() => setEndDateFor(null)}
+                  style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 14px', cursor: 'pointer', fontSize: '0.82rem' }}>
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
