@@ -52,6 +52,10 @@ export const changeUserRole = (username, role) => api.post('/auth/admin/change-r
 export const getHandsReport = (params) => api.get('/reports/admin/hands-report', { params });
 export const getFridayRakeReport = () => api.get('/reports/admin/friday-rake');
 export const getRakebackReport = (params) => api.get('/reports/admin/rakeback', { params });
+export const getPlayerRakeback = (id) => api.get(`/players/${id}/rakeback`);
+export const addPlayerRakeback = (id, deal) => api.post(`/players/${id}/rakeback`, deal);
+export const updatePlayerRakeback = (id, dealId, deal) => api.put(`/players/${id}/rakeback/${dealId}`, deal);
+export const deletePlayerRakeback = (id, dealId) => api.delete(`/players/${id}/rakeback/${dealId}`);
 export const backfillChipsTotal = () => api.post('/reports/admin/backfill-chips-total');
 export const getChipBalance = (since) => api.get('/reports/admin/chip-balance', { params: since ? { since } : {} });
 export const getPlayerValidation = (since) => api.get('/reports/admin/player-validation', { params: since ? { since } : {} });

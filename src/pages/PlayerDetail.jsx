@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory } from '../api';
+import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory, getPlayerRakeback, addPlayerRakeback, updatePlayerRakeback, deletePlayerRakeback } from '../api';
+
+const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
 import { useAuth } from '../auth/AuthContext';
 import { getTransactionLabel } from '../utils/transactionLabel';
 import DateInput from '../components/DateInput';
@@ -18,6 +20,38 @@ export default function PlayerDetail() {
   const [tab, setTab] = useState('results');
   const [showResetPass, setShowResetPass] = useState(false);
   const [newPass, setNewPass] = useState('');
+  // Per-game-type rakeback deals
+  const [rakebackDeals, setRakebackDeals] = useState([]);
+  const [newDealType, setNewDealType] = useState('NLH');
+  const [newDealPct, setNewDealPct] = useState('');
+  const [newDealDate, setNewDealDate] = useState('');
+  const loadDeals = () => getPlayerRakeback(id).then(r => setRakebackDeals(r.data || [])).catch(() => {});
+  useEffect(() => { loadDeals(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [id]);
+  const addDeal = async () => {
+    if (!newDealType || newDealPct === '' || newDealPct == null) return;
+    await addPlayerRakeback(id, {
+      gameType: newDealType,
+      percentage: parseFloat((Number(newDealPct) / 100).toFixed(4)),
+      startDate: newDealDate || null,
+    });
+    setNewDealPct(''); setNewDealDate('');
+    loadDeals();
+  };
+  const removeDeal = async (dealId) => { await deletePlayerRakeback(id, dealId); loadDeals(); };
+  const [editDealId, setEditDealId] = useState(null);
+  const [editDeal, setEditDeal] = useState({ gameType: 'NLH', pct: '', startDate: '' });
+  const startEditDeal = (d) => { setEditDealId(d.id); setEditDeal({ gameType: d.gameType, pct: Math.round(d.percentage * 100), startDate: d.startDate || '' }); };
+  const cancelEditDeal = () => { setEditDealId(null); };
+  const saveEditDeal = async (dealId) => {
+    if (editDeal.pct === '' || editDeal.pct == null) return;
+    await updatePlayerRakeback(id, dealId, {
+      gameType: editDeal.gameType,
+      percentage: parseFloat((Number(editDeal.pct) / 100).toFixed(4)),
+      startDate: editDeal.startDate || null,
+    });
+    setEditDealId(null);
+    loadDeals();
+  };
   const [showNewPass, setShowNewPass] = useState(false);
   const [loginStats, setLoginStats] = useState(null);
   const [nameHistory, setNameHistory] = useState([]);
@@ -96,10 +130,7 @@ export default function PlayerDetail() {
         agentRakePercentage: editData.isAgent && editData.agentRakePercentage !== ''
           ? parseFloat((Number(editData.agentRakePercentage) / 100).toFixed(4))
           : null,
-        rakebackPercentage: editData.rakebackPercentage !== '' && editData.rakebackPercentage != null
-          ? parseFloat((Number(editData.rakebackPercentage) / 100).toFixed(4))
-          : null,
-        rakebackSince: editData.rakebackSince || null,
+        // Rakeback is now managed as per-game-type deals via separate endpoints, not here.
         seeRakeback: editData.seeRakeback || false,
         satelliteBacked: editData.satelliteBacked || false,
         satelliteBackedSince: editData.satelliteBackedSince || null,
@@ -399,35 +430,59 @@ export default function PlayerDetail() {
                   </select>
                 </div>
                 <div style={{ marginTop: '0.75rem', borderTop: '1px solid #2d3148', paddingTop: '0.75rem' }}>
-                  <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>Rakeback</div>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                    <div>
-                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
-                        Rakeback %
-                      </label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="1"
-                          value={editData.rakebackPercentage}
-                          onChange={e => setEditData(d => ({ ...d, rakebackPercentage: e.target.value }))}
-                          placeholder="0"
-                          style={{ width: '80px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}
-                        />
+                  <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>Rakeback deals (per game type)</div>
+                  {rakebackDeals.length === 0 && (
+                    <div style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: '0.5rem' }}>No deals yet.</div>
+                  )}
+                  {rakebackDeals.map(d => (
+                    editDealId === d.id ? (
+                      <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                        <select value={editDeal.gameType} onChange={e => setEditDeal(s => ({ ...s, gameType: e.target.value }))}
+                          style={{ padding: '3px 6px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}>
+                          {RB_GAME_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <input type="number" min="0" max="100" step="1" value={editDeal.pct}
+                          onChange={e => setEditDeal(s => ({ ...s, pct: e.target.value }))}
+                          style={{ width: '60px', padding: '3px 6px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }} />
                         <span style={{ color: '#94a3b8' }}>%</span>
+                        <DateInput value={editDeal.startDate} onChange={v => setEditDeal(s => ({ ...s, startDate: v }))} />
+                        <button type="button" onClick={() => saveEditDeal(d.id)}
+                          style={{ background: '#16a34a', color: '#fff', border: 'none', borderRadius: '4px', padding: '3px 10px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>Save</button>
+                        <button type="button" onClick={cancelEditDeal}
+                          style={{ background: 'transparent', color: '#94a3b8', border: '1px solid #2d3148', borderRadius: '4px', padding: '3px 8px', cursor: 'pointer', fontSize: '0.8rem' }}>Cancel</button>
                       </div>
+                    ) : (
+                      <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                        <span style={{ background: '#1e293b', border: '1px solid #334155', padding: '1px 8px', borderRadius: '10px', color: '#a5b4fc', fontSize: '0.8rem' }}>{d.gameType}</span>
+                        <span style={{ color: '#34d399', fontWeight: 600 }}>{Math.round(d.percentage * 100)}%</span>
+                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>since {d.startDate || '—'}</span>
+                        <button type="button" onClick={() => startEditDeal(d)}
+                          style={{ marginLeft: '0.5rem', background: 'transparent', color: '#a5b4fc', border: '1px solid #334155', borderRadius: '4px', padding: '2px 10px', cursor: 'pointer', fontSize: '0.8rem' }}>✎ Edit</button>
+                        <button type="button" onClick={() => removeDeal(d.id)}
+                          style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: '4px', padding: '2px 10px', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
+                      </div>
+                    )
+                  ))}
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', marginBottom: '4px' }}>Game type</label>
+                      <select value={newDealType} onChange={e => setNewDealType(e.target.value)}
+                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }}>
+                        {RB_GAME_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
                     </div>
                     <div>
-                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '4px' }}>
-                        Rakeback since
-                      </label>
-                      <DateInput
-                        value={editData.rakebackSince}
-                        onChange={v => setEditData(d => ({ ...d, rakebackSince: v }))}
-                      />
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', marginBottom: '4px' }}>%</label>
+                      <input type="number" min="0" max="100" step="1" value={newDealPct}
+                        onChange={e => setNewDealPct(e.target.value)} placeholder="0"
+                        style={{ width: '70px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #2d3148', background: '#0f172a', color: '#e2e8f0' }} />
                     </div>
+                    <div>
+                      <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.8rem', marginBottom: '4px' }}>Start date</label>
+                      <DateInput value={newDealDate} onChange={setNewDealDate} />
+                    </div>
+                    <button type="button" onClick={addDeal}
+                      style={{ background: 'var(--accent, #eab308)', color: '#0f172a', border: 'none', borderRadius: '4px', padding: '6px 16px', fontWeight: 700, cursor: 'pointer' }}>Add</button>
                   </div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginTop: '0.75rem' }}>
                     <input
@@ -553,13 +608,15 @@ export default function PlayerDetail() {
                 </div>
               </div>
             )}
-            {player.rakebackPercentage != null && player.rakebackPercentage > 0 && (isAdmin || player.seeRakeback) && (
+            {rakebackDeals.length > 0 && (isAdmin || player.seeRakeback) && (
               <div>
                 <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>RAKEBACK</div>
-                <div style={{ color: '#34d399' }}>
-                  {Math.round(player.rakebackPercentage * 100)}%
-                  {player.rakebackSince && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>since {player.rakebackSince}</span>}
-                </div>
+                {rakebackDeals.map(d => (
+                  <div key={d.id} style={{ color: '#34d399' }}>
+                    <span style={{ color: '#a5b4fc' }}>{d.gameType}</span> {Math.round(d.percentage * 100)}%
+                    {d.startDate && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>since {d.startDate}</span>}
+                  </div>
+                ))}
               </div>
             )}
             {isAdmin && loginStats && (

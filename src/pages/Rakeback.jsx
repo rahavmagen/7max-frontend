@@ -4,8 +4,6 @@ import { getRakebackReport } from '../api';
 import DateInput from '../components/DateInput';
 import { fmtDateOnly as fmt } from '../utils/dates';
 
-const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'MTT'];
-
 export default function Rakeback() {
   const navigate = useNavigate();
   const [rbDateFrom, setRbDateFrom] = useState(() => new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10));
@@ -13,19 +11,13 @@ export default function Rakeback() {
   const [rbRows, setRbRows] = useState(null);
   const [rbLoading, setRbLoading] = useState(false);
   const [rbError, setRbError] = useState('');
-  const [rbGameTypes, setRbGameTypes] = useState(['NLH']);
-  const toggleRbGameType = (type) => {
-    setRbGameTypes(prev => prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]);
-  };
-  const allRbSelected = RB_GAME_TYPES.every(t => rbGameTypes.includes(t));
-  const toggleAllRbGameTypes = () => setRbGameTypes(allRbSelected ? [] : [...RB_GAME_TYPES]);
 
   const runRakeback = async (e) => {
     e.preventDefault();
     setRbError('');
     setRbLoading(true);
     try {
-      const res = await getRakebackReport({ dateFrom: rbDateFrom, dateTo: rbDateTo, gameTypes: rbGameTypes.join(',') });
+      const res = await getRakebackReport({ dateFrom: rbDateFrom, dateTo: rbDateTo });
       setRbRows(res.data);
     } catch {
       setRbError('שגיאה בטעינת דוח ריקבק');
@@ -42,24 +34,10 @@ export default function Rakeback() {
 
       <div className="card">
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-          סיכום ריקבק לשחקנים עם אחוז ריקבק מוגדר. תאריך התחלה אפקטיבי = MAX(מתאריך, rakebackSince)
+          מבוסס על הסכמי הריקבק המוגדרים לכל שחקן (סוג משחק + אחוז + תאריך התחלה). שורה לכל הסכם.
+          תאריך התחלה אפקטיבי = MAX(מתאריך, תאריך התחלת ההסכם).
         </p>
         <form onSubmit={runRakeback}>
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label>סוגי משחק (ריק = ללא ריקבק)</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.25rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#e2e8f0', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>
-                <input type="checkbox" checked={allRbSelected} onChange={toggleAllRbGameTypes} />
-                הכל
-              </label>
-              {RB_GAME_TYPES.map(type => (
-                <label key={type} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={rbGameTypes.includes(type)} onChange={() => toggleRbGameType(type)} />
-                  {type}
-                </label>
-              ))}
-            </div>
-          </div>
           <div className="form-row" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end' }}>
             <div className="form-group">
               <label>מתאריך</label>
@@ -84,12 +62,12 @@ export default function Rakeback() {
         {rbRows !== null && (
           <div style={{ marginTop: '1.5rem' }}>
             {rbRows.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>אין שחקנים עם ריקבק מוגדר בטווח זה</div>
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>אין הסכמי ריקבק בטווח זה</div>
             ) : (
               <>
                 <div style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
                   {fmt(rbDateFrom)} — {fmt(rbDateTo)} &nbsp;|&nbsp;
-                  <strong style={{ color: '#e2e8f0' }}>{rbRows.length} שחקנים</strong>
+                  <strong style={{ color: '#e2e8f0' }}>{rbRows.length} הסכמים</strong>
                   &nbsp;|&nbsp; סה"כ ריקבק:&nbsp;
                   <strong style={{ color: '#34d399' }}>
                     ₪{rbRows.reduce((s, r) => s + Number(r.rakebackAmount || 0), 0).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -101,6 +79,7 @@ export default function Rakeback() {
                       <th>#</th>
                       <th>שם משתמש</th>
                       <th>שם מלא</th>
+                      <th>סוג משחק</th>
                       <th>%</th>
                       <th>תאריך התחלה</th>
                       <th>תאריך אפקטיבי</th>
@@ -110,12 +89,13 @@ export default function Rakeback() {
                   </thead>
                   <tbody>
                     {rbRows.map((r, i) => (
-                      <tr key={r.playerId} style={{ cursor: 'pointer' }} onClick={() => navigate(`/player/${r.playerId}`)}>
+                      <tr key={`${r.playerId}-${r.gameType}-${i}`} style={{ cursor: 'pointer' }} onClick={() => navigate(`/player/${r.playerId}`)}>
                         <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{i + 1}</td>
                         <td><strong>{r.username}</strong></td>
                         <td style={{ color: '#94a3b8' }}>{r.fullName || '—'}</td>
+                        <td><span style={{ background: '#1e293b', border: '1px solid #334155', padding: '2px 10px', borderRadius: '12px', color: '#a5b4fc', fontSize: '0.85rem' }}>{r.gameType}</span></td>
                         <td style={{ color: '#a5b4fc' }}>{Math.round(r.rakebackPercentage * 100)}%</td>
-                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{r.rakebackSince || '—'}</td>
+                        <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{r.startDate || '—'}</td>
                         <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{r.effectiveFrom}</td>
                         <td style={{ color: '#f59e0b' }}>₪{Number(r.totalRakePaid).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td>

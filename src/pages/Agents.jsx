@@ -640,6 +640,7 @@ export default function Agents() {
                     {a.username}
                   </button>
                   {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{a.fullName}</span>}
+                  {a.phone && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>📞 {a.phone}</span>}
                   <button onClick={() => handleToggleClubManaged(a)}
                     title="Club-managed: club handles this agent's players directly (excluded from credit total, players may get manual credit)"
                     style={{ marginLeft: '0.5rem', fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', cursor: 'pointer',
@@ -747,6 +748,7 @@ export default function Agents() {
                       <button onClick={() => selected?.id === a.id ? setSelected(null) : openDetail(a)}
                         style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, fontWeight: 600 }}>{a.username}</button>
                       {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{a.fullName}</span>}
+                      {a.phone && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>📞 {a.phone}</span>}
                       <button onClick={() => handleToggleClubManaged(a)}
                         title="Remove club-managed" style={{ marginLeft: '0.5rem', fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', cursor: 'pointer', border: '1px solid #22c55e55', background: '#14532d', color: '#4ade80' }}>✓ club-managed</button>
                     </td>
@@ -784,6 +786,7 @@ export default function Agents() {
                   <div style={{ marginBottom: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <strong style={{ color: '#e2e8f0' }}>{a.username}</strong>
                     {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{a.fullName}</span>}
+                    {a.phone && <span style={{ color: '#64748b', fontSize: '0.8rem' }}>📞 {a.phone}</span>}
                     {a.clubManaged && <span style={{ fontSize: '0.68rem', color: '#4ade80', background: '#14532d', padding: '1px 6px', borderRadius: '4px' }}>club-managed</span>}
                     {agentChecked > 0 && (
                       <button onClick={handleDismissFlags} disabled={dismissing}
