@@ -641,11 +641,11 @@ export default function Agents() {
         <table style={{ width: '100%', minWidth: 1150, borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #2d3148', color: '#94a3b8', textAlign: 'left', fontSize: '0.82rem', background: '#12151f' }}>
-              <th style={{ padding: '10px 12px' }}>Agent</th>
+              <th style={{ padding: '10px 12px', position: 'sticky', left: 0, background: '#12151f', zIndex: 3 }}>Agent</th>
               <th style={{ padding: '10px 12px' }}>Rake %</th>
-              <th style={{ padding: '10px 12px' }}>Players</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Active</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }}>Games</th>
+              <th style={{ padding: '10px 6px', textAlign: 'right' }} title="Players">Ply</th>
+              <th style={{ padding: '10px 6px', textAlign: 'right' }} title="Active players">Act</th>
+              <th style={{ padding: '10px 6px', textAlign: 'right' }} title="Games">Gms</th>
               <th style={{ padding: '10px 12px' }}>Phone</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total Rake</th>
               <th style={{ padding: '10px 12px', textAlign: 'right', borderLeft: '2px solid #475569' }} title="Balance calc starts here. Agent's cut = rake% × Total Rake (rakeback we owe the agent)">Agent Rake</th>
@@ -667,7 +667,7 @@ export default function Agents() {
           <tbody>
             {mainAgents.map(a => (
               <tr key={a.id} style={{ borderBottom: '1px solid #1e2235', background: selected?.id === a.id ? '#151826' : 'transparent' }}>
-                <td style={{ padding: '10px 12px' }}>
+                <td style={{ padding: '10px 12px', position: 'sticky', left: 0, background: selected?.id === a.id ? '#151826' : 'var(--bg-card)', zIndex: 1 }}>
                   <button onClick={() => navigate(`/player/${a.id}`)}
                     style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
                     {a.username}
@@ -706,9 +706,9 @@ export default function Agents() {
                     </span>
                   )}
                 </td>
-                <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{a.playerCount}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.activePlayerCount ?? 0}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.gameCount ?? 0}</td>
+                <td style={{ padding: '10px 6px', textAlign: 'right', color: '#94a3b8' }}>{a.playerCount}</td>
+                <td style={{ padding: '10px 6px', textAlign: 'right', color: '#94a3b8' }}>{a.activePlayerCount ?? 0}</td>
+                <td style={{ padding: '10px 6px', textAlign: 'right', color: '#94a3b8' }}>{a.gameCount ?? 0}</td>
                 <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: '0.85rem' }}>{a.phone || '—'}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(a.totalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, borderLeft: '2px solid #475569' }} className={balanceClass(a.agentRake)}>{fmt(a.agentRake)}</td>
@@ -755,11 +755,11 @@ export default function Agents() {
             )}
             {mainAgents.length > 0 && (
               <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
-                <td style={{ padding: '10px 12px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
+                <td style={{ padding: '10px 12px', color: '#e2e8f0', fontWeight: 700, position: 'sticky', left: 0, background: '#12151f', zIndex: 1 }}>Total</td>
                 <td />
-                <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalPlayers}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalActive}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{summaryTotalGames}</td>
+                <td style={{ padding: '10px 6px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalPlayers}</td>
+                <td style={{ padding: '10px 6px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalActive}</td>
+                <td style={{ padding: '10px 6px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{summaryTotalGames}</td>
                 <td />{/* Phone — no total */}
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{fmt(summaryTotalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, borderLeft: '2px solid #475569' }} className={balanceClass(summaryTotalAgentRake)}>{fmt(summaryTotalAgentRake)}</td>
