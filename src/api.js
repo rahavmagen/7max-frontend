@@ -160,6 +160,8 @@ export const resyncAgents = () => api.post('/reports/admin/resync-agents');
 export const computeAgentCredit = () => api.post('/reports/admin/compute-agent-credit');
 export const setPlayerAgent = (playerId, agentId) => api.patch(`/players/${playerId}/agent`, { agentId: agentId || null });
 export const dismissAgentFlags = (playerIds) => api.post('/agents/dismiss-flags', { playerIds });
+export const setAgentSettledWeek = (id, value) => api.patch(`/agents/${id}/settled-week`, { value });
+export const uncheckAllAgentSettledWeek = () => api.post('/agents/uncheck-settled-week');
 export const getLastSettlementDate = () => api.get('/agents/last-settlement-date');
 export const setLastSettlementDate = (date) => api.put('/agents/last-settlement-date', { date });
 export const getExpectedRakeback = () => api.get('/reports/expected-rakeback');

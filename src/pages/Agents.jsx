@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, setLastSettlementDate, getAgentLedgerHistory } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, setLastSettlementDate, getAgentLedgerHistory, setAgentSettledWeek, uncheckAllAgentSettledWeek } from '../api';
 import { getPlayers, getBankAccounts, createTransfer, getAdminUsers, getPlayerTransactions } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
@@ -48,7 +48,7 @@ export default function Agents() {
   const [paymentForm, setPaymentForm] = useState(null); // { amount, effectiveDate, notes, direction }
   const [ledgerSaving, setLedgerSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [hideInactive, setHideInactive] = useState(false);
+  const [hideInactive, setHideInactive] = useState(true);
   const [agentTx, setAgentTx] = useState([]);          // the agent's own player transactions
   const [agentTxOpen, setAgentTxOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('dashboard'); // agent-detail tab: dashboard | players
@@ -332,6 +332,32 @@ export default function Agents() {
     }
   };
 
+  const handleToggleSettledWeek = async (a) => {
+    const newVal = !a.settledThisWeek;
+    setAgents(prev => prev.map(x => x.id === a.id ? { ...x, settledThisWeek: newVal } : x));
+    try { await setAgentSettledWeek(a.id, newVal); }
+    catch { setAgents(prev => prev.map(x => x.id === a.id ? { ...x, settledThisWeek: !newVal } : x)); }
+  };
+  const handleUncheckAllSettled = async () => {
+    setAgents(prev => prev.map(x => ({ ...x, settledThisWeek: false })));
+    try { await uncheckAllAgentSettledWeek(); } catch { load(); }
+  };
+
+  // Inline edit of an agent's starting balance → records a new OPENING ledger entry.
+  const [editingStart, setEditingStart] = useState(null);   // agentId being edited
+  const [startInput, setStartInput] = useState('');
+  const saveStartingBalance = async (a) => {
+    if (startInput === '' || startInput == null || isNaN(Number(startInput))) { setEditingStart(null); return; }
+    try {
+      await addAgentOpening(a.id, {
+        amount: Number(startInput),
+        effectiveDate: a.openingDate || a.lastSettlementDate || undefined,
+      });
+      setEditingStart(null);
+      load();
+    } catch { setMsg({ type: 'error', text: 'Failed to update starting balance' }); }
+  };
+
   const handleSettle = async (agentId) => {
     setSettling(true);
     setMsg(null);
@@ -611,8 +637,8 @@ export default function Agents() {
       )}
 
       {/* Agents summary table */}
-      <div className="card" style={{ marginBottom: '2rem', padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="card" style={{ marginBottom: '2rem', padding: 0, overflowX: 'auto' }}>
+        <table style={{ width: '100%', minWidth: 1150, borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #2d3148', color: '#94a3b8', textAlign: 'left', fontSize: '0.82rem', background: '#12151f' }}>
               <th style={{ padding: '10px 12px' }}>Agent</th>
@@ -620,7 +646,7 @@ export default function Agents() {
               <th style={{ padding: '10px 12px' }}>Players</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Active</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Games</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Current chips held by the agent and their players (excludes stale counts)">Chips</th>
+              <th style={{ padding: '10px 12px' }}>Phone</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total Rake</th>
               <th style={{ padding: '10px 12px', textAlign: 'right', borderLeft: '2px solid #475569' }} title="Balance calc starts here. Agent's cut = rake% × Total Rake (rakeback we owe the agent)">Agent Rake</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="The real unsettled backlog - games not yet closed into a Club Expense. This is what Settle actually acts on, and can differ from Agent Rake (which is just a period estimate that ignores settlement status).">Real Balance</th>
@@ -628,6 +654,13 @@ export default function Agents() {
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Starting balance carried from the last התחשבנות">Starting Bal</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Amounts are from the agent's point of view: + (green) = we owe the agent, − (red) = the agent owes us. Starting + Agent Rake + Players' P&L − Payments.">Current Balance</th>
               <th style={{ padding: '10px 12px' }}>Last Settlement</th>
+              <th style={{ padding: '10px 12px', textAlign: 'center' }} title="בוצע התחשבנות — mark that this agent's weekly settlement is done">
+                בוצע
+                <button onClick={handleUncheckAllSettled} title="Uncheck all"
+                  style={{ display: 'block', margin: '2px auto 0', background: 'transparent', color: '#60a5fa', border: 'none', cursor: 'pointer', fontSize: '0.68rem', textDecoration: 'underline' }}>
+                  uncheck all
+                </button>
+              </th>
               <th style={{ padding: '10px 12px' }}>Action</th>
             </tr>
           </thead>
@@ -635,12 +668,11 @@ export default function Agents() {
             {mainAgents.map(a => (
               <tr key={a.id} style={{ borderBottom: '1px solid #1e2235', background: selected?.id === a.id ? '#151826' : 'transparent' }}>
                 <td style={{ padding: '10px 12px' }}>
-                  <button onClick={() => selected?.id === a.id ? setSelected(null) : openDetail(a)}
+                  <button onClick={() => navigate(`/player/${a.id}`)}
                     style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
                     {a.username}
                   </button>
                   {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{a.fullName}</span>}
-                  {a.phone && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>📞 {a.phone}</span>}
                   <button onClick={() => handleToggleClubManaged(a)}
                     title="Club-managed: club handles this agent's players directly (excluded from credit total, players may get manual credit)"
                     style={{ marginLeft: '0.5rem', fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', cursor: 'pointer',
@@ -677,17 +709,37 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', color: '#94a3b8' }}>{a.playerCount}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.activePlayerCount ?? 0}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.gameCount ?? 0}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 600 }}>{fmt(a.totalChips)}</td>
+                <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: '0.85rem' }}>{a.phone || '—'}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(a.totalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, borderLeft: '2px solid #475569' }} className={balanceClass(a.agentRake)}>{fmt(a.agentRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.pendingBalance)}>{fmt(a.pendingBalance)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>{fmt(a.periodPnl)}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.openingBalance)}>{fmt(a.openingBalance)}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={editingStart === a.id ? '' : balanceClass(a.openingBalance)}>
+                  {editingStart === a.id ? (
+                    <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
+                      <input type="number" step="0.01" value={startInput} autoFocus
+                        onChange={e => setStartInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') saveStartingBalance(a); if (e.key === 'Escape') setEditingStart(null); }}
+                        style={{ ...inputStyle, width: 90, textAlign: 'right' }} />
+                      <button onClick={() => saveStartingBalance(a)} style={{ padding: '2px 8px', borderRadius: 4, border: 'none', background: '#1d4ed8', color: '#fff', cursor: 'pointer', fontSize: '0.78rem' }}>✓</button>
+                      <button onClick={() => setEditingStart(null)} style={{ padding: '2px 8px', borderRadius: 4, border: 'none', background: '#374151', color: '#fff', cursor: 'pointer', fontSize: '0.78rem' }}>✗</button>
+                    </span>
+                  ) : (
+                    <span onClick={() => { setEditingStart(a.id); setStartInput(a.openingBalance != null ? Number(a.openingBalance).toString() : ''); }}
+                      style={{ cursor: 'pointer' }} title="Click to edit the starting balance (records a new opening entry)">
+                      {fmt(a.openingBalance)}
+                    </span>
+                  )}
+                </td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: '1.02rem' }} className={balanceClass(a.currentBalance)}
                   title={Number(a.currentBalance) > 0 ? 'We owe the agent' : Number(a.currentBalance) < 0 ? 'The agent owes us' : 'Settled'}>
                   {fmt(a.currentBalance)}
                 </td>
                 <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '0.85rem' }}>{a.lastSettlementDate ? fmtDateOnly(a.lastSettlementDate) : '—'}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                  <input type="checkbox" checked={!!a.settledThisWeek} onChange={() => handleToggleSettledWeek(a)}
+                    title="בוצע התחשבנות" style={{ cursor: 'pointer', width: 16, height: 16 }} />
+                </td>
                 <td style={{ padding: '10px 12px' }}>
                   <button onClick={() => openSettle(a)}
                     title="Record a settlement transfer with this agent"
@@ -699,7 +751,7 @@ export default function Agents() {
               </tr>
             ))}
             {mainAgents.length === 0 && (
-              <tr><td colSpan={14} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
+              <tr><td colSpan={15} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
             )}
             {mainAgents.length > 0 && (
               <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
@@ -708,14 +760,16 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalPlayers}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 700 }}>{summaryTotalActive}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{summaryTotalGames}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{fmt(summaryTotalChips)}</td>
+                <td />{/* Phone — no total */}
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{fmt(summaryTotalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, borderLeft: '2px solid #475569' }} className={balanceClass(summaryTotalAgentRake)}>{fmt(summaryTotalAgentRake)}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalPending)}>{fmt(summaryTotalPending)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalPnl)}>{fmt(summaryTotalPnl)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalStarting)}>{fmt(summaryTotalStarting)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: '1.02rem' }} className={balanceClass(summaryTotalCurrentBalance)}>{fmt(summaryTotalCurrentBalance)}</td>
-                <td />
-                <td />
+                <td />{/* Last Settlement */}
+                <td />{/* בוצע */}
+                <td />{/* Action */}
               </tr>
             )}
           </tbody>
@@ -728,8 +782,8 @@ export default function Agents() {
           <div style={{ color: '#4ade80', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
             Club-managed agents ({clubManagedAgents.length}) — handled by the club directly, not counted in the totals above
           </div>
-          <div className="card" style={{ padding: 0, overflow: 'hidden', opacity: 0.85 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="card" style={{ padding: 0, overflowX: 'auto', opacity: 0.85 }}>
+            <table style={{ width: '100%', minWidth: 700, borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #2d3148', color: '#94a3b8', textAlign: 'left', fontSize: '0.82rem', background: '#12151f' }}>
                   <th style={{ padding: '10px 12px' }}>Agent</th>
@@ -745,7 +799,7 @@ export default function Agents() {
                 {clubManagedAgents.map(a => (
                   <tr key={a.id} style={{ borderBottom: '1px solid #1e2235' }}>
                     <td style={{ padding: '10px 12px' }}>
-                      <button onClick={() => selected?.id === a.id ? setSelected(null) : openDetail(a)}
+                      <button onClick={() => navigate(`/player/${a.id}`)}
                         style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, fontWeight: 600 }}>{a.username}</button>
                       {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{a.fullName}</span>}
                       {a.phone && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>📞 {a.phone}</span>}
