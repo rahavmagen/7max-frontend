@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
+import { LanguageProvider, useLang } from './i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 function useTheme() {
@@ -228,6 +229,7 @@ function PlayerDefaultRedirect({ auth }) {
 function AppRoutes() {
   const { auth, logout } = useAuth();
   const [theme, toggleTheme] = useTheme();
+  const { lang, toggleLang, t } = useLang();
   const [kashcashPending, setKashcashPending] = useState(0);
 
   useEffect(() => {
@@ -281,16 +283,19 @@ function AppRoutes() {
           )}
           {isPlayer && (
             <>
-              {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
-              <NavLink to="/games">Games</NavLink>
-              <NavLink to="/active-players">Players</NavLink>
-              <NavLink to="/league">League</NavLink>
-              <NavLink to="/deposit">Deposit KashCash</NavLink>
-              {isAgent && <NavLink to="/agent-portal">Agents</NavLink>}
+              {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>{t('myProfile')}</NavLink>}
+              <NavLink to="/active-players">{t('players')}</NavLink>
+              <NavLink to="/games">{t('games')}</NavLink>
+              <NavLink to="/league">{t('league')}</NavLink>
+              <NavLink to="/deposit">{t('deposit')}</NavLink>
+              {isAgent && <NavLink to="/agent-portal">{t('agents')}</NavLink>}
             </>
           )}
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button className="theme-toggle" onClick={toggleLang} title="Change language / שנה שפה" style={{ fontWeight: 700, fontSize: '0.8rem' }}>
+            {lang === 'he' ? 'EN' : 'עב'}
+          </button>
           <button className="theme-toggle" onClick={toggleTheme}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
@@ -373,9 +378,11 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <LanguageProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </LanguageProvider>
     </AuthProvider>
   );
 }
