@@ -155,7 +155,6 @@ function UnusedDropdown() {
         <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
           <NavLink to="/bring-a-friend">Bring a Friend</NavLink>
           <NavLink to="/import">Import Players</NavLink>
-          <NavLink to="/lesson">אימון קאש</NavLink>
           <NavLink to="/league">League</NavLink>
           <NavLink to="/ticket-assets">Tickets</NavLink>
         </div>
@@ -285,7 +284,6 @@ function AppRoutes() {
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>My Profile</NavLink>}
               <NavLink to="/games">Games</NavLink>
               <NavLink to="/active-players">Players</NavLink>
-              <NavLink to="/lesson">אימון קאש</NavLink>
               <NavLink to="/league">League</NavLink>
               <NavLink to="/deposit">Deposit KashCash</NavLink>
               {isAgent && <NavLink to="/agent-portal">Agents</NavLink>}
