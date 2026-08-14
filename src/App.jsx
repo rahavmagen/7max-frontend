@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { LanguageProvider, useLang } from './i18n';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -223,13 +223,19 @@ function PlayerDefaultRedirect({ auth }) {
     sessionStorage.removeItem('redirectAfterLogin');
     return <Navigate to={pending} replace />;
   }
-  return <Navigate to={auth.playerId ? `/player/${auth.playerId}` : '/games'} replace />;
+  return <Navigate to="/deposit" replace />;
 }
 
 function AppRoutes() {
   const { auth, logout } = useAuth();
   const [theme, toggleTheme] = useTheme();
   const { lang, toggleLang, t } = useLang();
+  const navigate = useNavigate();
+  const handleLogout = useCallback(() => {
+    sessionStorage.removeItem('redirectAfterLogin');
+    logout();
+    navigate('/', { replace: true });   // start fresh so re-login lands on the default page
+  }, [logout, navigate]);
   const [kashcashPending, setKashcashPending] = useState(0);
 
   useEffect(() => {
@@ -283,11 +289,11 @@ function AppRoutes() {
           )}
           {isPlayer && (
             <>
+              <NavLink to="/deposit">{t('deposit')}</NavLink>
               {auth.playerId && <NavLink to={`/player/${auth.playerId}`}>{t('myProfile')}</NavLink>}
               <NavLink to="/active-players">{t('players')}</NavLink>
               <NavLink to="/games">{t('games')}</NavLink>
               <NavLink to="/league">{t('league')}</NavLink>
-              <NavLink to="/deposit">{t('deposit')}</NavLink>
               {isAgent && <NavLink to="/agent-portal">{t('agents')}</NavLink>}
             </>
           )}
@@ -300,7 +306,7 @@ function AppRoutes() {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <button
-            onClick={logout}
+            onClick={handleLogout}
             style={{
               background: 'none',
               border: '1px solid #334155',
