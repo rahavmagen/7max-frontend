@@ -7,12 +7,14 @@ import { useAuth } from '../auth/AuthContext';
 import { getTransactionLabel } from '../utils/transactionLabel';
 import DateInput from '../components/DateInput';
 import { fmtDateTime } from '../utils/dates';
+import { useLang } from '../i18n';
 
 export default function PlayerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { auth } = useAuth();
   const isAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
+  const { t: tr } = useLang();
   const [player, setPlayer] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [transactions, setTransactions] = useState([]);
@@ -557,22 +559,22 @@ export default function PlayerDetail() {
 
       <div className="player-balance-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card" style={{ borderTopColor: '#4a5568' }}>
-          <h2>Player Info</h2>
+          <h2>{tr('pfPlayerInfo')}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
             <div>
-              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>USERNAME</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfUsername')}</div>
               <div style={{ fontWeight: 600 }}>{player.username}</div>
             </div>
             <div>
-              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>FULL NAME</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfFullName')}</div>
               <div>{player.fullName || '—'}</div>
             </div>
             <div>
-              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>PHONE</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfPhone')}</div>
               <div>{player.phone || '—'}</div>
             </div>
             <div>
-              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>CLUB ID</div>
+              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfClubId')}</div>
               <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
             </div>
             {isAdmin && nameHistory.length > 0 && (
@@ -594,14 +596,14 @@ export default function PlayerDetail() {
                 : null;
               return agentName ? (
                 <div>
-                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>AGENT</div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfAgent')}</div>
                   <div style={{ color: '#34d399' }}>{agentName}</div>
                 </div>
               ) : null;
             })()}
             {player.isAgent && (
               <div>
-                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>ROLE</div>
+                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfRole')}</div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span style={{ background: '#7c3aed', color: '#fff', fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.5px' }}>AGENT</span>
                   {player.clubManaged && <span style={{ background: '#14532d', color: '#4ade80', fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px' }}>club-managed</span>}
@@ -610,11 +612,11 @@ export default function PlayerDetail() {
             )}
             {rakebackDeals.length > 0 && (isAdmin || player.seeRakeback) && (
               <div>
-                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>RAKEBACK</div>
+                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfRakeback')}</div>
                 {rakebackDeals.map(d => (
                   <div key={d.id} style={{ color: '#34d399' }}>
                     <span style={{ color: '#a5b4fc' }}>{d.gameType}</span> {Math.round(d.percentage * 100)}%
-                    {d.startDate && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>since {d.startDate}</span>}
+                    {d.startDate && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>{tr('pfSince')} {d.startDate}</span>}
                   </div>
                 ))}
               </div>
@@ -635,17 +637,17 @@ export default function PlayerDetail() {
           </div>
         </div>
         <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderTopColor: player.balance > 0 ? '#22c55e' : player.balance < 0 ? '#ef4444' : '#64748b' }}>
-          <div style={{ color: '#7a8499', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Current Balance</div>
+          <div style={{ color: '#7a8499', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '1.2px' }}>{tr('pfCurrentBalance')}</div>
           <div className={balanceClass(player.balance)} style={{ fontSize: 'clamp(2rem, 8vw, 3rem)', fontWeight: 700, margin: '0.5rem 0' }}>
             {fmt(player.balance)}
           </div>
           <div style={{ display: 'flex', gap: '2rem', marginTop: '0.5rem' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7a8499', fontSize: '0.7rem', letterSpacing: '1px' }}>CURRENT CHIPS{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}</div>
+              <div style={{ color: '#7a8499', fontSize: '0.7rem', letterSpacing: '1px' }}>{tr('pfCurrentChips')}{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}</div>
               <div style={{ fontWeight: 600 }}>{fmt(player.currentChips)}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ color: '#7a8499', fontSize: '0.7rem', letterSpacing: '1px' }}>CREDIT GIVEN</div>
+              <div style={{ color: '#7a8499', fontSize: '0.7rem', letterSpacing: '1px' }}>{tr('pfCreditGiven')}</div>
               <div style={{ fontWeight: 600, color: player.creditTotal > 0 ? '#f59e0b' : '#94a3b8' }}>{fmt(player.creditTotal)}</div>
             </div>
           </div>
@@ -653,7 +655,7 @@ export default function PlayerDetail() {
       </div>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
-        <h2 style={{ marginBottom: '1rem', fontSize: '0.95rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Payment Methods</h2>
+        <h2 style={{ marginBottom: '1rem', fontSize: '0.95rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{tr('pfPaymentMethods')}</h2>
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
           {[
             { key: 'bit',          label: 'Bit',            field: 'bitEnabled'          },
@@ -694,8 +696,8 @@ export default function PlayerDetail() {
             <button key={t} className={`btn ${tab === t ? 'btn-primary' : 'btn-secondary'}`}
               onClick={() => setTab(t)}>
               {t === 'transactions'
-                ? `Transactions${transactions.length ? ` (${transactions.length})` : ''}`
-                : `Game Results${filteredResults.length ? ` (${filteredResults.length})` : ''}`}
+                ? `${tr('pfTransactions')}${transactions.length ? ` (${transactions.length})` : ''}`
+                : `${tr('pfGameResults')}${filteredResults.length ? ` (${filteredResults.length})` : ''}`}
             </button>
           ))}
         </div>
@@ -704,9 +706,9 @@ export default function PlayerDetail() {
           <div className="table-wrap"><table>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Amount</th>
+                <th>{tr('pfDate')}</th>
+                <th>{tr('pfType')}</th>
+                <th>{tr('pfAmount')}</th>
                 <th>Method</th>
                 <th>By</th>
                 <th>Notes</th>
@@ -744,9 +746,9 @@ export default function PlayerDetail() {
         {tab === 'results' && (
           <div>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <label style={{ color: '#64748b', fontSize: '0.85rem' }}>From:</label>
+              <label style={{ color: '#64748b', fontSize: '0.85rem' }}>{tr('pfFrom')}:</label>
               <DateInput value={dateFrom} onChange={setDateFrom} />
-              <label style={{ color: '#64748b', fontSize: '0.85rem' }}>To:</label>
+              <label style={{ color: '#64748b', fontSize: '0.85rem' }}>{tr('pfTo')}:</label>
               <DateInput value={dateTo} onChange={setDateTo} />
               {(dateFrom || dateTo || gameTypeFilter) && (
                 <button onClick={() => { setDateFrom(''); setDateTo(''); setGameTypeFilter(''); }}
@@ -772,17 +774,17 @@ export default function PlayerDetail() {
             {filteredResults.length > 0 && (
               <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem', padding: '0.75rem 1rem', background: '#1a1d2e', borderRadius: '8px', flexWrap: 'wrap' }}>
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                  Sessions: <strong style={{ color: '#e2e8f0' }}>{filteredResults.length}</strong>
+                  {tr('pfSessions')}: <strong style={{ color: '#e2e8f0' }}>{filteredResults.length}</strong>
                 </span>
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                  Total Hands: <strong style={{ color: '#e2e8f0' }}>{totalHands}</strong>
+                  {tr('pfTotalHands')}: <strong style={{ color: '#e2e8f0' }}>{totalHands}</strong>
                 </span>
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                  Total: <strong className={balanceClass(totalPnl)}>{fmt(totalPnl)}</strong>
+                  {tr('pfTotal')}: <strong className={balanceClass(totalPnl)}>{fmt(totalPnl)}</strong>
                 </span>
                 {(isAdmin || player.seeRakeback) && (
                   <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                    Total Rake: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
+                    {tr('pfTotalRake')}: <strong style={{ color: '#f59e0b' }}>{fmt(totalRake)}</strong>
                   </span>
                 )}
                 {(isAdmin || player.seeRakeback) && (
@@ -791,21 +793,21 @@ export default function PlayerDetail() {
                   </span>
                 )}
                 <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                  Current Balance{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}: <strong className={balanceClass(player.balance)}>{fmt(player.balance)}</strong>
+                  {tr('pfCurrentBalance')}{player.chipsAsOf ? ` · ${player.chipsAsOf} 00:00` : ''}: <strong className={balanceClass(player.balance)}>{fmt(player.balance)}</strong>
                 </span>
               </div>
             )}
             <div className="table-wrap"><table>
               <thead>
                 <tr>
-                  {thSort('date', 'Date')}
-                  {thSort('table', 'Table')}
-                  {thSort('game', 'Game')}
-                  {thSort('buyin', 'Buy-in')}
-                  {thSort('prize', 'Prize')}
-                  {thSort('hands', 'Hands')}
-                  {(isAdmin || player.seeRakeback) && thSort('rake', 'Rake', { color: '#f59e0b' })}
-                  {thSort('pnl', 'Profit / Loss')}
+                  {thSort('date', tr('pfDate'))}
+                  {thSort('table', tr('pfTable'))}
+                  {thSort('game', tr('pfGame'))}
+                  {thSort('buyin', tr('pfBuyin'))}
+                  {thSort('prize', tr('pfPrize'))}
+                  {thSort('hands', tr('pfHands'))}
+                  {(isAdmin || player.seeRakeback) && thSort('rake', tr('pfRake'), { color: '#f59e0b' })}
+                  {thSort('pnl', tr('pfPnl'))}
                   {isAdmin && player.satelliteBacked && <th style={{ whiteSpace: 'nowrap', color: '#4ade80' }}>Sat. Balance Effect (PROTOTYPE)</th>}
                 </tr>
               </thead>
@@ -857,7 +859,7 @@ export default function PlayerDetail() {
 
         {((tab === 'transactions' && transactions.length === 0) ||
           (tab === 'results' && filteredResults.length === 0)) && (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No records found</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>{tr('pfNoRecords')}</div>
         )}
       </div>
     </div>
