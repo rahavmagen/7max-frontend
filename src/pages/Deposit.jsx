@@ -130,7 +130,7 @@ export default function Deposit() {
   return (
     <div style={{ maxWidth: 1060, margin: '0 auto', padding: '1.5rem' }}>
 
-      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: 0 }}>
+      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'stretch', marginBottom: 0 }}>
 
       <div style={{
           background: 'var(--bg-card)',
@@ -245,8 +245,8 @@ export default function Deposit() {
           border: '1px solid var(--border)',
           borderRadius: 12,
           overflow: 'hidden',
-          flex: '1 1 380px',
-          minWidth: 320,
+          flex: '1.7 1 540px',
+          minWidth: 460,
           display: 'flex',
           flexDirection: 'column',
         }}>
