@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { initiateKashcashDeposit, finalizeKashcashDeposit, getMyKashcashDeposits } from '../api';
+import { useLang } from '../i18n';
 
 export default function Deposit() {
+  const { t } = useLang();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [iframeUrl, setIframeUrl] = useState(null);
@@ -154,15 +156,15 @@ export default function Deposit() {
               onError={e => { e.target.style.display = 'none'; }}
             />
             <div>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>KashCash Deposit</div>
-              <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: 2 }}>Secure payment via KashCash</div>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>{t('depositTitle')}</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: 2 }}>{t('depositSubtitle')}</div>
             </div>
           </div>
 
           {/* Form */}
           <div style={{ padding: '1.5rem' }}>
             <label style={{ display: 'block', color: 'var(--text-label)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Amount (&#8362;)
+              {t('amount')} (&#8362;)
             </label>
 
             {/* Quick amount buttons */}
@@ -195,7 +197,7 @@ export default function Deposit() {
               step="1"
               value={amount}
               onChange={e => setAmount(e.target.value)}
-              placeholder="Or enter custom amount"
+              placeholder={t('customAmount')}
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -227,12 +229,12 @@ export default function Deposit() {
                 letterSpacing: '0.02em',
               }}
             >
-              {loading ? 'Processing...' : `Deposit KashCash${amount && parseFloat(amount) >= 1 ? ` · ₪${parseFloat(amount).toLocaleString()}` : ''}`}
+              {loading ? t('processing') : `${t('depositBtn')}${amount && parseFloat(amount) >= 1 ? ` · ₪${parseFloat(amount).toLocaleString()}` : ''}`}
             </button>
 
             <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
               <span>🔒</span>
-              <span>Payments are processed securely by KashCash</span>
+              <span>{t('securePayments')}</span>
             </div>
           </div>
       </div>
@@ -333,17 +335,17 @@ export default function Deposit() {
       {iframeUrl && (
         <div style={{ margin: '0 0 1rem 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Complete your payment</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{t('completePayment')}</span>
             <button
               onClick={() => { setIframeUrl(null); updateStatus(null); }}
               style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: '0.85rem' }}
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
           {iframeUrl.trimStart().startsWith('<svg') ? (
             <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', textAlign: 'center', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
-              <p style={{ color: '#334155', marginBottom: '1rem', fontWeight: 500 }}>Scan the QR code to complete your payment</p>
+              <p style={{ color: '#334155', marginBottom: '1rem', fontWeight: 500 }}>{t('scanQr')}</p>
               <div dangerouslySetInnerHTML={{ __html: iframeUrl }} style={{ display: 'inline-block', maxWidth: 260 }} />
             </div>
           ) : (
@@ -377,7 +379,7 @@ export default function Deposit() {
           gap: 10,
         }}>
           <span style={{ fontSize: '1.2rem' }}>⏳</span>
-          Verifying payment with KashCash...
+          {t('verifyingPayment')}
         </div>
       )}
 
@@ -395,7 +397,7 @@ export default function Deposit() {
           gap: 10,
         }}>
           <span style={{ fontSize: '1.2rem' }}>✓</span>
-          Payment confirmed! Chips will be added to your account shortly.
+          {t('paymentConfirmed')}
         </div>
       )}
 
@@ -413,21 +415,21 @@ export default function Deposit() {
           gap: 10,
         }}>
           <span style={{ fontSize: '1.2rem' }}>✕</span>
-          Payment was cancelled or rejected. Please try again.
+          {t('paymentFailed')}
         </div>
       )}
 
       {history.length > 0 && (
         <div style={{ marginTop: '2.5rem' }}>
           <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Deposit History
+            {t('depositHistory')}
           </h3>
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: 'rgba(0,0,0,0.15)' }}>
-                    {['Date', 'Amount', 'KashCash TxID', 'Status'].map(h => (
+                    {[t('colDate'), t('colAmount'), t('colTxid'), t('colStatus')].map(h => (
                       <th key={h} style={{ padding: '10px 14px', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         {h}
                       </th>
@@ -448,8 +450,8 @@ export default function Deposit() {
                       </td>
                       <td style={{ padding: '10px 14px' }}>
                         {row.chipsConfirmed
-                          ? <span style={{ color: '#86efac', fontWeight: 600, fontSize: '0.8rem' }}>Added</span>
-                          : <span style={{ color: '#fbbf24', fontWeight: 600, fontSize: '0.8rem' }}>Pending</span>}
+                          ? <span style={{ color: '#86efac', fontWeight: 600, fontSize: '0.8rem' }}>{t('statusAdded')}</span>
+                          : <span style={{ color: '#fbbf24', fontWeight: 600, fontSize: '0.8rem' }}>{t('statusPending')}</span>}
                       </td>
                     </tr>
                   ))}
