@@ -65,10 +65,21 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
                 </thead>
                 <tbody>
                   {games.map((g, i) => (
+                    g.adjustment ? (
+                      <tr key={i} style={{ fontSize: '0.8rem', background: 'rgba(168,85,247,0.06)' }}>
+                        <td style={{ padding: '4px 1rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDateOnly(g.date)}</td>
+                        <td style={{ padding: '4px 8px' }}><span dir="rtl" style={{ color: '#c084fc' }}>{g.tableName}</span></td>
+                        <td /><td /><td />
+                        <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(g.pnl)}>{fmt(g.pnl)}</td>
+                      </tr>
+                    ) : (
                     <tr key={i} style={{ fontSize: '0.82rem' }}>
                       <td style={{ padding: '4px 1rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{fmtDateOnly(g.date)}</td>
                       <td style={{ padding: '4px 8px' }}>
-                        <div dir="rtl" style={{ color: '#e2e8f0', marginBottom: '2px' }}>{g.tableName || '—'}</div>
+                        <div dir="rtl" style={{ color: '#e2e8f0', marginBottom: '2px' }}>
+                          {g.tableName || '—'}
+                          {g.satToLive && <span style={{ marginRight: '0.4rem', fontSize: '0.68rem', color: '#c084fc', background: 'rgba(168,85,247,0.15)', border: '1px solid #7c3aed55', padding: '1px 5px', borderRadius: '4px' }}>סאט ללייב</span>}
+                        </div>
                         <span style={{ ...gameTypeStyle(g.gameType), padding: '2px 8px', borderRadius: '4px', fontSize: '0.78rem' }}>{g.gameType}</span>
                       </td>
                       <td style={{ padding: '4px 8px', textAlign: 'right', color: '#ef4444' }}>{fmt(-(g.buyIn || 0))}</td>
@@ -76,6 +87,7 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
                       <td style={{ padding: '4px 8px', textAlign: 'right', color: '#f59e0b' }}>{fmt(g.rakePaid)}</td>
                       <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(g.pnl)}>{fmt(g.pnl)}</td>
                     </tr>
+                    )
                   ))}
                   <tr style={{ fontSize: '0.82rem', borderTop: '1px solid #334155', background: '#12151f' }}>
                     <td style={{ padding: '4px 1rem', color: '#e2e8f0', fontWeight: 700 }}>Total</td>

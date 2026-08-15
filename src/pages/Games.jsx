@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { getGameSessions, getShabatRakeSummary } from '../api';
+import { getGameSessions, getShabatRakeSummary, setSessionSatToLive } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import DateInput from '../components/DateInput';
@@ -28,6 +28,13 @@ export default function Games() {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
+
+  // Mark/unmark a session as "satellite to live event" (its P&L is excluded from agent balances).
+  const toggleSatToLive = async (s, value) => {
+    setSessions(prev => prev.map(x => x.id === s.id ? { ...x, satToLive: value } : x));
+    try { await setSessionSatToLive(s.id, value); }
+    catch { setSessions(prev => prev.map(x => x.id === s.id ? { ...x, satToLive: !value } : x)); }
   };
 
   // Date range drives the server fetch (it's what controls how much data comes back,
@@ -229,6 +236,7 @@ export default function Games() {
                 {isAdmin && <th>Rake</th>}
                 <th>Hands</th>
                 {isAdmin && <th style={{ color: '#64748b', fontSize: '0.78rem' }}>כלול בריק</th>}
+                {isAdmin && <th style={{ color: '#64748b', fontSize: '0.78rem' }} title="סאט ללייב — לא נספר ברווח הסוכן">סאט ללייב</th>}
               </tr>
             </thead>
             <tbody>
@@ -274,6 +282,17 @@ export default function Games() {
                         checked={!excludedIds.has(s.id)}
                         onChange={e => toggleExclude(s.id, e)}
                         style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: '#f59e0b' }}
+                      />
+                    </td>
+                  )}
+                  {isAdmin && (
+                    <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={!!s.satToLive}
+                        onChange={e => toggleSatToLive(s, e.target.checked)}
+                        title="סאט ללייב — לא נספר ברווח הסוכן"
+                        style={{ width: '15px', height: '15px', cursor: 'pointer', accentColor: '#a855f7' }}
                       />
                     </td>
                   )}
