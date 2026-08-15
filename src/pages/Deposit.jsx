@@ -128,7 +128,7 @@ export default function Deposit() {
   const quickAmounts = [300, 500, 1000, 2000];
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '1.5rem' }}>
+    <div style={{ maxWidth: 1060, margin: '0 auto', padding: '1.5rem' }}>
 
       <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: 0 }}>
 
@@ -137,13 +137,13 @@ export default function Deposit() {
           border: '1px solid var(--border)',
           borderRadius: 12,
           overflow: 'hidden',
-          flex: '1 1 380px',
-          minWidth: 320,
+          flex: '1.7 1 540px',
+          minWidth: 460,
         }}>
           {/* Header */}
           <div style={{
             background: 'linear-gradient(135deg, #1e3a5f 0%, #0f2240 100%)',
-            padding: '1.5rem',
+            padding: '1.75rem 2rem',
             display: 'flex',
             alignItems: 'center',
             gap: '1rem',
@@ -156,13 +156,13 @@ export default function Deposit() {
               onError={e => { e.target.style.display = 'none'; }}
             />
             <div>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>{t('depositTitle')}</div>
-              <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginTop: 2 }}>{t('depositSubtitle')}</div>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.4rem' }}>{t('depositTitle')}</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: 2 }}>{t('depositSubtitle')}</div>
             </div>
           </div>
 
           {/* Form */}
-          <div style={{ padding: '1.5rem' }}>
+          <div style={{ padding: '1.75rem 2rem' }}>
             <label style={{ display: 'block', color: 'var(--text-label)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {t('amount')} (&#8362;)
             </label>
@@ -175,12 +175,12 @@ export default function Deposit() {
                   onClick={() => setAmount(String(q))}
                   style={{
                     flex: 1,
-                    padding: '6px 0',
+                    padding: '12px 0',
                     background: amount === String(q) ? 'var(--accent)' : 'var(--bg-input)',
                     color: amount === String(q) ? '#0f172a' : 'var(--text-secondary)',
                     border: '1px solid var(--border)',
                     borderRadius: 6,
-                    fontSize: '0.85rem',
+                    fontSize: '1rem',
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'all 0.15s',
@@ -200,12 +200,12 @@ export default function Deposit() {
               placeholder={t('customAmount')}
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: '14px 16px',
                 background: 'var(--bg-input)',
                 border: '1px solid var(--border)',
                 borderRadius: 8,
                 color: 'var(--text-primary)',
-                fontSize: '1rem',
+                fontSize: '1.15rem',
                 boxSizing: 'border-box',
                 marginBottom: '1.25rem',
                 outline: 'none',
@@ -217,13 +217,13 @@ export default function Deposit() {
               disabled={loading || !amount || parseFloat(amount) < 1}
               style={{
                 width: '100%',
-                padding: '12px 24px',
+                padding: '16px 24px',
                 background: loading || !amount || parseFloat(amount) < 1 ? '#334155' : 'var(--accent)',
                 color: loading || !amount || parseFloat(amount) < 1 ? '#64748b' : '#0f172a',
                 border: 'none',
                 borderRadius: 8,
                 fontWeight: 700,
-                fontSize: '1rem',
+                fontSize: '1.15rem',
                 cursor: loading || !amount || parseFloat(amount) < 1 ? 'not-allowed' : 'pointer',
                 transition: 'background 0.15s',
                 letterSpacing: '0.02em',
