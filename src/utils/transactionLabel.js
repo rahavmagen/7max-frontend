@@ -15,5 +15,7 @@ export function getTransactionLabel(type, sourceRef) {
   if (type === 'WITHDRAWAL') return 'Withdrawal';
   if (type === 'CHIP_PROMO') return 'Rakeback';
   if (type === 'PLAYER_GIFT') return 'Player Gift';
+  if (type === 'LIVE_TICKET_WON') return 'זכה בכרטיס ללייב';
+  if (type === 'LIVE_TICKET_USED') return 'מימש כרטיס ללייב';
   return type;
 }

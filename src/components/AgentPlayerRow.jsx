@@ -36,6 +36,12 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
           </Link>
           {player.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>{player.fullName}</span>}
           {player.isSelf && <span style={{ marginLeft: '0.4rem', fontSize: '0.68rem', color: '#fbbf24', background: '#3b2f0b', border: '1px solid #a16207', padding: '1px 6px', borderRadius: '4px' }}>agent (self)</span>}
+          {Number(player.ticketWorth) > 0 && (
+            <span title="כרטיס ללייב שהמועדון חייב לשחקן זה (לא כסף)"
+              style={{ marginLeft: '0.4rem', fontSize: '0.68rem', color: '#c084fc', background: 'rgba(168,85,247,0.15)', border: '1px solid #7c3aed55', padding: '1px 6px', borderRadius: '4px' }}>
+              🎟 {player.ticketCount > 1 ? `×${player.ticketCount} · ` : ''}{fmt(player.ticketWorth)}
+            </span>
+          )}
         </td>
         {showBalance && (
           <td style={{ padding: '8px', textAlign: 'right', color: Number(player.balance) < 0 ? '#f87171' : '#4ade80', fontWeight: 600 }}>{fmt(player.balance)}</td>

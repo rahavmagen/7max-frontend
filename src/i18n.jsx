@@ -74,6 +74,7 @@ const TRANSLATIONS = {
     pfRake: 'ריק',
     pfPnl: 'רווח / הפסד',
     pfNoRecords: 'לא נמצאו רשומות',
+    pfLiveTickets: 'כרטיסים ללייב',
   },
   en: {
     myProfile: 'My Profile',
@@ -146,6 +147,7 @@ const TRANSLATIONS = {
     pfRake: 'Rake',
     pfPnl: 'Profit / Loss',
     pfNoRecords: 'No records found',
+    pfLiveTickets: 'Live tickets',
   },
 };
 

@@ -52,6 +52,7 @@ export const changeUserRole = (username, role) => api.post('/auth/admin/change-r
 export const getHandsReport = (params) => api.get('/reports/admin/hands-report', { params });
 export const getFridayRakeReport = () => api.get('/reports/admin/friday-rake');
 export const getRakebackReport = (params) => api.get('/reports/admin/rakeback', { params });
+export const getPlayerLiveTickets = (id) => api.get(`/players/${id}/live-tickets`);
 export const getPlayerRakeback = (id) => api.get(`/players/${id}/rakeback`);
 export const addPlayerRakeback = (id, deal) => api.post(`/players/${id}/rakeback`, deal);
 export const updatePlayerRakeback = (id, dealId, deal) => api.put(`/players/${id}/rakeback/${dealId}`, deal);
@@ -74,6 +75,9 @@ export const getBalanceSheet = (from, to) => {
 export const resetAllData = () => api.post('/import/wipe');
 export const getGameSessions = (params) => api.get('/reports/sessions', { params });
 export const setSessionSatToLive = (id, value) => api.patch(`/reports/sessions/${id}/sat-to-live`, { value });
+export const getLiveTickets = () => api.get('/live-tickets');
+export const useLiveTicket = (id) => api.post(`/live-tickets/${id}/use`);
+export const syncLiveTickets = () => api.post('/live-tickets/sync');
 export const getSessionResults = (id) => api.get(`/reports/sessions/${id}/results`);
 export const comparePlayersWithXls = (file) => {
   const form = new FormData();

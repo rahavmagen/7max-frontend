@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory, getPlayerRakeback, addPlayerRakeback, updatePlayerRakeback, deletePlayerRakeback } from '../api';
+import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory, getPlayerRakeback, addPlayerRakeback, updatePlayerRakeback, deletePlayerRakeback, getPlayerLiveTickets } from '../api';
 
 const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
 import { useAuth } from '../auth/AuthContext';
@@ -19,6 +19,7 @@ export default function PlayerDetail() {
   const [loadError, setLoadError] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [results, setResults] = useState([]);
+  const [liveTickets, setLiveTickets] = useState([]);
   const [tab, setTab] = useState('results');
   const [showResetPass, setShowResetPass] = useState(false);
   const [newPass, setNewPass] = useState('');
@@ -89,6 +90,7 @@ export default function PlayerDetail() {
     if (isAdmin) getPlayerNameHistory(id).then(r => setNameHistory(r.data || [])).catch(() => {});
     if (isAdmin) getAgents().then(r => setAgents(r.data || [])).catch(() => {});
     getActivePlayers().then(r => setAllPlayers(r.data || [])).catch(() => {});
+    getPlayerLiveTickets(id).then(r => setLiveTickets(r.data || [])).catch(() => {});
   };
 
   useEffect(() => { load(); }, [id]);
@@ -617,6 +619,16 @@ export default function PlayerDetail() {
                   <div key={d.id} style={{ color: '#34d399' }}>
                     <span style={{ color: '#a5b4fc' }}>{d.gameType}</span> {Math.round(d.percentage * 100)}%
                     {d.startDate && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.4rem' }}>{tr('pfSince')} {d.startDate}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {liveTickets.length > 0 && (
+              <div>
+                <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>🎟 {tr('pfLiveTickets')}</div>
+                {liveTickets.map(t => (
+                  <div key={t.id} dir="rtl" style={{ color: '#c084fc' }}>
+                    {t.eventName} — <strong>{fmt(t.worth)}</strong>
                   </div>
                 ))}
               </div>

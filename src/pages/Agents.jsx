@@ -856,6 +856,9 @@ export default function Agents() {
                     <span>Current balance: <strong style={{ fontSize: '1.15rem' }} className={balanceClass(a.currentBalance)}>{fmt(a.currentBalance)}</strong>
                       <span style={{ color: '#64748b', marginLeft: 4 }}>({Number(a.currentBalance) > 0 ? 'we owe agent' : Number(a.currentBalance) < 0 ? 'agent owes us' : 'settled'})</span></span>
                     <span style={{ marginLeft: 'auto' }}>= Starting <strong className={balanceClass(a.openingBalance)}>{fmt(a.openingBalance)}</strong> − Agent Rake <strong className={balanceClass(a.agentRake)}>{fmt(a.agentRake)}</strong> − P&L <strong className={balanceClass(a.periodPnl)}>{fmt(a.periodPnl)}</strong></span>
+                    {Number(a.ticketWorth) > 0 && (
+                      <span style={{ width: '100%', color: '#c084fc' }}>🎟 כרטיס ללייב שאנחנו חייבים בשווי <strong>{fmt(a.ticketWorth)}</strong> — כרטיס, לא כסף</span>
+                    )}
                   </div>
                   {rows.length === 0 ? (
                     <div style={{ color: '#64748b', fontSize: '0.82rem', padding: '0.5rem' }}>No players / no data for the selected range</div>
@@ -967,6 +970,9 @@ export default function Agents() {
               <span>− Agent Rake: <strong className={balanceClass(balance?.rakebackSince)}>{fmt(balance?.rakebackSince)}</strong> <span style={{ color: '#64748b' }}>(of {fmt(balance?.totalRake)} rake)</span></span>
               <span>− Players' P&L: <strong className={balanceClass(balance?.playerPnlSince)}>{fmt(balance?.playerPnlSince)}</strong> <span style={{ color: '#64748b' }}>({Number(balance?.playerPnlSince) >= 0 ? 'won' : 'lost'})</span></span>
               <span>− Payments: <strong className={balanceClass(balance?.paymentsSince)}>{fmt(balance?.paymentsSince)}</strong></span>
+              {Number(balance?.ticketWorth) > 0 && (
+                <span style={{ width: '100%', color: '#c084fc' }}>🎟 כרטיס ללייב שאנחנו חייבים בשווי <strong>{fmt(balance?.ticketWorth)}</strong> — כרטיס, לא כסף</span>
+              )}
             </div>
 
             {/* Set-opening form */}
