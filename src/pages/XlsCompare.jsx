@@ -635,7 +635,8 @@ function NoNameReport() {
   const agentMap = {};
   players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
 
-  const noName = players.filter(p => !p.fullName || p.fullName.trim() === '');
+  // Agents hold a chip float for managing their downline - that's not a "missing name" problem.
+  const noName = players.filter(p => !p.isAgent && (!p.fullName || p.fullName.trim() === ''));
 
   let filtered = noName.filter(p => {
     const agentName = agentMap[p.agentId] || '';
