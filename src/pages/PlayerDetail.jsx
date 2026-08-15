@@ -834,7 +834,7 @@ export default function PlayerDetail() {
                       {r.session && r.session.startTime ? fmtDateTime(r.session.startTime) : '-'}
                     </td>
                     <td dir="rtl" style={{ textAlign: 'right' }}>{r.session ? r.session.tableName : '-'}</td>
-                    <td><span style={{ background: '#2d3148', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{r.session ? r.session.gameType : '-'}</span></td>
+                    <td><span style={{ background: '#2d3148', color: '#e2e8f0', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>{r.session ? r.session.gameType : '-'}</span></td>
                     <td style={{ color: '#ef4444', whiteSpace: 'nowrap' }}>{fmt(-(r.buyIn || 0))}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{fmt(displayCashout)}</td>
                     <td style={{ color: '#64748b', whiteSpace: 'nowrap' }}>{r.handsPlayed}</td>
