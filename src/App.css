@@ -135,6 +135,8 @@ h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-secondary); }
 [data-theme="light"] .navbar { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 
 table { width: 100%; border-collapse: collapse; }
+/* Wide tables scroll horizontally on any screen size so far-right columns aren't clipped. */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 th { text-align: left; padding: 0.7rem 1rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1.1px; color: var(--text-label); border-bottom: 2px solid var(--border); }
 td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--bg-row-border); font-size: 0.9rem; }
 tbody tr:nth-child(odd) td { background: var(--bg-row-alt); }
