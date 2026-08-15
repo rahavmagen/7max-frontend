@@ -1,57 +1,66 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getActivePlayers } from '../api';
+import { useLang } from '../i18n';
 
 export default function ActivePlayers() {
   const [players, setPlayers] = useState([]);
   const [search, setSearch] = useState('');
+  const [showChipless, setShowChipless] = useState(false);   // default: hide players with no chips
   const navigate = useNavigate();
+  const { t } = useLang();
 
   useEffect(() => {
-    getActivePlayers().then(r => setPlayers(r.data));
+    getActivePlayers().then(r => setPlayers(r.data));   // all players; the chips filter is client-side
   }, []);
 
-  const filtered = players.filter(p =>
-    p.username.toLowerCase().includes(search.toLowerCase()) ||
-    (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
-    (p.agentUsername && p.agentUsername.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = players.filter(p => {
+    const matchesSearch =
+      p.username.toLowerCase().includes(search.toLowerCase()) ||
+      (p.fullName && p.fullName.toLowerCase().includes(search.toLowerCase())) ||
+      (p.agentUsername && p.agentUsername.toLowerCase().includes(search.toLowerCase()));
+    return matchesSearch && (showChipless || p.hasChips);
+  });
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <h1 style={{ margin: 0 }}>Active Players</h1>
-        <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none', fontSize: '0.875rem' }}>📄 תקנון המועדון</a>
+        <h1 style={{ margin: 0 }}>{t('playersTitle')}</h1>
+        <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none', fontSize: '0.875rem' }}>📄 {t('clubRules')}</a>
       </div>
       <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>
-        Players who participated in at least one game in the last 30 days.
+        {t('playersHoldingChips')}
       </p>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <input
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search by username or name..."
+            placeholder={t('searchPlaceholder')}
             style={{ background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '6px 12px', borderRadius: '6px', width: '260px' }}
           />
           <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-            {filtered.length} player{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} {t('playersWord')}
           </span>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer', marginLeft: 'auto' }}>
+            <input type="checkbox" checked={showChipless} onChange={e => setShowChipless(e.target.checked)} style={{ cursor: 'pointer' }} />
+            {t('showChipless')}
+          </label>
         </div>
       </div>
 
       <div className="card">
         {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No players found</div>
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>{t('noPlayers')}</div>
         ) : (
           <div className="table-wrap"><table>
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Full Name</th>
-                <th>Agent</th>
+                <th>{t('colUsername')}</th>
+                <th>{t('colFullName')}</th>
+                <th>{t('colAgent')}</th>
               </tr>
             </thead>
             <tbody>
