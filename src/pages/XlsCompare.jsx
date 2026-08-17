@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { getPlayers, getAdminTransfers } from '../api';
+import { getPlayers, getAdminTransfers, getLastPlayed } from '../api';
+import { fmtDateOnly } from '../utils/dates';
 
 // ── shared helpers ──────────────────────────────────────────────────────────
 
@@ -620,6 +621,7 @@ function CreditCompare() {
 
 function NoNameReport() {
   const [players, setPlayers] = useState([]);
+  const [lastPlayedMap, setLastPlayedMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterChips, setFilterChips] = useState('has');   // all | has | none
@@ -629,14 +631,18 @@ function NoNameReport() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getPlayers().then(r => { setPlayers(r.data); setLoading(false); }).catch(() => setLoading(false));
+    Promise.all([getPlayers(), getLastPlayed().catch(() => ({ data: {} }))])
+      .then(([pRes, lpRes]) => { setPlayers(pRes.data); setLastPlayedMap(lpRes.data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
   const agentMap = {};
   players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
 
   // Agents hold a chip float for managing their downline - that's not a "missing name" problem.
-  const noName = players.filter(p => !p.isAgent && (!p.fullName || p.fullName.trim() === ''));
+  const noName = players
+    .filter(p => !p.isAgent && (!p.fullName || p.fullName.trim() === ''))
+    .map(p => ({ ...p, lastPlayed: lastPlayedMap[p.id] || null }));
 
   let filtered = noName.filter(p => {
     const agentName = agentMap[p.agentId] || '';
@@ -720,6 +726,7 @@ function NoNameReport() {
               <Th col="phone" label="Phone" />
               <Th col="clubPlayerId" label="Club ID" />
               <Th col="agentName" label="Agent" />
+              <Th col="lastPlayed" label="Last Played" />
               <Th col="currentChips" label="Chips" />
               <Th col="creditTotal" label="Credit" />
               <Th col="balance" label="Balance" />
@@ -734,6 +741,7 @@ function NoNameReport() {
                     <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{p.phone || '—'}</td>
                     <td style={{ color: '#64748b', fontSize: '0.8rem', fontFamily: 'monospace' }}>{p.clubPlayerId || '—'}</td>
                     <td style={{ color: '#34d399', fontSize: '0.85rem' }}>{agentName || '—'}</td>
+                    <td style={{ color: '#64748b', fontSize: '0.85rem' }}>{p.lastPlayed ? fmtDateOnly(p.lastPlayed) : '—'}</td>
                     <td style={{ color: Number(p.currentChips) > 0 ? '#e2e8f0' : '#475569' }}>{fmtN(p.currentChips)}</td>
                     <td style={{ color: p.creditTotal > 0 ? '#f59e0b' : '#475569' }}>{p.creditTotal > 0 ? fmtN(p.creditTotal) : '—'}</td>
                     <td><strong style={{ color: bal > 0 ? '#4ade80' : bal < 0 ? '#f87171' : '#475569' }}>{fmtN(bal)}</strong></td>

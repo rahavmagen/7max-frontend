@@ -13,6 +13,7 @@ api.interceptors.request.use(config => {
 });
 
 export const getPlayers = () => api.get('/players');
+export const getLastPlayed = () => api.get('/players/last-played');
 export const getActivePlayers = (params) => api.get('/players/active', { params });
 export const getLoginStats = (id) => api.get(`/players/${id}/login-stats`);
 export const getStalePlayers = () => api.get('/players/stale');
