@@ -75,6 +75,7 @@ const TRANSLATIONS = {
     pfPnl: 'רווח / הפסד',
     pfNoRecords: 'לא נמצאו רשומות',
     pfLiveTickets: 'כרטיסים ללייב',
+    playersActiveOnly: 'רשימת שמות השחקנים ניתנת לצפיה רק לשחקנים פעילים (ששיחקו בחודש האחרון)',
   },
   en: {
     myProfile: 'My Profile',
@@ -148,6 +149,7 @@ const TRANSLATIONS = {
     pfPnl: 'Profit / Loss',
     pfNoRecords: 'No records found',
     pfLiveTickets: 'Live tickets',
+    playersActiveOnly: 'The player names list is available only to active players (who played in the last month).',
   },
 };
 

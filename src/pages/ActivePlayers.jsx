@@ -1,18 +1,44 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getActivePlayers } from '../api';
+import { getActivePlayers, getMyActivity } from '../api';
 import { useLang } from '../i18n';
+import { useAuth } from '../auth/AuthContext';
 
 export default function ActivePlayers() {
   const [players, setPlayers] = useState([]);
   const [search, setSearch] = useState('');
   const [showChipless, setShowChipless] = useState(false);   // default: hide players with no chips
+  const [locked, setLocked] = useState(false);   // inactive players can't view the names list
   const navigate = useNavigate();
   const { t } = useLang();
+  const { auth } = useAuth();
 
   useEffect(() => {
-    getActivePlayers().then(r => setPlayers(r.data));   // all players; the chips filter is client-side
-  }, []);
+    const isPlayer = auth?.role === 'PLAYER';
+    // Only active players (a game in the last month) may view the names list. Admins/managers always can.
+    const load = () => getActivePlayers().then(r => setPlayers(r.data));   // all players; chips filter is client-side
+    if (isPlayer) {
+      getMyActivity()
+        .then(r => { if (r.data?.active) load(); else setLocked(true); })
+        .catch(() => setLocked(true));
+    } else {
+      load();
+    }
+  }, [auth]);
+
+  if (locked) {
+    return (
+      <div>
+        <h1 style={{ marginTop: 0 }}>{t('playersTitle')}</h1>
+        <div className="card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>🔒</div>
+          <p dir="rtl" style={{ color: '#94a3b8', fontSize: '1.05rem', margin: 0, lineHeight: 1.6 }}>
+            {t('playersActiveOnly')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const filtered = players.filter(p => {
     const matchesSearch =
