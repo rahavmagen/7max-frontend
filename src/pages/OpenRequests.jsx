@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   getPendingKashcashDeposits, getKashcashHistory, confirmKashcashDeposit,
+  getPendingGrowDeposits, getGrowHistory, confirmGrowDeposit,
   getPendingJoinRequests, getJoinHistory, approveJoinRequest, rejectJoinRequest,
 } from '../api';
 import DateInput from '../components/DateInput';
@@ -18,6 +19,12 @@ export default function OpenRequests() {
   const [confirming, setConfirming] = useState(null);
   const [msg, setMsg] = useState(null);
 
+  const [growPending, setGrowPending] = useState([]);
+  const [growHistory, setGrowHistory] = useState(null);
+  const [growFrom, setGrowFrom] = useState('');
+  const [growTo, setGrowTo] = useState('');
+  const [growConfirming, setGrowConfirming] = useState(null);
+
   const [joinPending, setJoinPending] = useState([]);
   const [joinHistory, setJoinHistory] = useState([]);
   const [showJoinHistory, setShowJoinHistory] = useState(false);
@@ -27,6 +34,10 @@ export default function OpenRequests() {
     getPendingKashcashDeposits().then(r => setPending(r.data)).catch(() => {});
   const loadHistory = () =>
     getKashcashHistory(from || null, to || null).then(r => setHistory(r.data)).catch(() => {});
+  const loadGrowPending = () =>
+    getPendingGrowDeposits().then(r => setGrowPending(r.data)).catch(() => {});
+  const loadGrowHistory = () =>
+    getGrowHistory(growFrom || null, growTo || null).then(r => setGrowHistory(r.data)).catch(() => {});
   const loadJoinPending = () =>
     getPendingJoinRequests().then(r => setJoinPending(r.data)).catch(() => {});
   const loadJoinHistory = () =>
@@ -35,6 +46,8 @@ export default function OpenRequests() {
   useEffect(() => {
     loadPending();
     loadHistory();
+    loadGrowPending();
+    loadGrowHistory();
     loadJoinPending();
     loadJoinHistory();
   }, []);
@@ -50,6 +63,19 @@ export default function OpenRequests() {
       setMsg({ type: 'error', text: 'Failed to confirm. Please try again.' });
     }
     setConfirming(null);
+  };
+
+  const handleGrowConfirm = async (id) => {
+    setGrowConfirming(id);
+    setMsg(null);
+    try {
+      await confirmGrowDeposit(id);
+      setMsg({ type: 'success', text: 'Marked as done — chips confirmed.' });
+      await Promise.all([loadGrowPending(), loadGrowHistory()]);
+    } catch {
+      setMsg({ type: 'error', text: 'Failed to confirm. Please try again.' });
+    }
+    setGrowConfirming(null);
   };
 
   const handleJoinAction = async (id, action) => {
@@ -286,6 +312,122 @@ export default function OpenRequests() {
                   <tr style={{ borderTop: '2px solid var(--border)' }}>
                     <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>Total</td>
                     <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--accent)', fontSize: '1rem' }}>{fmt(history.total)}</td>
+                    <td colSpan={2} />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )
+        )}
+      </div>
+
+      {/* Grow Deposits (Open) — Pending */}
+      <div style={card}>
+        <h3 style={{ color: 'var(--text-primary)', marginTop: 0, marginBottom: '1rem' }}>
+          Grow Deposits (Open)
+          {growPending.length > 0 && (
+            <span style={{ marginLeft: 10, background: '#dc2626', color: '#fff', borderRadius: 12, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 600 }}>
+              {growPending.length}
+            </span>
+          )}
+        </h3>
+
+        {growPending.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>No pending deposits</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Date', 'Username', 'Full Name', 'Amount', 'Grow Process ID', 'Action'].map(h => (
+                    <th key={h} style={th}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {growPending.map(row => (
+                  <tr key={row.id}>
+                    <td style={td}>{row.date ? new Date(row.date).toLocaleString('he-IL') : '—'}</td>
+                    <td style={td}><Link to={`/player/${row.playerId}`} style={{ color: 'var(--accent)', fontWeight: 500, textDecoration: 'none' }}>{row.username}</Link></td>
+                    <td style={td}><Link to={`/player/${row.playerId}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{row.fullName}</Link></td>
+                    <td style={{ ...td, fontWeight: 600, color: 'var(--accent)' }}>{fmt(row.amount)}</td>
+                    <td style={{ ...td, fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{row.growProcessId}</td>
+                    <td style={td}>
+                      <button
+                        onClick={() => handleGrowConfirm(row.id)}
+                        disabled={growConfirming === row.id}
+                        style={{
+                          background: growConfirming === row.id ? '#334155' : '#16a34a',
+                          color: '#fff', border: 'none', borderRadius: 6,
+                          padding: '5px 14px', fontSize: '0.85rem', fontWeight: 600,
+                          cursor: growConfirming === row.id ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {growConfirming === row.id ? '...' : 'Mark Done'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Grow History */}
+      <div style={card}>
+        <h3 style={{ color: 'var(--text-primary)', marginTop: 0, marginBottom: '1rem' }}>Grow History</h3>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          {[['From', growFrom, setGrowFrom], ['To', growTo, setGrowTo]].map(([label, val, setter]) => (
+            <div key={label}>
+              <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 4 }}>{label}</label>
+              <DateInput value={val} onChange={setter} />
+            </div>
+          ))}
+          <button onClick={loadGrowHistory}
+            style={{ background: 'var(--accent)', color: '#0f172a', border: 'none', borderRadius: 6, padding: '7px 20px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+            Filter
+          </button>
+          {(growFrom || growTo) && (
+            <button onClick={() => { setGrowFrom(''); setGrowTo(''); getGrowHistory(null, null).then(r => setGrowHistory(r.data)).catch(() => {}); }}
+              style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '7px 14px', cursor: 'pointer', fontSize: '0.85rem' }}>
+              Clear
+            </button>
+          )}
+        </div>
+        {growHistory && (
+          growHistory.rows.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)' }}>No deposits in this period</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    {['Date', 'Username', 'Full Name', 'Amount', 'Grow Process ID', 'Status'].map(h => (
+                      <th key={h} style={th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {growHistory.rows.map(row => (
+                    <tr key={row.id}>
+                      <td style={td}>{row.date ? new Date(row.date).toLocaleString('he-IL') : '—'}</td>
+                      <td style={{ ...td, fontWeight: 500, color: 'var(--text-primary)' }}>{row.username}</td>
+                      <td style={td}>{row.fullName}</td>
+                      <td style={{ ...td, fontWeight: 600, color: 'var(--accent)' }}>{fmt(row.amount)}</td>
+                      <td style={{ ...td, fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{row.growProcessId}</td>
+                      <td style={td}>
+                        {row.chipsConfirmed
+                          ? <span style={{ color: '#86efac', fontWeight: 600 }}>Done</span>
+                          : <span style={{ color: '#fbbf24' }}>Pending chips</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{ borderTop: '2px solid var(--border)' }}>
+                    <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>Total</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--accent)', fontSize: '1rem' }}>{fmt(growHistory.total)}</td>
                     <td colSpan={2} />
                   </tr>
                 </tfoot>

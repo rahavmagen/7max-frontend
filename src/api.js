@@ -196,6 +196,14 @@ export const getMyKashcashDeposits = () => api.get('/kashcash/my');
 // Grow deposits
 export const initiateGrowDeposit = (amount) => api.post('/grow-deposits/initiate', { amount });
 export const getMyGrowDeposits = () => api.get('/grow-deposits/my');
+export const getPendingGrowDeposits = () => api.get('/grow-deposits/pending');
+export const getGrowHistory = (from, to) => {
+  const params = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+  return api.get('/grow-deposits/history', { params });
+};
+export const confirmGrowDeposit = (id) => api.post(`/grow-deposits/confirm/${id}`);
 
 export const getInactivePlayers = (params) => api.get('/reports/inactive-players', { params });
 export const getInactivePlayersBalance = (days) => api.get('/players/inactive-balance', { params: { days } });
