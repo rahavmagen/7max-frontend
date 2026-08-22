@@ -187,7 +187,7 @@ function KashcashDropdown({ pending }) {
         onClick={() => setOpen(o => !o)}
         style={{ position: 'relative' }}
       >
-        KashCash ▾
+        Deposit ▾
         {pending > 0 && (
           <span style={{
             position: 'absolute', top: -4, right: -10,
@@ -200,7 +200,7 @@ function KashcashDropdown({ pending }) {
       </span>
       {open && (
         <div className="nav-dropdown-menu" onClick={() => setOpen(false)}>
-          <NavLink to="/deposit">Deposit KashCash</NavLink>
+          <NavLink to="/deposit">Deposit</NavLink>
           <NavLink to="/open-requests" style={{ position: 'relative' }}>
             Open Requests
             {pending > 0 && (
