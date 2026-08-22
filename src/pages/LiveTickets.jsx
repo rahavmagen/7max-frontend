@@ -76,7 +76,10 @@ export default function LiveTickets() {
               <tbody>
                 {tickets.map((t, i) => (
                   <tr key={t.id} style={{ borderTop: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                    <td style={td}><Link to={`/player/${t.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{t.player}</Link></td>
+                    <td style={td}>
+                      <Link to={`/player/${t.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{t.player}</Link>
+                      {t.playerFullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}> — {t.playerFullName}</span>}
+                    </td>
                     <td style={{ ...td, color: '#34d399', fontSize: '0.85rem' }}>{t.agent || '—'}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }} dir="rtl">{t.eventName || '—'}</td>
                     <td style={{ ...td, textAlign: 'right', color: '#c084fc', fontWeight: 600 }}>{fmt(t.worth)}</td>
