@@ -9,7 +9,8 @@ export default function Deposit() {
   const [iframeUrl, setIframeUrl] = useState(null);
   const [growAmount, setGrowAmount] = useState('');
   const [growLoading, setGrowLoading] = useState(false);
-  const [growStatus, setGrowStatus] = useState(null); // null | 'processing' | 'success' | 'error'
+  const [growStatus, setGrowStatus] = useState(null); // null | 'processing' | 'success' | 'error' | 'phone'
+  const [method, setMethod] = useState('kashcash'); // which payment method card is shown
   const growProcessIdRef = useRef(null);
   const growHandledRef = useRef(false);
   // Persist status across tab switches so user sees result when returning to this page
@@ -166,19 +167,40 @@ export default function Deposit() {
       window.open(paymentLinkUrl, '_blank', 'noopener,noreferrer');
       setGrowStatus('processing');
       pollForGrowDeposit(processId);
-    } catch {
-      setGrowStatus('error');
+    } catch (err) {
+      const code = err?.response?.data?.error;
+      setGrowStatus(code === 'INVALID_PHONE' ? 'phone' : 'error');
     }
     setGrowLoading(false);
   };
 
   const quickAmounts = [300, 500, 1000, 2000];
 
+  const methodTabStyle = (active) => ({
+    flex: '1 1 200px',
+    padding: '12px 16px',
+    background: active ? 'var(--accent)' : 'var(--bg-card)',
+    color: active ? '#0f172a' : 'var(--text-secondary)',
+    border: '1px solid ' + (active ? 'var(--accent)' : 'var(--border)'),
+    borderRadius: 8,
+    fontWeight: 700,
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  });
+
   return (
     <div style={{ maxWidth: 1060, margin: '0 auto', padding: '1.5rem' }}>
 
+      {/* Payment method switch */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button onClick={() => setMethod('kashcash')} style={methodTabStyle(method === 'kashcash')}>KashCash</button>
+        <button onClick={() => setMethod('grow')} style={methodTabStyle(method === 'grow')} dir="rtl">תשלום בכרטיס אשראי, Bit, Apple/Google&nbsp;Pay</button>
+      </div>
+
       <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'stretch', marginBottom: 0 }}>
 
+      {method === 'kashcash' && (
       <div style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
@@ -285,8 +307,10 @@ export default function Deposit() {
             </div>
           </div>
       </div>
+      )}
 
-      {/* Grow deposit card */}
+      {/* Grow deposit card (credit card / Bit / Apple-Google Pay) */}
+      {method === 'grow' && (
       <div style={{
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
@@ -303,12 +327,12 @@ export default function Deposit() {
             gap: '1rem',
             borderBottom: '1px solid var(--border)',
           }}>
-            <div style={{ height: 48, width: 48, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#4c1d95', fontSize: '1.1rem' }}>
-              Grow
+            <div style={{ height: 48, width: 48, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+              💳
             </div>
-            <div>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.4rem' }}>הפקדה עם Grow</div>
-              <div style={{ color: '#c4b5fd', fontSize: '0.9rem', marginTop: 2 }}>תשלום בכרטיס אשראי, Bit, Apple/Google Pay</div>
+            <div dir="rtl">
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.15rem' }}>תשלום בכרטיס אשראי, Bit, Apple/Google Pay</div>
+              <div style={{ color: '#c4b5fd', fontSize: '0.9rem', marginTop: 2 }}>הפקדה מיידית לחשבון</div>
             </div>
           </div>
 
@@ -378,12 +402,12 @@ export default function Deposit() {
                 letterSpacing: '0.02em',
               }}
             >
-              {growLoading ? t('processing') : `שלם עם Grow${growAmount && parseFloat(growAmount) >= 1 ? ` · ₪${parseFloat(growAmount).toLocaleString()}` : ''}`}
+              {growLoading ? t('processing') : `שלם${growAmount && parseFloat(growAmount) >= 1 ? ` · ₪${parseFloat(growAmount).toLocaleString()}` : ''}`}
             </button>
 
             <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
               <span>🔒</span>
-              <span>התשלומים מעובדים באופן מאובטח דרך Grow</span>
+              <span>התשלומים מעובדים באופן מאובטח</span>
             </div>
 
             {growStatus === 'processing' && (
@@ -404,8 +428,15 @@ export default function Deposit() {
                 {t('paymentFailed')}
               </div>
             )}
+            {growStatus === 'phone' && (
+              <div dir="rtl" style={{ background: '#78350f', color: '#fcd34d', border: '1px solid #f59e0b', borderRadius: 10, padding: '0.85rem 1.25rem', marginTop: '1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '1.2rem' }}>📱</span>
+                מספר הטלפון בפרופיל חסר או שגוי — יש לעדכן מספר נייד תקין (05XXXXXXXX) כדי לשלם בכרטיס אשראי
+              </div>
+            )}
           </div>
       </div>
+      )}
 
       {/* WhatsApp / Phone card */}
       <div style={{
