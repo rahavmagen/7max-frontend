@@ -207,7 +207,7 @@ export default function Deposit() {
           borderRadius: 12,
           overflow: 'hidden',
           flex: '1.7 1 540px',
-          minWidth: 460,
+          minWidth: 'min(100%, 460px)',
         }}>
           {/* Header */}
           <div style={{
@@ -317,7 +317,7 @@ export default function Deposit() {
           borderRadius: 12,
           overflow: 'hidden',
           flex: '1.7 1 540px',
-          minWidth: 460,
+          minWidth: 'min(100%, 460px)',
         }}>
           <div style={{
             background: 'linear-gradient(135deg, #4c1d95 0%, #2e1065 100%)',
@@ -445,7 +445,7 @@ export default function Deposit() {
           borderRadius: 12,
           overflow: 'hidden',
           flex: '1.7 1 540px',
-          minWidth: 460,
+          minWidth: 'min(100%, 460px)',
           display: 'flex',
           flexDirection: 'column',
         }}>
