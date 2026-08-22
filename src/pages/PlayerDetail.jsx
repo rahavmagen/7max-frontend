@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory, getPlayerRakeback, addPlayerRakeback, updatePlayerRakeback, deletePlayerRakeback, getPlayerLiveTickets } from '../api';
+import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory, getPlayerRakeback, addPlayerRakeback, updatePlayerRakeback, deletePlayerRakeback, getPlayerLiveTickets, updateSelfDetails } from '../api';
 
 const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
 import { useAuth } from '../auth/AuthContext';
@@ -14,7 +14,30 @@ export default function PlayerDetail() {
   const navigate = useNavigate();
   const { auth } = useAuth();
   const isAdmin = auth?.role === 'ADMIN' || auth?.role === 'MANAGER';
+  const isOwnProfile = !isAdmin && String(auth?.playerId) === String(id); // player viewing their own profile
   const { t: tr } = useLang();
+  // Player self-edit of their join details (name / phone / club id)
+  const [selfEditing, setSelfEditing] = useState(false);
+  const [selfForm, setSelfForm] = useState({ fullName: '', phone: '', clubPlayerId: '' });
+  const [selfErr, setSelfErr] = useState('');
+  const [selfSaving, setSelfSaving] = useState(false);
+  const startSelfEdit = () => {
+    setSelfErr('');
+    setSelfForm({ fullName: player.fullName || '', phone: player.phone || '', clubPlayerId: player.clubPlayerId || '' });
+    setSelfEditing(true);
+  };
+  const saveSelfEdit = async () => {
+    setSelfErr(''); setSelfSaving(true);
+    try {
+      const r = await updateSelfDetails(id, selfForm);
+      setPlayer(p => ({ ...p, fullName: r.data.fullName, phone: r.data.phone, clubPlayerId: r.data.clubPlayerId }));
+      setSelfEditing(false);
+    } catch (e) {
+      const code = e?.response?.data?.error;
+      setSelfErr(code === 'CLUB_ID_TAKEN' ? tr('pfClubIdTaken') : tr('pfSaveFailed'));
+    }
+    setSelfSaving(false);
+  };
   const [player, setPlayer] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [transactions, setTransactions] = useState([]);
@@ -561,24 +584,56 @@ export default function PlayerDetail() {
 
       <div className="player-balance-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card" style={{ borderTopColor: '#4a5568' }}>
-          <h2>{tr('pfPlayerInfo')}</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0 }}>{tr('pfPlayerInfo')}</h2>
+            {isOwnProfile && !selfEditing && (
+              <button className="btn btn-secondary" style={{ fontSize: '0.8rem' }} onClick={startSelfEdit}>✏️ {tr('pfEditDetails')}</button>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', marginTop: '0.8rem' }}>
             <div>
               <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfUsername')}</div>
               <div style={{ fontWeight: 600 }}>{player.username}</div>
             </div>
-            <div>
-              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfFullName')}</div>
-              <div>{player.fullName || '—'}</div>
-            </div>
-            <div>
-              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfPhone')}</div>
-              <div>{player.phone || '—'}</div>
-            </div>
-            <div>
-              <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfClubId')}</div>
-              <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
-            </div>
+            {selfEditing ? (
+              <>
+                <div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfFullName')}</div>
+                  <input value={selfForm.fullName} onChange={e => setSelfForm(f => ({ ...f, fullName: e.target.value }))}
+                    style={{ width: '100%', padding: '6px 8px', background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', borderRadius: 6, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfPhone')}</div>
+                  <input value={selfForm.phone} onChange={e => setSelfForm(f => ({ ...f, phone: e.target.value }))}
+                    style={{ width: '100%', padding: '6px 8px', background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', borderRadius: 6, boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfClubId')}</div>
+                  <input value={selfForm.clubPlayerId} onChange={e => setSelfForm(f => ({ ...f, clubPlayerId: e.target.value }))}
+                    style={{ width: '100%', padding: '6px 8px', background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', borderRadius: 6, boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                </div>
+                {selfErr && <div style={{ color: '#f87171', fontSize: '0.8rem' }}>{selfErr}</div>}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-primary" style={{ fontSize: '0.85rem' }} disabled={selfSaving} onClick={saveSelfEdit}>{tr('pfSave')}</button>
+                  <button className="btn btn-secondary" style={{ fontSize: '0.85rem' }} disabled={selfSaving} onClick={() => setSelfEditing(false)}>{tr('cancel')}</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfFullName')}</div>
+                  <div>{player.fullName || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfPhone')}</div>
+                  <div>{player.phone || '—'}</div>
+                </div>
+                <div>
+                  <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>{tr('pfClubId')}</div>
+                  <div style={{ color: '#94a3b8', fontFamily: 'monospace' }}>{player.clubPlayerId || '—'}</div>
+                </div>
+              </>
+            )}
             {isAdmin && nameHistory.length > 0 && (
               <div>
                 <div style={{ color: '#7a8499', fontSize: '0.72rem', letterSpacing: '1.1px' }}>PREVIOUS NAMES</div>

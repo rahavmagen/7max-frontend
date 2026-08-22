@@ -76,6 +76,10 @@ const TRANSLATIONS = {
     pfNoRecords: 'לא נמצאו רשומות',
     pfLiveTickets: 'כרטיסים ללייב',
     playersActiveOnly: 'רשימת שמות השחקנים ניתנת לצפיה רק לשחקנים פעילים (ששיחקו בחודש האחרון)',
+    pfEditDetails: 'עריכת פרטים',
+    pfSave: 'שמירה',
+    pfClubIdTaken: 'מזהה המועדון כבר בשימוש על ידי שחקן אחר',
+    pfSaveFailed: 'השמירה נכשלה, נסה שוב',
   },
   en: {
     myProfile: 'My Profile',
@@ -150,6 +154,10 @@ const TRANSLATIONS = {
     pfNoRecords: 'No records found',
     pfLiveTickets: 'Live tickets',
     playersActiveOnly: 'The player names list is available only to active players (who played in the last month).',
+    pfEditDetails: 'Edit details',
+    pfSave: 'Save',
+    pfClubIdTaken: 'This club ID is already used by another player',
+    pfSaveFailed: 'Save failed, please try again',
   },
 };
 

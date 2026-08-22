@@ -21,6 +21,7 @@ export const getStalePlayers = () => api.get('/players/stale');
 export const getPlayer = (id) => api.get(`/players/${id}`);
 export const createPlayer = (data) => api.post('/players', data);
 export const updatePlayer = (id, data) => api.put(`/players/${id}`, data);
+export const updateSelfDetails = (id, data) => api.patch(`/players/${id}/self-details`, data);
 export const deletePlayer = (id) => api.delete(`/players/${id}`);
 export const updateCredit = (id, delta, notes) => api.patch(`/players/${id}/credit`, { delta, notes });
 export const setPlayerBalance = (id, balance, notes) => api.patch(`/players/${id}/balance`, { balance, notes });
