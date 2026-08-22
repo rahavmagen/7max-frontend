@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { initiateKashcashDeposit, finalizeKashcashDeposit, getMyKashcashDeposits } from '../api';
+import { initiateKashcashDeposit, finalizeKashcashDeposit, getMyKashcashDeposits, initiateGrowDeposit, getMyGrowDeposits } from '../api';
 import { useLang } from '../i18n';
 
 export default function Deposit() {
@@ -7,6 +7,11 @@ export default function Deposit() {
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [iframeUrl, setIframeUrl] = useState(null);
+  const [growAmount, setGrowAmount] = useState('');
+  const [growLoading, setGrowLoading] = useState(false);
+  const [growStatus, setGrowStatus] = useState(null); // null | 'processing' | 'success' | 'error'
+  const growProcessIdRef = useRef(null);
+  const growHandledRef = useRef(false);
   // Persist status across tab switches so user sees result when returning to this page
   const [paymentStatus, setPaymentStatus] = useState(() => {
     const s = sessionStorage.getItem('kc_payment_status');
@@ -125,6 +130,48 @@ export default function Deposit() {
     setLoading(false);
   };
 
+  // Grow's payment link opens in a new tab, so we poll for the deposit to land
+  // rather than relying on a postMessage/redirect back into this tab.
+  const pollForGrowDeposit = (processId) => {
+    const startTime = Date.now();
+    const pollId = setInterval(async () => {
+      if (growHandledRef.current) { clearInterval(pollId); return; }
+      if (Date.now() - startTime > 10 * 60 * 1000) {
+        clearInterval(pollId);
+        if (!growHandledRef.current) setGrowStatus('error');
+        return;
+      }
+      try {
+        const res = await getMyGrowDeposits();
+        const found = res.data.find(d => d.growProcessId === processId);
+        if (found) {
+          clearInterval(pollId);
+          growHandledRef.current = true;
+          setGrowStatus('success');
+        }
+      } catch { /* ignore */ }
+    }, 3000);
+  };
+
+  const handleGrowPay = async () => {
+    const num = parseFloat(growAmount);
+    if (!num || num < 1) return;
+    setGrowLoading(true);
+    setGrowStatus(null);
+    growHandledRef.current = false;
+    try {
+      const res = await initiateGrowDeposit(num);
+      const { paymentLinkUrl, processId } = res.data;
+      growProcessIdRef.current = processId;
+      window.open(paymentLinkUrl, '_blank', 'noopener,noreferrer');
+      setGrowStatus('processing');
+      pollForGrowDeposit(processId);
+    } catch {
+      setGrowStatus('error');
+    }
+    setGrowLoading(false);
+  };
+
   const quickAmounts = [300, 500, 1000, 2000];
 
   return (
@@ -236,6 +283,127 @@ export default function Deposit() {
               <span>🔒</span>
               <span>{t('securePayments')}</span>
             </div>
+          </div>
+      </div>
+
+      {/* Grow deposit card */}
+      <div style={{
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          overflow: 'hidden',
+          flex: '1.7 1 540px',
+          minWidth: 460,
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #4c1d95 0%, #2e1065 100%)',
+            padding: '1.75rem 2rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            borderBottom: '1px solid var(--border)',
+          }}>
+            <div style={{ height: 48, width: 48, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#4c1d95', fontSize: '1.1rem' }}>
+              Grow
+            </div>
+            <div>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: '1.4rem' }}>הפקדה עם Grow</div>
+              <div style={{ color: '#c4b5fd', fontSize: '0.9rem', marginTop: 2 }}>תשלום בכרטיס אשראי, Bit, Apple/Google Pay</div>
+            </div>
+          </div>
+
+          <div style={{ padding: '1.75rem 2rem' }} dir="rtl">
+            <label style={{ display: 'block', color: 'var(--text-label)', fontSize: '0.8rem', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              סכום (&#8362;)
+            </label>
+
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {quickAmounts.map(q => (
+                <button
+                  key={q}
+                  onClick={() => setGrowAmount(String(q))}
+                  style={{
+                    flex: 1,
+                    padding: '12px 0',
+                    background: growAmount === String(q) ? '#a78bfa' : 'var(--bg-input)',
+                    color: growAmount === String(q) ? '#1e1033' : 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 6,
+                    fontSize: '1rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  &#8362;{q}
+                </button>
+              ))}
+            </div>
+
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={growAmount}
+              onChange={e => setGrowAmount(e.target.value)}
+              placeholder="סכום אחר"
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                color: 'var(--text-primary)',
+                fontSize: '1.15rem',
+                boxSizing: 'border-box',
+                marginBottom: '1.25rem',
+                outline: 'none',
+              }}
+            />
+
+            <button
+              onClick={handleGrowPay}
+              disabled={growLoading || !growAmount || parseFloat(growAmount) < 1}
+              style={{
+                width: '100%',
+                padding: '16px 24px',
+                background: growLoading || !growAmount || parseFloat(growAmount) < 1 ? '#334155' : '#a78bfa',
+                color: growLoading || !growAmount || parseFloat(growAmount) < 1 ? '#64748b' : '#1e1033',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 700,
+                fontSize: '1.15rem',
+                cursor: growLoading || !growAmount || parseFloat(growAmount) < 1 ? 'not-allowed' : 'pointer',
+                transition: 'background 0.15s',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {growLoading ? t('processing') : `שלם עם Grow${growAmount && parseFloat(growAmount) >= 1 ? ` · ₪${parseFloat(growAmount).toLocaleString()}` : ''}`}
+            </button>
+
+            <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+              <span>🔒</span>
+              <span>התשלומים מעובדים באופן מאובטח דרך Grow</span>
+            </div>
+
+            {growStatus === 'processing' && (
+              <div style={{ background: '#1e3a5f', color: '#93c5fd', border: '1px solid #3b82f6', borderRadius: 10, padding: '0.85rem 1.25rem', marginTop: '1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '1.2rem' }}>⏳</span>
+                השלם את התשלום בלשונית שנפתחה — ממתין לאישור...
+              </div>
+            )}
+            {growStatus === 'success' && (
+              <div style={{ background: '#14532d', color: '#86efac', border: '1px solid #16a34a', borderRadius: 10, padding: '0.85rem 1.25rem', marginTop: '1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '1.2rem' }}>✓</span>
+                {t('paymentConfirmed')}
+              </div>
+            )}
+            {growStatus === 'error' && (
+              <div style={{ background: '#450a0a', color: '#fca5a5', border: '1px solid #dc2626', borderRadius: 10, padding: '0.85rem 1.25rem', marginTop: '1rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: '1.2rem' }}>✕</span>
+                {t('paymentFailed')}
+              </div>
+            )}
           </div>
       </div>
 
