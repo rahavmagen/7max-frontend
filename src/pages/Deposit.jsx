@@ -10,7 +10,7 @@ export default function Deposit() {
   const [growAmount, setGrowAmount] = useState('');
   const [growLoading, setGrowLoading] = useState(false);
   const [growStatus, setGrowStatus] = useState(null); // null | 'processing' | 'success' | 'error' | 'phone'
-  const [method, setMethod] = useState('kashcash'); // which payment method card is shown
+  const [method, setMethod] = useState('grow'); // which payment method card is shown
   const growProcessIdRef = useRef(null);
   const growHandledRef = useRef(false);
   // Persist status across tab switches so user sees result when returning to this page
