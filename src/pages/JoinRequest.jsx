@@ -17,7 +17,7 @@ export default function JoinRequest() {
       await submitJoinRequest(form);
       setSubmitted(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to send request. Please try again.');
+      setError(err.response?.data?.error || 'שליחת הבקשה נכשלה. נסה/י שוב.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +44,7 @@ export default function JoinRequest() {
       }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <img src="/7maxlogo.png" alt="7MAX" style={{ height: '64px', marginBottom: '0.75rem' }} />
-          <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>Request to join the club</p>
+          <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0, direction: 'rtl' }}>בקשת הצטרפות למועדון</p>
         </div>
 
         {submitted ? (
@@ -54,13 +54,14 @@ export default function JoinRequest() {
             borderRadius: '10px',
             padding: '1.5rem',
             textAlign: 'center',
+            direction: 'rtl',
           }}>
             <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>✅</div>
             <div style={{ color: '#86efac', fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem' }}>
-              Request sent!
+              הבקשה נשלחה!
             </div>
             <div style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-              You will receive access once an admin approves your request.
+              תקבל/י גישה לאחר שמנהל יאשר את הבקשה.
             </div>
           </div>
         ) : (
@@ -75,30 +76,31 @@ export default function JoinRequest() {
                 fontSize: '0.875rem',
                 marginBottom: '1.25rem',
                 textAlign: 'center',
+                direction: 'rtl',
               }}>
                 {error}
               </div>
             )}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', direction: 'rtl' }}>
               <div>
-                <label style={labelStyle}>ClubGG Username *</label>
+                <label style={labelStyle}>שם משתמש ClubGG *</label>
                 <input required value={form.username} onChange={e => set('username', e.target.value)}
-                  style={inputStyle} placeholder="e.g. liorar" />
+                  style={inputStyle} placeholder="לדוגמה: liorar" />
               </div>
               <div>
-                <label style={labelStyle}>Full Name *</label>
+                <label style={labelStyle}>שם מלא *</label>
                 <input required value={form.fullName} onChange={e => set('fullName', e.target.value)}
-                  style={inputStyle} placeholder="e.g. לירון כהן" />
+                  style={inputStyle} placeholder="לדוגמה: לירון כהן" />
               </div>
               <div>
-                <label style={labelStyle}>Phone *</label>
+                <label style={labelStyle}>טלפון *</label>
                 <input required value={form.phone} onChange={e => set('phone', e.target.value)}
                   style={inputStyle} placeholder="050-0000000" />
               </div>
               <div>
-                <label style={labelStyle}>ClubGG Player ID (optional)</label>
+                <label style={labelStyle}>מספר שחקן ClubGG (אופציונלי)</label>
                 <input value={form.clubPlayerId} onChange={e => set('clubPlayerId', e.target.value)}
-                  style={inputStyle} placeholder="e.g. 2163-3811" />
+                  style={inputStyle} placeholder="לדוגמה: 2163-3811" />
               </div>
               <button type="submit" disabled={loading} style={{
                 background: loading ? '#334155' : '#6366f1',
@@ -111,7 +113,7 @@ export default function JoinRequest() {
                 cursor: loading ? 'not-allowed' : 'pointer',
                 marginTop: '0.25rem',
               }}>
-                {loading ? 'Sending...' : 'Send Request'}
+                {loading ? 'שולח...' : 'שלח בקשה'}
               </button>
             </form>
             <div style={{
@@ -123,11 +125,12 @@ export default function JoinRequest() {
               fontSize: '0.83rem',
               color: '#a5b4fc',
               lineHeight: 1.6,
+              direction: 'rtl',
             }}>
-              To be approved, you must first join the club on ClubGG.<br />
+              כדי לקבל אישור, עליך להצטרף קודם למועדון ב-ClubGG.<br />
               👉 <a href="https://clubgg.app.link/QyU3JGEfS2b" target="_blank" rel="noopener noreferrer"
-                style={{ color: '#818cf8' }}>Join the club app</a><br />
-              Club ID: <strong>770299</strong>
+                style={{ color: '#818cf8' }}>הצטרפות לאפליקציית המועדון</a><br />
+              מספר מועדון: <strong>770299</strong>
             </div>
           </>
         )}
