@@ -58,8 +58,35 @@ export default function Deposit() {
         }
       } else if (data.status === 2 || data.status === 3) {
         if (paymentHandledRef.current) return;
-        updateStatus('error');
         setIframeUrl(null);
+        // A stale/leftover browser tab (e.g. the QR fallback, if it loaded after the
+        // KashCash app already completed the same payment) can report "rejected" even
+        // though the payment actually succeeded elsewhere. Don't trust this signal on
+        // its own - confirm against the server's own record before declaring failure.
+        const txId = pendingTxIdRef.current;
+        if (!txId) {
+          paymentHandledRef.current = true;
+          updateStatus('error');
+          return;
+        }
+        getMyKashcashDeposits()
+          .then((res) => {
+            if (paymentHandledRef.current) return; // the poller already resolved this
+            paymentHandledRef.current = true;
+            const found = res.data.find(d => d.kashcashTxId === txId);
+            if (found) {
+              updateStatus('success');
+              setHistory(res.data);
+            } else {
+              updateStatus('error');
+            }
+          })
+          .catch(() => {
+            if (!paymentHandledRef.current) {
+              paymentHandledRef.current = true;
+              updateStatus('error');
+            }
+          });
       }
     };
     window.addEventListener('message', handler);
