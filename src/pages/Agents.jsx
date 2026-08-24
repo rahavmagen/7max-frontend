@@ -993,7 +993,11 @@ export default function Agents() {
             <div style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '1.25rem', fontSize: '0.85rem', color: '#94a3b8' }}>
               <span>Starting {balance?.openingDate ? `(${fmtDateOnly(balance.openingDate)})` : '(none)'}: <strong className={balanceClass(balance?.openingBalance)}>{fmt(balance?.openingBalance)}</strong></span>
               <span>− Agent Rake: <strong className={balanceClass(balance?.rakebackSince)}>{fmt(balance?.rakebackSince)}</strong> <span style={{ color: '#64748b' }}>(of {fmt(balance?.totalRake)} rake)</span></span>
-              <span>− Players' P&L: <strong className={balanceClass(balance?.playerPnlSince)}>{fmt(balance?.playerPnlSince)}</strong> <span style={{ color: '#64748b' }}>({Number(balance?.playerPnlSince) >= 0 ? 'won' : 'lost'})</span></span>
+              <span>− Players' P&L: <strong className={balanceClass(balance?.playerPnlSince)}>{fmt(balance?.playerPnlSince)}</strong> <span style={{ color: '#64748b' }}>({Number(balance?.playerPnlSince) >= 0 ? 'won' : 'lost'})</span>
+                {balance?.appPnl != null && Number(balance?.appPnl) !== Number(balance?.playerPnlSince) && (
+                  <span title="סה״כ הרווח של הסוכן כפי שמופיע באפליקציה (GG), כולל סאט ללייב — להשוואה"> · app <strong className={balanceClass(balance?.appPnl)}>{fmt(balance?.appPnl)}</strong></span>
+                )}
+              </span>
               <span>− Payments: <strong className={balanceClass(balance?.paymentsSince)}>{fmt(balance?.paymentsSince)}</strong></span>
               {Number(balance?.ticketWorth) > 0 && (
                 <span style={{ width: '100%', color: '#c084fc' }}>🎟 כרטיס ללייב שאנחנו חייבים בשווי <strong>{fmt(balance?.ticketWorth)}</strong> — כרטיס, לא כסף
