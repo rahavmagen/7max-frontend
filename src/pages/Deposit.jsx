@@ -187,14 +187,21 @@ export default function Deposit() {
     setGrowLoading(true);
     setGrowStatus(null);
     growHandledRef.current = false;
+    // iOS Safari only allows window.open() synchronously within the click handler -
+    // once we `await` the server call below, a fresh window.open() gets silently
+    // blocked (no tab, no error). Open a blank tab now, before the await, and point
+    // it at the real payment link once we have it.
+    const growTab = window.open('', '_blank', 'noopener,noreferrer');
     try {
       const res = await initiateGrowDeposit(num);
       const { paymentLinkUrl, processId } = res.data;
       growProcessIdRef.current = processId;
-      window.open(paymentLinkUrl, '_blank', 'noopener,noreferrer');
+      if (growTab) growTab.location.href = paymentLinkUrl;
+      else window.open(paymentLinkUrl, '_blank', 'noopener,noreferrer');
       setGrowStatus('processing');
       pollForGrowDeposit(processId);
     } catch (err) {
+      if (growTab) growTab.close();
       const code = err?.response?.data?.error;
       setGrowStatus(code === 'INVALID_PHONE' ? 'phone' : 'error');
     }
