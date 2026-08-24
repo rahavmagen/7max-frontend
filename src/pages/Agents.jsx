@@ -862,7 +862,9 @@ export default function Agents() {
                       <span style={{ color: '#64748b', marginLeft: 4 }}>({Number(a.currentBalance) > 0 ? 'we owe agent' : Number(a.currentBalance) < 0 ? 'agent owes us' : 'settled'})</span></span>
                     <span style={{ marginLeft: 'auto' }}>= Starting <strong className={balanceClass(a.openingBalance)}>{fmt(a.openingBalance)}</strong> − Agent Rake <strong className={balanceClass(a.agentRake)}>{fmt(a.agentRake)}</strong> − P&L <strong className={balanceClass(a.periodPnl)}>{fmt(a.periodPnl)}</strong></span>
                     {Number(a.ticketWorth) > 0 && (
-                      <span style={{ width: '100%', color: '#c084fc' }}>🎟 כרטיס ללייב שאנחנו חייבים בשווי <strong>{fmt(a.ticketWorth)}</strong> — כרטיס, לא כסף</span>
+                      <span style={{ width: '100%', color: '#c084fc' }}>🎟 כרטיס ללייב שאנחנו חייבים בשווי <strong>{fmt(a.ticketWorth)}</strong> — כרטיס, לא כסף
+                        {Number(a.ticketCost) > 0 && <span> · עלות סאט <strong>{fmt(a.ticketCost)}</strong> · <span style={{ color: '#4ade80' }}>רווח <strong>{fmt(a.ticketProfit)}</strong></span></span>}
+                      </span>
                     )}
                   </div>
                   {rows.length === 0 ? (
@@ -978,7 +980,9 @@ export default function Agents() {
               <span>− Players' P&L: <strong className={balanceClass(balance?.playerPnlSince)}>{fmt(balance?.playerPnlSince)}</strong> <span style={{ color: '#64748b' }}>({Number(balance?.playerPnlSince) >= 0 ? 'won' : 'lost'})</span></span>
               <span>− Payments: <strong className={balanceClass(balance?.paymentsSince)}>{fmt(balance?.paymentsSince)}</strong></span>
               {Number(balance?.ticketWorth) > 0 && (
-                <span style={{ width: '100%', color: '#c084fc' }}>🎟 כרטיס ללייב שאנחנו חייבים בשווי <strong>{fmt(balance?.ticketWorth)}</strong> — כרטיס, לא כסף</span>
+                <span style={{ width: '100%', color: '#c084fc' }}>🎟 כרטיס ללייב שאנחנו חייבים בשווי <strong>{fmt(balance?.ticketWorth)}</strong> — כרטיס, לא כסף
+                  {Number(balance?.ticketCost) > 0 && <span> · עלות סאט <strong>{fmt(balance?.ticketCost)}</strong> · <span style={{ color: '#4ade80' }}>רווח <strong>{fmt(balance?.ticketProfit)}</strong></span></span>}
+                </span>
               )}
             </div>
 
