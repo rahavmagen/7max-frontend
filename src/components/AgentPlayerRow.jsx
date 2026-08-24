@@ -51,7 +51,12 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{player.gameCount}</td>
         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{fmt(player.totalRake)}</td>
         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 600 }}>{fmt(player.agentShare)}</td>
-        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(player.periodPnl)}>{fmt(player.periodPnl)}</td>
+        <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(player.periodPnl)}>
+          {fmt(player.periodPnl)}
+          {player.appPnl != null && Number(player.appPnl) !== Number(player.periodPnl) && (
+            <span title="הרווח כפי שמופיע באפליקציה (GG), כולל את הסאט ללייב — להשוואה" style={{ display: 'block', fontSize: '0.68rem', color: '#c084fc', fontWeight: 400 }}>app {fmt(player.appPnl)}</span>
+          )}
+        </td>
       </tr>
       {expanded && (
         <tr>

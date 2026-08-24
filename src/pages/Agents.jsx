@@ -718,7 +718,12 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(a.totalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, borderLeft: '2px solid #475569' }} className={balanceClass(a.agentRake)}>{fmt(a.agentRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.pendingBalance)}>{fmt(a.pendingBalance)}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>{fmt(a.periodPnl)}</td>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>
+                  {fmt(a.periodPnl)}
+                  {a.appPnl != null && Number(a.appPnl) !== Number(a.periodPnl) && (
+                    <span title="הרווח כפי שמופיע באפליקציה (GG), כולל את הסאט ללייב — להשוואה" style={{ display: 'block', fontSize: '0.68rem', color: '#c084fc', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
+                  )}
+                </td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={editingStart === a.id ? '' : balanceClass(a.openingBalance)}>
                   {editingStart === a.id ? (
                     <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center', justifyContent: 'flex-end' }}>
@@ -816,7 +821,12 @@ export default function Agents() {
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.gameCount ?? 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(a.totalChips)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{fmt(a.totalRake)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>{fmt(a.periodPnl)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>
+                  {fmt(a.periodPnl)}
+                  {a.appPnl != null && Number(a.appPnl) !== Number(a.periodPnl) && (
+                    <span title="הרווח כפי שמופיע באפליקציה (GG), כולל את הסאט ללייב — להשוואה" style={{ display: 'block', fontSize: '0.68rem', color: '#c084fc', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
+                  )}
+                </td>
                   </tr>
                 ))}
               </tbody>
