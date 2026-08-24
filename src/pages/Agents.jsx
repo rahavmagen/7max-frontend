@@ -721,7 +721,7 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>
                   {fmt(a.periodPnl)}
                   {a.appPnl != null && Number(a.appPnl) !== Number(a.periodPnl) && (
-                    <span title="הרווח כפי שמופיע באפליקציה (GG), כולל את הסאט ללייב — להשוואה" style={{ display: 'block', fontSize: '0.68rem', color: '#c084fc', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
+                    <span className={balanceClass(a.appPnl)} title="הרווח של הסוכן כפי שמופיע באפליקציה (GG), כולל סאט ללייב" style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
                   )}
                 </td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={editingStart === a.id ? '' : balanceClass(a.openingBalance)}>
@@ -824,7 +824,7 @@ export default function Agents() {
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>
                   {fmt(a.periodPnl)}
                   {a.appPnl != null && Number(a.appPnl) !== Number(a.periodPnl) && (
-                    <span title="הרווח כפי שמופיע באפליקציה (GG), כולל את הסאט ללייב — להשוואה" style={{ display: 'block', fontSize: '0.68rem', color: '#c084fc', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
+                    <span className={balanceClass(a.appPnl)} title="הרווח של הסוכן כפי שמופיע באפליקציה (GG), כולל סאט ללייב" style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
                   )}
                 </td>
                   </tr>
@@ -847,6 +847,7 @@ export default function Agents() {
               const tRake = rows.reduce((s, p) => s + Number(p.totalRake || 0), 0);
               const tShare = rows.reduce((s, p) => s + Number(p.agentShare || 0), 0);
               const tPnl = rows.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
+              const tAppPnl = rows.reduce((s, p) => s + Number(p.appPnl ?? p.periodPnl ?? 0), 0);
               const tChips = rows.reduce((s, p) => s + Number(p.currentChips || 0), 0);
               const tCredit = rows.reduce((s, p) => s + Number(p.agentChipCredit || 0), 0);
               return (
@@ -903,7 +904,12 @@ export default function Agents() {
                           <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{tGames}</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#f59e0b' }}>{fmt(tRake)}</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#fbbf24' }}>{fmt(tShare)}</td>
-                          <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(tPnl)}>{fmt(tPnl)}</td>
+                          <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(tPnl)}>
+                            {fmt(tPnl)}
+                            {Number(tAppPnl) !== Number(tPnl) && (
+                              <span className={balanceClass(tAppPnl)} title="סה״כ הרווח של הסוכן כפי שמופיע באפליקציה (GG), כולל סאט ללייב" style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400 }}>app {fmt(tAppPnl)}</span>
+                            )}
+                          </td>
                         </tr>
                       </tbody>
                     </table>

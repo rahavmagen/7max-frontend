@@ -54,7 +54,7 @@ export default function AgentPlayerRow({ player, showBalance, expanded, onToggle
         <td style={{ padding: '8px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(player.periodPnl)}>
           {fmt(player.periodPnl)}
           {player.appPnl != null && Number(player.appPnl) !== Number(player.periodPnl) && (
-            <span title="הרווח כפי שמופיע באפליקציה (GG), כולל את הסאט ללייב — להשוואה" style={{ display: 'block', fontSize: '0.68rem', color: '#c084fc', fontWeight: 400 }}>app {fmt(player.appPnl)}</span>
+            <span className={balanceClass(player.appPnl)} title="הרווח כפי שמופיע באפליקציה (GG), כולל את הסאט ללייב — להשוואה" style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400 }}>app {fmt(player.appPnl)}</span>
           )}
         </td>
       </tr>
