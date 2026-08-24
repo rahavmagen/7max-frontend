@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { initiateKashcashDeposit, finalizeKashcashDeposit, getMyKashcashDeposits, initiateGrowDeposit, getMyGrowDeposits } from '../api';
 import { useLang } from '../i18n';
 
+const GROW_PENDING_KEY = 'grow_pending_process_id';
+
 export default function Deposit() {
   const { t } = useLang();
   const [amount, setAmount] = useState('');
@@ -9,7 +11,9 @@ export default function Deposit() {
   const [iframeUrl, setIframeUrl] = useState(null);
   const [growAmount, setGrowAmount] = useState('');
   const [growLoading, setGrowLoading] = useState(false);
-  const [growStatus, setGrowStatus] = useState(null); // null | 'processing' | 'success' | 'error' | 'phone'
+  // null | 'processing' | 'success' | 'error' | 'phone' - restores to 'processing' if we
+  // redirected the whole tab to Grow (mobile) and the player has just come back.
+  const [growStatus, setGrowStatus] = useState(() => sessionStorage.getItem(GROW_PENDING_KEY) ? 'processing' : null);
   const [method, setMethod] = useState('grow'); // which payment method card is shown
   const growProcessIdRef = useRef(null);
   const growHandledRef = useRef(false);
@@ -158,14 +162,16 @@ export default function Deposit() {
     setLoading(false);
   };
 
-  // Grow's payment link opens in a new tab, so we poll for the deposit to land
-  // rather than relying on a postMessage/redirect back into this tab.
+  // Grow's payment link opens in a new tab (desktop) or the same tab (mobile), so
+  // we poll for the deposit to land rather than relying on a redirect back into
+  // this exact tab/session.
   const pollForGrowDeposit = (processId) => {
     const startTime = Date.now();
     const pollId = setInterval(async () => {
       if (growHandledRef.current) { clearInterval(pollId); return; }
       if (Date.now() - startTime > 10 * 60 * 1000) {
         clearInterval(pollId);
+        sessionStorage.removeItem(GROW_PENDING_KEY);
         if (!growHandledRef.current) setGrowStatus('error');
         return;
       }
@@ -175,11 +181,23 @@ export default function Deposit() {
         if (found) {
           clearInterval(pollId);
           growHandledRef.current = true;
+          sessionStorage.removeItem(GROW_PENDING_KEY);
           setGrowStatus('success');
         }
       } catch { /* ignore */ }
     }, 3000);
   };
+
+  // If we redirected the whole tab to Grow (mobile) and the player has come back
+  // (Safari back button, or reopening the site), resume checking the deposit we
+  // left pending instead of leaving them with no feedback at all.
+  useEffect(() => {
+    const pending = sessionStorage.getItem(GROW_PENDING_KEY);
+    if (pending) {
+      growProcessIdRef.current = pending;
+      pollForGrowDeposit(pending);
+    }
+  }, []);
 
   const handleGrowPay = async () => {
     const num = parseFloat(growAmount);
@@ -187,12 +205,27 @@ export default function Deposit() {
     setGrowLoading(true);
     setGrowStatus(null);
     growHandledRef.current = false;
-    // iOS Safari only allows window.open() synchronously within the click handler -
-    // once we `await` the server call below, a fresh window.open() gets silently
-    // blocked (no tab, no error). Open a blank tab now, before the await, and point
-    // it at the real payment link once we have it. Deliberately no 'noopener' here:
-    // that flag makes many browsers (Safari included) return null instead of a
-    // usable window reference, which would defeat the whole point of pre-opening it.
+
+    // iOS Safari's new-tab/popup handling around window.open() (even the
+    // pre-opened-blank-tab workaround) has proven unreliable in practice - players
+    // reported a tab opening but never navigating to the real payment page. A
+    // plain full-page redirect has no popup mechanics at all, so there's nothing
+    // for the browser to block or mishandle. Desktop keeps the new-tab flow
+    // (verified working) so the player doesn't lose this page while paying.
+    if (isMobile) {
+      try {
+        const res = await initiateGrowDeposit(num);
+        const { paymentLinkUrl, processId } = res.data;
+        sessionStorage.setItem(GROW_PENDING_KEY, processId);
+        window.location.href = paymentLinkUrl;
+      } catch (err) {
+        const code = err?.response?.data?.error;
+        setGrowStatus(code === 'INVALID_PHONE' ? 'phone' : 'error');
+      }
+      setGrowLoading(false);
+      return;
+    }
+
     const growTab = window.open('', '_blank');
     try {
       const res = await initiateGrowDeposit(num);
