@@ -190,8 +190,10 @@ export default function Deposit() {
     // iOS Safari only allows window.open() synchronously within the click handler -
     // once we `await` the server call below, a fresh window.open() gets silently
     // blocked (no tab, no error). Open a blank tab now, before the await, and point
-    // it at the real payment link once we have it.
-    const growTab = window.open('', '_blank', 'noopener,noreferrer');
+    // it at the real payment link once we have it. Deliberately no 'noopener' here:
+    // that flag makes many browsers (Safari included) return null instead of a
+    // usable window reference, which would defeat the whole point of pre-opening it.
+    const growTab = window.open('', '_blank');
     try {
       const res = await initiateGrowDeposit(num);
       const { paymentLinkUrl, processId } = res.data;
