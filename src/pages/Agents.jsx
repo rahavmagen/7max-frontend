@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
 import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, setLastSettlementDate, getAgentLedgerHistory, setAgentSettledWeek, uncheckAllAgentSettledWeek } from '../api';
 import { getPlayers, getBankAccounts, createTransfer, getAdminUsers, getPlayerTransactions } from '../api';
 import DateInput from '../components/DateInput';
@@ -21,7 +20,6 @@ const fmt = (n) => {
 const balanceClass = (n) => Number(n) > 0 ? 'positive' : Number(n) < 0 ? 'negative' : 'zero';
 
 export default function Agents() {
-  const navigate = useNavigate();
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null); // { id, username }
@@ -222,6 +220,13 @@ export default function Agents() {
       setMsg({ type: 'error', text: 'Failed to save last settlement date' });
     }
     setSavingSettlementDate(false);
+  };
+
+  const detailRef = useRef(null);
+  // Open the agent's inline detail panel and scroll down to it (instead of leaving for /player).
+  const openDetailScroll = (agent) => {
+    openDetail(agent);
+    setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
   };
 
   const openDetail = (agent) => {
@@ -668,7 +673,7 @@ export default function Agents() {
             {mainAgents.map(a => (
               <tr key={a.id} style={{ borderBottom: '1px solid #1e2235', background: selected?.id === a.id ? '#151826' : 'transparent' }}>
                 <td style={{ padding: '10px 12px', position: 'sticky', left: 0, background: selected?.id === a.id ? '#151826' : 'var(--bg-card)', zIndex: 1 }}>
-                  <button onClick={() => navigate(`/player/${a.id}`)}
+                  <button onClick={() => openDetailScroll(a)}
                     style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
                     {a.username}
                   </button>
@@ -799,7 +804,7 @@ export default function Agents() {
                 {clubManagedAgents.map(a => (
                   <tr key={a.id} style={{ borderBottom: '1px solid #1e2235' }}>
                     <td style={{ padding: '10px 12px' }}>
-                      <button onClick={() => navigate(`/player/${a.id}`)}
+                      <button onClick={() => openDetailScroll(a)}
                         style={{ background: 'none', border: 'none', color: '#60a5fa', cursor: 'pointer', padding: 0, fontWeight: 600 }}>{a.username}</button>
                       {a.fullName && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>{a.fullName}</span>}
                       {a.phone && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.5rem' }}>📞 {a.phone}</span>}
@@ -863,7 +868,8 @@ export default function Agents() {
                   {rows.length === 0 ? (
                     <div style={{ color: '#64748b', fontSize: '0.82rem', padding: '0.5rem' }}>No players / no data for the selected range</div>
                   ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid #2d3148', color: '#64748b', textAlign: 'left', fontSize: '0.8rem' }}>
                           <th style={{ padding: '6px' }}>Player</th>
@@ -889,6 +895,7 @@ export default function Agents() {
                         </tr>
                       </tbody>
                     </table>
+                    </div>
                   )}
                 </div>
               );
@@ -899,7 +906,7 @@ export default function Agents() {
 
       {/* Agent detail panel */}
       {selected && (
-        <div>
+        <div ref={detailRef}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
             <h3 style={{ margin: 0, color: '#e2e8f0' }}>
               {selected.username} — Detail
