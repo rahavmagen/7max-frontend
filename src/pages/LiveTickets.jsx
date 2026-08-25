@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getLiveTickets, useLiveTicket, syncLiveTickets } from '../api';
+import { getLiveTickets, getLiveTicketsHistory, useLiveTicket, syncLiveTickets } from '../api';
 
 export default function LiveTickets() {
   const [tickets, setTickets] = useState(null);
+  const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [msg, setMsg] = useState(null);
 
   const load = async () => {
     setLoading(true);
-    try { const r = await getLiveTickets(); setTickets(r.data); }
+    try {
+      const [r, h] = await Promise.all([getLiveTickets(), getLiveTicketsHistory()]);
+      setTickets(r.data); setHistory(h.data);
+    }
     catch { setMsg('שגיאה בטעינה'); }
     setLoading(false);
   };
@@ -24,7 +28,7 @@ export default function LiveTickets() {
 
   const markUsed = async (id) => {
     setBusyId(id);
-    try { await useLiveTicket(id); setTickets(prev => prev.filter(t => t.id !== id)); }
+    try { await useLiveTicket(id); await load(); }   // reload so the ticket moves to the history table
     catch { setMsg('שגיאה בסימון'); }
     setBusyId(null);
   };
@@ -97,6 +101,51 @@ export default function LiveTickets() {
           </div>
         </div>
       ))}
+
+      {history !== null && history.length > 0 && (
+        <div style={{ marginTop: '2rem' }}>
+          <h3 style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '0.75rem' }}>היסטוריה — כל הכרטיסים ({history.length})</h3>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(0,0,0,0.15)' }}>
+                    <th style={th}>שחקן</th>
+                    <th style={th}>סוכן</th>
+                    <th style={th}>אירוע</th>
+                    <th style={{ ...th, textAlign: 'right' }}>שווי</th>
+                    <th style={{ ...th, textAlign: 'right' }}>עלות סאט</th>
+                    <th style={{ ...th, textAlign: 'right' }}>רווח</th>
+                    <th style={th}>תאריך זכייה</th>
+                    <th style={th}>סטטוס</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((t, i) => (
+                    <tr key={t.id} style={{ borderTop: '1px solid var(--border)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)', opacity: t.used ? 0.55 : 1 }}>
+                      <td style={td}>
+                        <Link to={`/player/${t.playerId}`} style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>{t.player}</Link>
+                        {t.playerFullName && <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}> — {t.playerFullName}</span>}
+                      </td>
+                      <td style={{ ...td, color: '#34d399', fontSize: '0.85rem' }}>{t.agent || '—'}</td>
+                      <td style={{ ...td, color: 'var(--text-secondary)' }} dir="rtl">{t.eventName || '—'}</td>
+                      <td style={{ ...td, textAlign: 'right', color: '#c084fc', fontWeight: 600 }}>{fmt(t.worth)}</td>
+                      <td style={{ ...td, textAlign: 'right', color: '#fca5a5' }}>{fmt(t.cost)}</td>
+                      <td style={{ ...td, textAlign: 'right', color: '#4ade80', fontWeight: 600 }}>{fmt(t.profit)}</td>
+                      <td style={{ ...td, color: 'var(--text-muted)', fontSize: '0.85rem' }}>{fmtDate(t.wonDate)}</td>
+                      <td style={td}>
+                        {t.used
+                          ? <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>✓ מומש {fmtDate(t.usedDate)}</span>
+                          : <span style={{ color: '#fbbf24', fontSize: '0.82rem' }}>● פתוח</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -79,6 +79,7 @@ export const resetAllData = () => api.post('/import/wipe');
 export const getGameSessions = (params) => api.get('/reports/sessions', { params });
 export const setSessionSatToLive = (id, value) => api.patch(`/reports/sessions/${id}/sat-to-live`, { value });
 export const getLiveTickets = () => api.get('/live-tickets');
+export const getLiveTicketsHistory = () => api.get('/live-tickets/history');
 export const useLiveTicket = (id) => api.post(`/live-tickets/${id}/use`);
 export const syncLiveTickets = () => api.post('/live-tickets/sync');
 export const getSessionResults = (id) => api.get(`/reports/sessions/${id}/results`);
