@@ -1142,6 +1142,7 @@ export default function Agents() {
                     <tr style={{ borderBottom: '1px solid #2d3148', color: '#64748b', textAlign: 'left', fontSize: '0.82rem' }}>
                       <th style={{ padding: '8px' }}>Player</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Balance</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Chips</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Games</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Club Rake</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Agent Share</th>
@@ -1153,12 +1154,13 @@ export default function Agents() {
                       <AgentPlayerRow key={p.playerId} player={p} showBalance={true} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
                     ))}
                     {playerStats.length === 0 && (
-                      <tr><td colSpan={6} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
+                      <tr><td colSpan={7} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
                     )}
                     {playerStats.length > 1 && (
                       <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
                         <td style={{ padding: '8px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
                         <td />
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(playerStats.reduce((s, p) => s + Number(p.currentChips || 0), 0))}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{playerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(statsTotalRake)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 700 }}>{fmt(statsTotalShare)}</td>
