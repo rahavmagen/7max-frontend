@@ -345,6 +345,8 @@ function AddHorseTab({ onAdded }) {
   useEffect(() => { loadPlayers(); }, []);
 
   const horses = players.filter(p => p.satelliteBacked || p.tournamentHorseBacked);
+  const [hideInactive, setHideInactive] = useState(false);
+  const shownHorses = hideInactive ? horses.filter(h => Math.abs(Number(h.balance || 0)) >= 0.005) : horses;
   const toggleGameType = (t) => setGameTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   const isEditing = program === 'TOURNAMENT' && horses.some(h => h.id === playerId && h.tournamentHorseBacked);
 
@@ -443,12 +445,16 @@ function AddHorseTab({ onAdded }) {
       </div>
 
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-        <div style={{ padding: '0.9rem 1.25rem', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', fontWeight: 700 }}>
-          Current horses ({horses.length})
+        <div style={{ padding: '0.9rem 1.25rem', borderBottom: '1px solid var(--border)', color: 'var(--text-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <span>Current horses ({shownHorses.length})</span>
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 400, cursor: 'pointer' }}>
+            <input type="checkbox" checked={hideInactive} onChange={e => setHideInactive(e.target.checked)} style={{ cursor: 'pointer' }} />
+            Hide inactive (zero balance)
+          </label>
         </div>
-        {horses.length === 0 ? (
-          <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>No horses enrolled yet.</div>
-        ) : horses.map(h => (
+        {shownHorses.length === 0 ? (
+          <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>{horses.length === 0 ? 'No horses enrolled yet.' : 'All zero-balance horses are hidden.'}</div>
+        ) : shownHorses.map(h => (
           <div key={h.id} style={{ padding: '0.7rem 1.25rem', borderTop: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
