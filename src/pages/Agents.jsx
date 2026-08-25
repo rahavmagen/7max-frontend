@@ -718,7 +718,7 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(a.totalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, borderLeft: '2px solid #475569' }} className={balanceClass(a.agentRake)}>{fmt(a.agentRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.pendingBalance)}>{fmt(a.pendingBalance)}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>
+                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }} className={balanceClass(a.periodPnl)}>
                   {fmt(a.periodPnl)}
                   {a.appPnl != null && Number(a.appPnl) !== Number(a.periodPnl) && (
                     <span className={balanceClass(a.appPnl)} title="הרווח של הסוכן כפי שמופיע באפליקציה (GG), כולל סאט ללייב" style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
@@ -821,7 +821,7 @@ export default function Agents() {
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{a.gameCount ?? 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(a.totalChips)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8' }}>{fmt(a.totalRake)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.periodPnl)}>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }} className={balanceClass(a.periodPnl)}>
                   {fmt(a.periodPnl)}
                   {a.appPnl != null && Number(a.appPnl) !== Number(a.periodPnl) && (
                     <span className={balanceClass(a.appPnl)} title="הרווח של הסוכן כפי שמופיע באפליקציה (GG), כולל סאט ללייב" style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400 }}>app {fmt(a.appPnl)}</span>
