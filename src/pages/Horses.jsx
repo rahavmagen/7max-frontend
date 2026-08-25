@@ -476,7 +476,7 @@ function AddHorseTab({ onAdded }) {
                     </button>
                     <button onClick={() => remove(h.id, 'SATELLITE')} disabled={busyId === h.id}
                       style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
-                      {busyId === h.id ? '…' : 'Remove Satellite'}
+                      {busyId === h.id ? '…' : 'Remove Horse'}
                     </button>
                   </>
                 )}
@@ -492,7 +492,7 @@ function AddHorseTab({ onAdded }) {
                     </button>
                     <button onClick={() => remove(h.id, 'TOURNAMENT')} disabled={busyId === h.id}
                       style={{ background: 'transparent', color: '#fca5a5', border: '1px solid #7f1d1d', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: '0.82rem' }}>
-                      {busyId === h.id ? '…' : 'Remove Tournament'}
+                      {busyId === h.id ? '…' : 'Remove Horse'}
                     </button>
                   </>
                 )}
