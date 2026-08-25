@@ -654,7 +654,7 @@ export default function Agents() {
               <th style={{ padding: '10px 12px' }}>Phone</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total Rake</th>
               <th style={{ padding: '10px 12px', textAlign: 'right', borderLeft: '2px solid #475569' }} title="Balance calc starts here. Agent's cut = rake% × Total Rake (rakeback we owe the agent)">Agent Rake</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }} title="היתרה האמיתית שנותרה להתחשבנות: עמלת הריק שנצברה על המשחקים של השחקנים ועדיין לא נסגרה כהוצאת מועדון (לא סולקה). זה הסכום שכפתור ׳התחשבנות׳ פועל עליו. שונה מ׳Agent Rake׳ שהוא רק הערכה לפי טווח התאריכים ומתעלם מסטטוס הסליקה.">Real Balance</th>
+              <th style={{ padding: '10px 12px', textAlign: 'right' }} title="היתרה האמיתית שנותרה להתחשבנות: עמלת הריק שנצברה על המשחקים של השחקנים ועדיין לא נסגרה כהוצאת מועדון (לא סולקה). זה הסכום שכפתור ׳התחשבנות׳ פועל עליו. שונה מ׳Agent Rake׳ שהוא רק הערכה לפי טווח התאריכים ומתעלם מסטטוס הסליקה.">ריק לרישום</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Players' net P&L over the chosen dates (won = +)">P&amp;L</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Starting balance carried from the last התחשבנות">Starting Bal</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Amounts are from the agent's point of view: + (green) = we owe the agent, − (red) = the agent owes us. Starting + Agent Rake + Players' P&L − Payments.">Current Balance</th>
