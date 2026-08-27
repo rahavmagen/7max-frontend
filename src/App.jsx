@@ -265,6 +265,7 @@ function AppRoutes() {
   const isAdmin = auth.role === 'ADMIN' || auth.role === 'MANAGER';
   const isPlayer = auth.role === 'PLAYER';
   const isAgent = isPlayer && auth.isAgent;
+  const isWorker = isPlayer && auth.isWorker;   // player who also gets the Wheel
 
   return (
     <div className="app">
@@ -297,6 +298,7 @@ function AppRoutes() {
               <NavLink to="/games">{t('games')}</NavLink>
               <NavLink to="/league">{t('league')}</NavLink>
               {isAgent && <NavLink to="/agent-portal">{t('agents')}</NavLink>}
+              {isWorker && <NavLink to="/wheel">🎡 Wheel</NavLink>}
             </>
           )}
         </div>
@@ -375,6 +377,7 @@ function AppRoutes() {
               <Route path="/league" element={<League />} />
               <Route path="/agent-portal" element={<AgentPortal />} />
               <Route path="/deposit" element={<Deposit />} />
+              {isWorker && <Route path="/wheel" element={<Wheel />} />}
               <Route path="*" element={<PlayerDefaultRedirect auth={auth} />} />
             </>
           )}

@@ -154,6 +154,7 @@ export default function PlayerDetail() {
         fullName: editName,
         phone: editPhone,
         isAgent: editData.isAgent,
+        isWorker: editData.isWorker,
         agentRakePercentage: editData.isAgent && editData.agentRakePercentage !== ''
           ? parseFloat((Number(editData.agentRakePercentage) / 100).toFixed(4))
           : null,
@@ -314,7 +315,7 @@ export default function PlayerDetail() {
           <a href="/takanon.docx" download className="btn btn-secondary" style={{ textDecoration: 'none' }}>📄 תקנון המועדון</a>
           {isAdmin && (
             <>
-              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '', rakebackPercentage: player.rakebackPercentage != null ? Math.round(player.rakebackPercentage * 100) : '', rakebackSince: player.rakebackSince || '', seeRakeback: player.seeRakeback || false, satelliteBacked: player.satelliteBacked || false, satelliteBackedSince: player.satelliteBackedSince || '' }); }}>
+              <button className="btn btn-secondary" onClick={() => { setShowEditInfo(!showEditInfo); setEditName(player.fullName || ''); setEditPhone(player.phone || ''); setEditUsername(player.username || ''); setEditData({ isAgent: player.isAgent || false, isWorker: player.isWorker || false, agentRakePercentage: player.agentRakePercentage != null ? Math.round(player.agentRakePercentage * 100) : '', agentId: player.agentId || '', rakebackPercentage: player.rakebackPercentage != null ? Math.round(player.rakebackPercentage * 100) : '', rakebackSince: player.rakebackSince || '', seeRakeback: player.seeRakeback || false, satelliteBacked: player.satelliteBacked || false, satelliteBackedSince: player.satelliteBackedSince || '' }); }}>
                 ✏️ Edit Info
               </button>
               <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
@@ -422,6 +423,16 @@ export default function PlayerDetail() {
                       onChange={e => setEditData(d => ({ ...d, isAgent: e.target.checked }))}
                     />
                     <span>This player is an agent</span>
+                  </label>
+                </div>
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={editData.isWorker || false}
+                      onChange={e => setEditData(d => ({ ...d, isWorker: e.target.checked }))}
+                    />
+                    <span>Worker (also gets the Wheel screen)</span>
                   </label>
                 </div>
                 {editData.isAgent && (
