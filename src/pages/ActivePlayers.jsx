@@ -15,9 +15,10 @@ export default function ActivePlayers() {
 
   useEffect(() => {
     const isPlayer = auth?.role === 'PLAYER';
-    // Only active players (a game in the last month) may view the names list. Admins/managers always can.
+    // Only active players (a game in the last month) may view the names list. Admins/managers
+    // and workers always can — a worker's own play activity is irrelevant to this gate.
     const load = () => getActivePlayers().then(r => setPlayers(r.data));   // all players; chips filter is client-side
-    if (isPlayer) {
+    if (isPlayer && !auth?.isWorker) {
       getMyActivity()
         .then(r => { if (r.data?.active) load(); else setLocked(true); })
         .catch(() => setLocked(true));
