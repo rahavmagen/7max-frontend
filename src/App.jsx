@@ -51,6 +51,7 @@ import InactivePlayersBalance from './pages/InactivePlayersBalance';
 import Horses from './pages/Horses';
 import LiveTickets from './pages/LiveTickets';
 import PlayerStats from './pages/PlayerStats';
+import Privacy from './pages/Privacy';
 import { getPendingKashcashDeposits, getPendingJoinRequests } from './api';
 import './App.css';
 
@@ -388,6 +389,8 @@ function AppRoutes() {
 }
 
 export default function App() {
+  if (window.location.pathname === '/privacy') return <Privacy />;
+
   return (
     <AuthProvider>
       <LanguageProvider>
