@@ -108,6 +108,13 @@ export default function Agents() {
         // Update the agent balance: agent paid us reduces what we owe (−amt); we paid the agent (+amt).
         const ledgerAmt = f.direction === 'agentPays' ? -amt : amt;
         await addAgentPayment(f.agent.id, { amount: ledgerAmt, notes: f.notes || `Settle via ${f.method}` });
+        // If the other side is ALSO an agent (not the club/a bank/a regular player), this is really
+        // an agent-to-agent payment - update their ledger too, with the opposite sign, so both
+        // balances move. Without this, only the initiating agent's balance ever changed.
+        const counterpartyPlayer = settlePlayers.find(p => String(p.id) === String(f.counterpartyId));
+        if (counterpartyPlayer?.isAgent) {
+          await addAgentPayment(counterpartyPlayer.id, { amount: -ledgerAmt, notes: f.notes || `Settle via ${f.method} (from ${f.agent.username})` });
+        }
       }
       // Record the agent rake as a Club Expense, independent of how much was actually transferred
       // above (e.g. owed 3K, only 2K paid now) - the full corrected figure still gets written.
