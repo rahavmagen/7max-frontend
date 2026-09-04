@@ -640,8 +640,9 @@ function NoNameReport() {
   players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
 
   // Agents hold a chip float for managing their downline - that's not a "missing name" problem.
+  // Players who left the club (stale chips + a real club ID) have nothing left to reconcile.
   const noName = players
-    .filter(p => !p.isAgent && (!p.fullName || p.fullName.trim() === ''))
+    .filter(p => !p.isAgent && !(p.chipsStale === true && p.clubPlayerId) && (!p.fullName || p.fullName.trim() === ''))
     .map(p => ({ ...p, lastPlayed: lastPlayedMap[p.id] || null }));
 
   let filtered = noName.filter(p => {
