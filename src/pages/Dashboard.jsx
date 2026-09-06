@@ -7,8 +7,6 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [hideZero, setHideZero] = useState(false);
   const [showStaleOnly, setShowStaleOnly] = useState(false);
-  const [showLeftClubOnly, setShowLeftClubOnly] = useState(false);
-  const [showNoFullName, setShowNoFullName] = useState(false);
   const [sort, setSort] = useState({ col: null, dir: 1 });
   const navigate = useNavigate();
 
@@ -26,7 +24,6 @@ export default function Dashboard() {
   };
 
   const isStale = (p) => p.chipsStale === true && (!p.clubPlayerId || p.clubPlayerId === '') && (p.currentChips || 0) > 0;
-  const isLeftClub = (p) => p.chipsStale === true && p.clubPlayerId;
 
   // Build agent lookup from the players list itself
   const agentMap = {};
@@ -44,16 +41,8 @@ export default function Dashboard() {
     filtered = filtered.filter(p => isStale(p));
   }
 
-  if (showLeftClubOnly) {
-    filtered = filtered.filter(p => isLeftClub(p));
-  }
-
   if (hideZero) {
     filtered = filtered.filter(p => Number(p.balance) !== 0);
-  }
-
-  if (showNoFullName) {
-    filtered = filtered.filter(p => !p.fullName || p.fullName.trim() === '');
   }
 
   const strCols = ['username', 'fullName', 'phone', 'clubPlayerId'];
@@ -66,13 +55,7 @@ export default function Dashboard() {
     });
   }
 
-  const totalChips = players.filter(p => !isStale(p)).reduce((s, p) => s + (p.currentChips || 0), 0);
-  const totalCredit = players.reduce((s, p) => s + (p.creditTotal || 0), 0);
-  const totalPnl = players.filter(p => !isStale(p)).reduce((s, p) => s + (p.balance || 0), 0);
-  const activeCount = players.filter(p => p.active && !isStale(p)).length;
   const staleCount = players.filter(p => isStale(p)).length;
-  const leftClubCount = players.filter(p => isLeftClub(p)).length;
-  const noFullNameCount = players.filter(p => !p.fullName || p.fullName.trim() === '').length;
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -96,41 +79,15 @@ export default function Dashboard() {
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
-          <div className="label">Total Players</div>
-          <div className="value neutral">{activeCount}</div>
-        </div>
         {staleCount > 0 && (
           <div
             className="stat-card"
-            onClick={() => { setShowStaleOnly(s => !s); setShowLeftClubOnly(false); setShowNoFullName(false); }}
+            onClick={() => setShowStaleOnly(s => !s)}
             style={{ borderTopColor: '#f59e0b', borderColor: showStaleOnly ? '#f59e0b' : '#2d3148', cursor: 'pointer', outline: showStaleOnly ? '2px solid #f59e0b' : 'none' }}
             title="Click to filter unknown players (no club ID)"
           >
             <div className="label" style={{ color: '#f59e0b' }}>Not Exists {showStaleOnly ? '(filtering)' : ''}</div>
             <div className="value" style={{ color: '#f59e0b' }}>{staleCount}</div>
-          </div>
-        )}
-        {leftClubCount > 0 && (
-          <div
-            className="stat-card"
-            onClick={() => { setShowLeftClubOnly(s => !s); setShowStaleOnly(false); setShowNoFullName(false); }}
-            style={{ borderTopColor: '#6366f1', cursor: 'pointer', outline: showLeftClubOnly ? '2px solid #6366f1' : 'none' }}
-            title="Click to filter players who left the club"
-          >
-            <div className="label">Left Club {showLeftClubOnly ? '(filtering)' : ''}</div>
-            <div className="value">{leftClubCount}</div>
-          </div>
-        )}
-        {noFullNameCount > 0 && (
-          <div
-            className="stat-card"
-            onClick={() => { setShowNoFullName(s => !s); setShowStaleOnly(false); setShowLeftClubOnly(false); }}
-            style={{ borderTopColor: '#94a3b8', cursor: 'pointer', outline: showNoFullName ? '2px solid #94a3b8' : 'none' }}
-            title="Click to filter players with no full name set"
-          >
-            <div className="label" style={{ color: '#94a3b8' }}>No Full Name {showNoFullName ? '(filtering)' : ''}</div>
-            <div className="value" style={{ color: '#94a3b8' }}>{noFullNameCount}</div>
           </div>
         )}
       </div>
