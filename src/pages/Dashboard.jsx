@@ -7,6 +7,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
   const [hideZero, setHideZero] = useState(false);
   const [showStaleOnly, setShowStaleOnly] = useState(false);
+  const [showAgents, setShowAgents] = useState(false);
   const [sort, setSort] = useState({ col: null, dir: 1 });
   const navigate = useNavigate();
 
@@ -39,6 +40,10 @@ export default function Dashboard() {
 
   if (showStaleOnly) {
     filtered = filtered.filter(p => isStale(p));
+  }
+
+  if (!showAgents) {
+    filtered = filtered.filter(p => !p.isAgent && !p.agentId);
   }
 
   if (hideZero) {
@@ -101,6 +106,15 @@ export default function Dashboard() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', whiteSpace: 'nowrap', color: '#94a3b8', fontSize: '0.9rem' }}>
+            <input
+              type="checkbox"
+              checked={showAgents}
+              onChange={e => setShowAgents(e.target.checked)}
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            Show agent players
+          </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', whiteSpace: 'nowrap', color: '#94a3b8', fontSize: '0.9rem' }}>
             <input
               type="checkbox"
