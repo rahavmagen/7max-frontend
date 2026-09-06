@@ -38,7 +38,16 @@ export default function Dashboard() {
 
   // Build agent lookup from the players list itself
   const agentMap = {};
-  players.forEach(p => { if (p.isAgent) agentMap[p.id] = p.username; });
+  const clubManagedAgentIds = new Set();
+  players.forEach(p => {
+    if (p.isAgent) agentMap[p.id] = p.username;
+    if (p.isAgent && p.clubManaged) clubManagedAgentIds.add(p.id);
+  });
+
+  // Club-managed agents (and their downline) are treated like normal players by the club,
+  // so they stay visible even when "Show agent players" is off.
+  const isClubManagedOrDownline = (p) =>
+    (p.isAgent && p.clubManaged) || clubManagedAgentIds.has(p.agentId);
 
   let filtered = players.filter(p => {
     const agentName = agentMap[p.agentId] || '';
@@ -53,7 +62,7 @@ export default function Dashboard() {
   }
 
   if (!showAgents && !search) {
-    filtered = filtered.filter(p => !p.isAgent && !p.agentId);
+    filtered = filtered.filter(p => (!p.isAgent && !p.agentId) || isClubManagedOrDownline(p));
   }
 
   if (!showZero) {
