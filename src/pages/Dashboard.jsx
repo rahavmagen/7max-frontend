@@ -52,7 +52,7 @@ export default function Dashboard() {
     filtered = filtered.filter(p => isStale(p));
   }
 
-  if (!showAgents) {
+  if (!showAgents && !search) {
     filtered = filtered.filter(p => !p.isAgent && !p.agentId);
   }
 
