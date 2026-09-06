@@ -5,7 +5,7 @@ import { getPlayers } from '../api';
 export default function Dashboard() {
   const [players, setPlayers] = useState([]);
   const [search, setSearch] = useState('');
-  const [hideZero, setHideZero] = useState(false);
+  const [showZero, setShowZero] = useState(false);
   const [showStaleOnly, setShowStaleOnly] = useState(false);
   const [showAgents, setShowAgents] = useState(false);
   const [sort, setSort] = useState({ col: null, dir: 1 });
@@ -46,7 +46,7 @@ export default function Dashboard() {
     filtered = filtered.filter(p => !p.isAgent && !p.agentId);
   }
 
-  if (hideZero) {
+  if (!showZero) {
     filtered = filtered.filter(p => Number(p.balance) !== 0);
   }
 
@@ -118,11 +118,11 @@ export default function Dashboard() {
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', whiteSpace: 'nowrap', color: '#94a3b8', fontSize: '0.9rem' }}>
             <input
               type="checkbox"
-              checked={hideZero}
-              onChange={e => setHideZero(e.target.checked)}
+              checked={showZero}
+              onChange={e => setShowZero(e.target.checked)}
               style={{ width: '16px', height: '16px', cursor: 'pointer' }}
             />
-            Hide zero balance players
+            Show zero balance players
           </label>
           <span style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
             Showing {filtered.length} of {players.length}
