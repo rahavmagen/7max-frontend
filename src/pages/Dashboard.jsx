@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPlayers } from '../api';
+import { sumSelectedBalances } from '../utils/balanceSum';
 
 export default function Dashboard() {
   const [players, setPlayers] = useState([]);
@@ -8,6 +9,7 @@ export default function Dashboard() {
   const [showZero, setShowZero] = useState(false);
   const [showStaleOnly, setShowStaleOnly] = useState(false);
   const [showAgents, setShowAgents] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [sort, setSort] = useState({ col: null, dir: 1 });
   const navigate = useNavigate();
 
@@ -17,6 +19,14 @@ export default function Dashboard() {
 
   const toggleSort = (col) => {
     setSort(s => s.col === col ? { col, dir: s.dir * -1 } : { col, dir: -1 });
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   };
 
   const sortArrow = (col) => {
@@ -61,6 +71,7 @@ export default function Dashboard() {
   }
 
   const staleCount = players.filter(p => isStale(p)).length;
+  const selectedSum = sumSelectedBalances(players, selectedIds);
 
   const fmt = (n) => {
     if (n === undefined || n === null) return '₪0';
@@ -127,11 +138,24 @@ export default function Dashboard() {
           <span style={{ color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
             Showing {filtered.length} of {players.length}
           </span>
+          {selectedIds.size > 0 && (
+            <span style={{ color: '#a5b4fc', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {selectedIds.size} selected — Balance: {fmt(selectedSum)}
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Clear
+              </button>
+            </span>
+          )}
         </div>
 
         <div className="table-wrap"><table>
           <thead>
             <tr>
+              <th></th>
               {thSort('username', 'Username')}
               {thSort('fullName', 'Full Name')}
               {thSort('phone', 'Phone')}
@@ -145,6 +169,14 @@ export default function Dashboard() {
           <tbody>
             {filtered.map(p => (
               <tr key={p.id} onClick={() => navigate(`/player/${p.id}`)}>
+                <td onClick={e => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(p.id)}
+                    onChange={() => toggleSelect(p.id)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                  />
+                </td>
                 <td>
                   <strong>{p.username}</strong>
                   {isStale(p) && (
