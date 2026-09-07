@@ -89,7 +89,7 @@ export default function GameResults() {
             </thead>
             <tbody>
               {displayedResults.map((r, i) => (
-                <tr key={i}>
+                <tr key={r.playerId ?? r.username ?? i}>
                   <td style={{ color: '#64748b', width: '40px' }}>
                     {r.tournamentPlace != null ? (
                       <strong style={{ color: r.tournamentPlace <= 3 ? '#f59e0b' : '#94a3b8' }}>
