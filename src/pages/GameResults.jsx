@@ -14,6 +14,7 @@ export default function GameResults() {
 
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [agentOnly, setAgentOnly] = useState(false);
 
   useEffect(() => {
     getSessionResults(id).then(r => {
@@ -33,6 +34,8 @@ export default function GameResults() {
 
   const fmtDate = fmtDateTime;
 
+  const displayedResults = agentOnly ? results.filter(r => r.superAgentName) : results;
+
   if (loading) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
   return (
@@ -51,9 +54,25 @@ export default function GameResults() {
         {isAdmin && session?.rakeTotal != null && <span>Rake: <strong style={{ color: '#94a3b8' }}>{fmt(session.rakeTotal)}</strong></span>}
       </div>
 
+      {results.length > 0 && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+          <input
+            type="checkbox"
+            checked={agentOnly}
+            onChange={e => setAgentOnly(e.target.checked)}
+            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+          />
+          Show only agent players
+        </label>
+      )}
+
       {results.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
           No results found for this game.
+        </div>
+      ) : displayedResults.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+          No agent players found for this game.
         </div>
       ) : (
         <div className="card">
@@ -69,7 +88,7 @@ export default function GameResults() {
               </tr>
             </thead>
             <tbody>
-              {results.map((r, i) => (
+              {displayedResults.map((r, i) => (
                 <tr key={i}>
                   <td style={{ color: '#64748b', width: '40px' }}>
                     {r.tournamentPlace != null ? (
@@ -82,6 +101,9 @@ export default function GameResults() {
                     <div><strong style={{ color: '#a5b4fc' }}>{r.fullName || r.username}</strong></div>
                     {r.fullName && r.fullName !== r.username && (
                       <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{r.username}</div>
+                    )}
+                    {r.superAgentName && (
+                      <div style={{ color: '#34d399', fontSize: '0.75rem' }}>{r.superAgentName}</div>
                     )}
                   </td>
                   <td style={{ color: '#94a3b8' }}>{fmt(r.buyIn)}</td>
