@@ -28,6 +28,8 @@ export default function Agents() {
   const [settlementHistory, setSettlementHistory] = useState([]);
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
+  const [draftFilterFrom, setDraftFilterFrom] = useState(''); // edited but not yet applied (per-agent)
+  const [draftFilterTo, setDraftFilterTo] = useState('');
   const [msg, setMsg] = useState(null);
   const [settling, setSettling] = useState(false);
   const [editingRake, setEditingRake] = useState(null); // agentId being edited
@@ -35,6 +37,8 @@ export default function Agents() {
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [summaryFrom, setSummaryFrom] = useState(''); // date filter for the agents table
   const [summaryTo, setSummaryTo] = useState('');
+  const [draftSummaryFrom, setDraftSummaryFrom] = useState(''); // edited but not yet applied (page-level)
+  const [draftSummaryTo, setDraftSummaryTo] = useState('');
   const [showAllAgents, setShowAllAgents] = useState(false); // expand ALL agents at once
   const [allAgentStats, setAllAgentStats] = useState({});    // agentId -> playerStats[]
   const [allLoading, setAllLoading] = useState(false);
@@ -262,7 +266,17 @@ export default function Agents() {
       .catch(() => { setPlayerStats([]); setStatsLoading(false); });
   };
 
-  const handleFilter = () => fetchStats(selected.id, filterFrom, filterTo);
+  // Keep the draft date inputs in sync whenever the applied filter changes from elsewhere
+  // (selecting an agent, Clear, "Page dates", the initial last-settlement-date default, ...).
+  useEffect(() => { setDraftFilterFrom(filterFrom); setDraftFilterTo(filterTo); }, [filterFrom, filterTo]);
+  useEffect(() => { setDraftSummaryFrom(summaryFrom); setDraftSummaryTo(summaryTo); }, [summaryFrom, summaryTo]);
+
+  const handleFilter = () => {
+    setFilterFrom(draftFilterFrom);
+    setFilterTo(draftFilterTo);
+    fetchStats(selected.id, draftFilterFrom, draftFilterTo);
+    loadBalance(selected.id, draftFilterFrom, draftFilterTo);
+  };
   const handleClearFilter = () => { setFilterFrom(''); setFilterTo(''); fetchStats(selected.id, '', ''); };
   const resetToPageDates = () => { setFilterFrom(summaryFrom); setFilterTo(summaryTo); fetchStats(selected.id, summaryFrom, summaryTo); loadBalance(selected.id, summaryFrom, summaryTo); };
   // Changing the page (all-agents) dates also snaps the currently-open agent to that range.
@@ -530,9 +544,14 @@ export default function Agents() {
         <h2 style={{ margin: 0 }}>Agents</h2>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ color: '#64748b', fontSize: '0.82rem' }}>From</span>
-          <DateInput value={summaryFrom} onChange={v => applyPageDates(v, summaryTo)} style={inputStyle} />
+          <DateInput value={draftSummaryFrom} onChange={setDraftSummaryFrom} style={inputStyle} />
           <span style={{ color: '#64748b', fontSize: '0.82rem' }}>To</span>
-          <DateInput value={summaryTo} onChange={v => applyPageDates(summaryFrom, v)} style={inputStyle} />
+          <DateInput value={draftSummaryTo} onChange={setDraftSummaryTo} style={inputStyle} />
+          <button onClick={() => applyPageDates(draftSummaryFrom, draftSummaryTo)}
+            disabled={draftSummaryFrom === summaryFrom && draftSummaryTo === summaryTo}
+            style={{ padding: '5px 12px', borderRadius: '5px', border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: (draftSummaryFrom === summaryFrom && draftSummaryTo === summaryTo) ? 0.5 : 1 }}>
+            Apply
+          </button>
           {(summaryFrom || summaryTo) && (
             <button onClick={() => applyPageDates('', '')}
               style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.82rem' }}>
@@ -944,9 +963,14 @@ export default function Agents() {
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ color: '#64748b', fontSize: '0.82rem' }} title="Dates for THIS agent only. Defaults to the range chosen on the agents page — change freely just for this agent.">Dates (this agent)</span>
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>From</span>
-              <DateInput value={filterFrom} onChange={v => { setFilterFrom(v); fetchStats(selected.id, v, filterTo); loadBalance(selected.id, v, filterTo); }} style={inputStyle} />
+              <DateInput value={draftFilterFrom} onChange={setDraftFilterFrom} style={inputStyle} />
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>To</span>
-              <DateInput value={filterTo} onChange={v => { setFilterTo(v); fetchStats(selected.id, filterFrom, v); loadBalance(selected.id, filterFrom, v); }} style={inputStyle} />
+              <DateInput value={draftFilterTo} onChange={setDraftFilterTo} style={inputStyle} />
+              <button onClick={handleFilter}
+                disabled={draftFilterFrom === filterFrom && draftFilterTo === filterTo}
+                style={{ padding: '5px 12px', borderRadius: '5px', border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: (draftFilterFrom === filterFrom && draftFilterTo === filterTo) ? 0.5 : 1 }}>
+                Apply
+              </button>
               {detailOverridesPage && (summaryFrom || summaryTo) && (
                 <button onClick={resetToPageDates} title="Snap back to the range chosen on the agents page"
                   style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#a78bfa', cursor: 'pointer', fontSize: '0.82rem' }}>
