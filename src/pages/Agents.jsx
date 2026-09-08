@@ -210,12 +210,9 @@ export default function Agents() {
   const [savingSettlementDate, setSavingSettlementDate] = useState(false);
   useEffect(() => {
     getLastSettlementDate()
-      .then(r => {
-        const d = r.data?.date || '';
-        if (d) { setSummaryFrom(d); setDefaultedFrom(d); load(d, ''); }
-        else load('', '');
-      })
-      .catch(() => load('', ''));
+      .then(r => setDefaultedFrom(r.data?.date || ''))
+      .catch(() => {});
+    load('', '');
   }, []);
 
   const startEditSettlementDate = () => { setSettlementDateDraft(defaultedFrom || summaryFrom || ''); setEditingSettlementDate(true); };
@@ -583,8 +580,9 @@ export default function Agents() {
 
       <div style={{ marginTop: '-0.75rem', marginBottom: '1rem', color: '#94a3b8', fontSize: '0.85rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <span>
-          Rake &amp; P&amp;L period: <strong style={{ color: '#e2e8f0' }}>{summaryFrom ? fmtDateOnly(summaryFrom) : 'start'} – {summaryTo ? fmtDateOnly(summaryTo) : 'today'}</strong>
-          {summaryFrom && summaryFrom === defaultedFrom && <span style={{ color: '#a78bfa', marginLeft: '0.5rem' }}>(since last התחשבנות)</span>}
+          Rake &amp; P&amp;L period: <strong style={{ color: '#e2e8f0' }}>
+            {(summaryFrom || summaryTo) ? `${summaryFrom ? fmtDateOnly(summaryFrom) : 'start'} – ${summaryTo ? fmtDateOnly(summaryTo) : 'today'}` : "each agent's own last settlement"}
+          </strong>
           <span style={{ color: '#64748b', marginLeft: '0.75rem' }}>· amounts are from the agent's point of view (+ green = we owe agent, − red = agent owes us)</span>
         </span>
         {editingSettlementDate ? (
