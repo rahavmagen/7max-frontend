@@ -163,10 +163,10 @@ export default function Agents() {
   };
 
   const submitPayment = () => {
-    const amt = parseFloat(paymentForm?.amount); // + = we paid agent, − = agent paid us; dated today
+    const amt = parseFloat(paymentForm?.amount); // + = we paid agent, − = agent paid us
     if (isNaN(amt) || amt === 0) { setMsg({ type: 'error', text: 'Enter an amount (− if the agent paid you)' }); return; }
     setLedgerSaving(true);
-    addAgentPayment(selected.id, { amount: amt, notes: paymentForm.notes || null })
+    addAgentPayment(selected.id, { amount: amt, effectiveDate: paymentForm.effectiveDate || undefined, notes: paymentForm.notes || null })
       .then(r => { setBalance(r.data); setPaymentForm(null); loadBalance(selected.id, filterFrom, filterTo); load(); })
       .catch(e => setMsg({ type: 'error', text: e?.response?.data?.error || 'Failed to log payment' }))
       .finally(() => setLedgerSaving(false));
@@ -1013,6 +1013,8 @@ export default function Agents() {
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <button onClick={() => { setOpeningForm(openingForm ? null : { amount: '', effectiveDate: '', notes: '' }); setPaymentForm(null); }}
                   style={{ ...inputStyle, cursor: 'pointer', color: '#a78bfa', fontWeight: 600 }}>Set starting balance</button>
+                <button onClick={() => { setPaymentForm(paymentForm ? null : { amount: '', effectiveDate: new Date().toISOString().slice(0, 10), notes: '' }); setOpeningForm(null); }}
+                  style={{ ...inputStyle, cursor: 'pointer', color: '#38bdf8', fontWeight: 600 }}>Log payment</button>
                 <button onClick={() => openSettle(selected)}
                   style={{ ...inputStyle, cursor: 'pointer', color: '#4ade80', fontWeight: 600 }}>Settle</button>
               </div>
@@ -1054,12 +1056,14 @@ export default function Agents() {
             {paymentForm && (
               <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#12151f', borderRadius: '6px' }}>
                 <div style={{ color: '#f59e0b', fontSize: '0.8rem', marginBottom: '0.5rem' }}>
-                  Enter the amount paid. Put a <strong>minus (−)</strong> if the <strong>agent paid you</strong>. Logged with today's date ({fmtDateOnly(new Date().toISOString())}).
+                  Enter the amount paid. Put a <strong>minus (−)</strong> if the <strong>agent paid you</strong>.
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                   <div><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Amount (+ we paid agent, − agent paid us)</div>
                     <input type="number" step="0.01" value={paymentForm.amount} autoFocus
                       onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))} style={{ ...inputStyle, width: 200 }} /></div>
+                  <div><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Date</div>
+                    <DateInput value={paymentForm.effectiveDate} onChange={v => setPaymentForm(f => ({ ...f, effectiveDate: v }))} style={inputStyle} /></div>
                   <div style={{ flex: 1, minWidth: 140 }}><div style={{ color: '#64748b', fontSize: '0.75rem' }}>Note</div>
                     <input value={paymentForm.notes} onChange={e => setPaymentForm(f => ({ ...f, notes: e.target.value }))} style={{ ...inputStyle, width: '100%' }} /></div>
                   <button onClick={submitPayment} disabled={ledgerSaving}
