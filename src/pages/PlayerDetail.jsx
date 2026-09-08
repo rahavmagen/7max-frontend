@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, deletePlayer, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory, getPlayerRakeback, addPlayerRakeback, updatePlayerRakeback, deletePlayerRakeback, getPlayerLiveTickets, updateSelfDetails } from '../api';
+import { getPlayer, getActivePlayers, getPlayerTransactions, getPlayerResults, adminResetPassword, getLoginStats, changeUserRole, updatePlayer, setPlayerBalance, renamePlayerUsername, updatePaymentMethods, getAgents, setPlayerAgent, getPlayerNameHistory, getPlayerRakeback, addPlayerRakeback, updatePlayerRakeback, deletePlayerRakeback, getPlayerLiveTickets, updateSelfDetails } from '../api';
 
 const RB_GAME_TYPES = ['NLH', 'PLO', 'PLO5', 'PLO6', 'MTT', 'SNG', 'AoF', 'SPIN_GOLD'];
 import { useAuth } from '../auth/AuthContext';
@@ -202,16 +202,6 @@ export default function PlayerDetail() {
     }
   };
 
-  const handleDeletePlayer = async () => {
-    if (!window.confirm(`Delete player "${player.username}" and ALL their data (transactions, game results, transfers)? This cannot be undone.`)) return;
-    try {
-      await deletePlayer(id);
-      navigate('/');
-    } catch {
-      setMsg({ type: 'error', text: 'Failed to delete player' });
-    }
-  };
-
   if (loadError) return <div style={{ padding: '2rem', color: '#ef4444' }}>Could not load player data. Please try again.</div>;
   if (!player) return <div style={{ padding: '2rem', color: '#64748b' }}>Loading...</div>;
 
@@ -324,14 +314,9 @@ export default function PlayerDetail() {
                 🔑 Reset Pass
               </button>
               {auth?.role === 'ADMIN' && (
-                <>
-                  <button className="btn btn-secondary" onClick={() => { setShowRoleForm(!showRoleForm); setNewRole(''); }}>
-                    👑 Change Role
-                  </button>
-                  <button className="btn btn-danger" onClick={handleDeletePlayer}>
-                    🗑️ Delete Player
-                  </button>
-                </>
+                <button className="btn btn-secondary" onClick={() => { setShowRoleForm(!showRoleForm); setNewRole(''); }}>
+                  👑 Change Role
+                </button>
               )}
             </>
           )}
