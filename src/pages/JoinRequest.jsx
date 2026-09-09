@@ -1,11 +1,14 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { submitJoinRequest } from '../api';
+import { useAuth } from '../auth/AuthContext';
 
 export default function JoinRequest() {
   const [form, setForm] = useState({ username: '', fullName: '', phone: '', clubPlayerId: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const { setAuthData } = useAuth();
+  const navigate = useNavigate();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -14,8 +17,9 @@ export default function JoinRequest() {
     setError('');
     setLoading(true);
     try {
-      await submitJoinRequest(form);
-      setSubmitted(true);
+      const res = await submitJoinRequest(form);
+      setAuthData(res.data);
+      navigate('/deposit', { replace: true });
     } catch (err) {
       setError(err.response?.data?.error || 'שליחת הבקשה נכשלה. נסה/י שוב.');
     } finally {
@@ -47,25 +51,7 @@ export default function JoinRequest() {
           <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0, direction: 'rtl' }}>בקשת הצטרפות למועדון</p>
         </div>
 
-        {submitted ? (
-          <div style={{
-            background: 'rgba(34,197,94,0.1)',
-            border: '1px solid rgba(34,197,94,0.3)',
-            borderRadius: '10px',
-            padding: '1.5rem',
-            textAlign: 'center',
-            direction: 'rtl',
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>✅</div>
-            <div style={{ color: '#86efac', fontWeight: 700, fontSize: '1rem', marginBottom: '0.5rem' }}>
-              הבקשה נשלחה!
-            </div>
-            <div style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-              תקבל/י גישה לאחר שמנהל יאשר את הבקשה.
-            </div>
-          </div>
-        ) : (
-          <>
+        <>
             {error && (
               <div style={{
                 background: 'rgba(239,68,68,0.1)',
@@ -96,6 +82,9 @@ export default function JoinRequest() {
                 <label style={labelStyle}>טלפון *</label>
                 <input required value={form.phone} onChange={e => set('phone', e.target.value)}
                   style={inputStyle} placeholder="050-0000000" />
+                <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.35rem' }}>
+                  מספר הטלפון ישמש כסיסמה הראשונית שלך לאתר
+                </div>
               </div>
               <div>
                 <label style={labelStyle}>מספר שחקן ClubGG (אופציונלי)</label>
@@ -133,7 +122,6 @@ export default function JoinRequest() {
               מספר מועדון: <strong>770299</strong>
             </div>
           </>
-        )}
       </div>
 
       {/* WhatsApp / Phone card */}

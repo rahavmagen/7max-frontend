@@ -16,6 +16,13 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
+  // Store an already-obtained login-shaped response (e.g. from POST /join, which logs the new
+  // user straight in) without making a separate /auth/login call.
+  const setAuthData = useCallback((data) => {
+    localStorage.setItem('auth', JSON.stringify(data));
+    setAuth(data);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('auth');
     setAuth(null);
@@ -28,7 +35,7 @@ export function AuthProvider({ children }) {
   }, [auth]);
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout, clearMustChange }}>
+    <AuthContext.Provider value={{ auth, login, logout, clearMustChange, setAuthData }}>
       {children}
     </AuthContext.Provider>
   );
