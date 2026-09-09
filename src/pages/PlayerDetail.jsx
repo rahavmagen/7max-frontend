@@ -310,9 +310,6 @@ export default function PlayerDetail() {
               <button className="btn btn-secondary" onClick={() => { setShowSetBalance(!showSetBalance); setNewBalance(player.balance != null ? player.balance : ''); setBalanceNotes(''); }}>
                 ⚖️ Set Balance
               </button>
-              <button className="btn btn-secondary" onClick={() => { setShowResetPass(!showResetPass); setNewPass(''); }}>
-                🔑 Reset Pass
-              </button>
               {auth?.role === 'ADMIN' && (
                 <button className="btn btn-secondary" onClick={() => { setShowRoleForm(!showRoleForm); setNewRole(''); }}>
                   👑 Change Role
@@ -320,10 +317,15 @@ export default function PlayerDetail() {
               )}
             </>
           )}
+          {(isAdmin || auth?.isWorker) && (
+            <button className="btn btn-secondary" onClick={() => { setShowResetPass(!showResetPass); setNewPass(''); }}>
+              🔑 Reset Pass
+            </button>
+          )}
         </div>
       </div>
 
-      {showResetPass && isAdmin && (
+      {showResetPass && (isAdmin || auth?.isWorker) && (
         <div className="card">
           <h2>איפוס סיסמא — {player.username}</h2>
           <form onSubmit={handleResetPassword}>
