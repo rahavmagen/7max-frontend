@@ -369,12 +369,14 @@ export default function Agents() {
   // Inline edit of an agent's starting balance → records a new OPENING ledger entry.
   const [editingStart, setEditingStart] = useState(null);   // agentId being edited
   const [startInput, setStartInput] = useState('');
+  const [startDateInput, setStartDateInput] = useState('');
   const saveStartingBalance = async (a) => {
     if (startInput === '' || startInput == null || isNaN(Number(startInput))) { setEditingStart(null); return; }
+    if (!startDateInput) { setMsg({ type: 'error', text: 'Pick an effective date for the starting balance' }); return; }
     try {
       await addAgentOpening(a.id, {
         amount: Number(startInput),
-        effectiveDate: a.openingDate || a.lastSettlementDate || undefined,
+        effectiveDate: startDateInput,
       });
       setEditingStart(null);
       load();
@@ -755,12 +757,17 @@ export default function Agents() {
                         onChange={e => setStartInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') saveStartingBalance(a); if (e.key === 'Escape') setEditingStart(null); }}
                         style={{ ...inputStyle, width: 90, textAlign: 'right' }} />
+                      <DateInput value={startDateInput} onChange={setStartDateInput} style={{ width: 100, padding: '0.35rem 0.5rem', fontSize: '0.78rem' }} />
                       <button onClick={() => saveStartingBalance(a)} style={{ padding: '2px 8px', borderRadius: 4, border: 'none', background: '#1d4ed8', color: '#fff', cursor: 'pointer', fontSize: '0.78rem' }}>✓</button>
                       <button onClick={() => setEditingStart(null)} style={{ padding: '2px 8px', borderRadius: 4, border: 'none', background: '#374151', color: '#fff', cursor: 'pointer', fontSize: '0.78rem' }}>✗</button>
                     </span>
                   ) : (
-                    <span onClick={() => { setEditingStart(a.id); setStartInput(a.openingBalance != null ? Number(a.openingBalance).toString() : ''); }}
-                      style={{ cursor: 'pointer' }} title="Click to edit the starting balance (records a new opening entry)">
+                    <span onClick={() => {
+                      setEditingStart(a.id);
+                      setStartInput(a.openingBalance != null ? Number(a.openingBalance).toString() : '');
+                      setStartDateInput(a.openingDate || new Date().toISOString().slice(0, 10));
+                    }}
+                      style={{ cursor: 'pointer' }} title="Click to edit the starting balance and its effective date (records a new opening entry)">
                       {fmt(a.openingBalance)}
                     </span>
                   )}
