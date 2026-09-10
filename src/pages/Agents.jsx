@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getAgents, getAgentSummary, getAgentPlayerStats, settleAgent, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, setLastSettlementDate, getAgentLedgerHistory, setAgentSettledWeek, uncheckAllAgentSettledWeek } from '../api';
+import { getAgents, getAgentSummary, getAgentPlayerStats, setAgentRakePercentage, setAgentClubManaged, resyncAgents, computeAgentCredit, dismissAgentFlags, getAgentBalance, getAgentLedger, addAgentOpening, addAgentPayment, deleteAgentLedgerEntry, getLastSettlementDate, setLastSettlementDate, getAgentLedgerHistory, setAgentSettledWeek, uncheckAllAgentSettledWeek } from '../api';
 import { getPlayers, getBankAccounts, createTransfer, getAdminUsers, getPlayerTransactions } from '../api';
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
@@ -31,7 +31,6 @@ export default function Agents() {
   const [draftFilterFrom, setDraftFilterFrom] = useState(''); // edited but not yet applied (per-agent)
   const [draftFilterTo, setDraftFilterTo] = useState('');
   const [msg, setMsg] = useState(null);
-  const [settling, setSettling] = useState(false);
   const [editingRake, setEditingRake] = useState(null); // agentId being edited
   const [rakeInput, setRakeInput] = useState('');
   const [expandedIds, setExpandedIds] = useState(new Set());
@@ -62,17 +61,10 @@ export default function Agents() {
   const [settleSaving, setSettleSaving] = useState(false);
 
   const openSettle = (agent) => {
-    setSettleForm({ agent, direction: 'agentPays', counterpartyId: '', clubType: '', adminUser: '', method: 'CASH', amount: '', notes: '', agentRake: '' });
+    setSettleForm({ agent, direction: 'agentPays', counterpartyId: '', clubType: '', adminUser: '', method: 'CASH', amount: '', notes: '' });
     if (settlePlayers.length === 0) getPlayers().then(r => setSettlePlayers(r.data || [])).catch(() => {});
     if (settleBanks.length === 0) getBankAccounts().then(r => setSettleBanks(r.data || [])).catch(() => {});
     if (settleAdmins.length === 0) getAdminUsers().then(r => setSettleAdmins(r.data || [])).catch(() => {});
-    // Pre-fill from the real unsettled backlog (what settleAgent can actually act on), not the
-    // period-projected "Agent Rake" column, which ignores settlement status and can be non-zero
-    // even when nothing is actually left to settle.
-    getAgentSummary(agent.id).then(r => {
-      const pending = Number(r.data?.pendingBalance || 0);
-      setSettleForm(f => (f && f.agent.id === agent.id) ? { ...f, agentRake: pending > 0 ? String(pending) : '' } : f);
-    }).catch(() => {});
   };
 
   // Resolve the counterparty into a transfer party (player / bank account / admin wallet).
@@ -89,41 +81,29 @@ export default function Agents() {
   const submitSettle = async () => {
     const f = settleForm;
     const amt = parseFloat(f?.amount);
-    const rakeAmt = parseFloat(f?.agentRake);
-    const hasTransfer = !isNaN(amt) && amt > 0;
-    const hasRake = !isNaN(rakeAmt) && rakeAmt > 0;
-    if (!hasTransfer && !hasRake) { setMsg({ type: 'error', text: 'Enter a transfer amount and/or an agent rake to record' }); return; }
-    if (hasTransfer) {
-      if (!f.counterpartyId) { setMsg({ type: 'error', text: 'Choose the other side (player / bank / admin wallet)' }); return; }
-      if (f.counterpartyId === 'CLUB' && !f.clubType) { setMsg({ type: 'error', text: 'Choose Admin Wallet or Bank' }); return; }
-      if (f.counterpartyId === 'CLUB' && f.clubType === 'admin' && !f.adminUser) { setMsg({ type: 'error', text: 'Select which admin wallet' }); return; }
-    }
+    if (isNaN(amt) || amt <= 0) { setMsg({ type: 'error', text: 'Enter a transfer amount' }); return; }
+    if (!f.counterpartyId) { setMsg({ type: 'error', text: 'Choose the other side (player / bank / admin wallet)' }); return; }
+    if (f.counterpartyId === 'CLUB' && !f.clubType) { setMsg({ type: 'error', text: 'Choose Admin Wallet or Bank' }); return; }
+    if (f.counterpartyId === 'CLUB' && f.clubType === 'admin' && !f.adminUser) { setMsg({ type: 'error', text: 'Select which admin wallet' }); return; }
     setSettleSaving(true);
     try {
-      if (hasTransfer) {
-        const o = resolveCounterparty(f);
-        // agentPays = money INTO the club (agent → counterparty); clubPays = money OUT (counterparty → agent).
-        const payload = f.direction === 'agentPays'
-          ? { fromPlayerId: f.agent.id, fromBankAccountId: null, fromAdminUsername: null,
-              toPlayerId: o.playerId, toBankAccountId: o.bankAccountId, toAdminUsername: o.adminUsername }
-          : { fromPlayerId: o.playerId, fromBankAccountId: o.bankAccountId, fromAdminUsername: o.adminUsername,
-              toPlayerId: f.agent.id, toBankAccountId: null, toAdminUsername: null };
-        await createTransfer({ ...payload, method: f.method, amount: amt, notes: f.notes || `Agent settle: ${f.agent.username}` });
-        // Update the agent balance: agent paid us reduces what we owe (−amt); we paid the agent (+amt).
-        const ledgerAmt = f.direction === 'agentPays' ? -amt : amt;
-        await addAgentPayment(f.agent.id, { amount: ledgerAmt, notes: f.notes || `Settle via ${f.method}` });
-        // If the other side is ALSO an agent (not the club/a bank/a regular player), this is really
-        // an agent-to-agent payment - update their ledger too, with the opposite sign, so both
-        // balances move. Without this, only the initiating agent's balance ever changed.
-        const counterpartyPlayer = settlePlayers.find(p => String(p.id) === String(f.counterpartyId));
-        if (counterpartyPlayer?.isAgent) {
-          await addAgentPayment(counterpartyPlayer.id, { amount: -ledgerAmt, notes: f.notes || `Settle via ${f.method} (from ${f.agent.username})` });
-        }
-      }
-      // Record the agent rake as a Club Expense, independent of how much was actually transferred
-      // above (e.g. owed 3K, only 2K paid now) - the full corrected figure still gets written.
-      if (hasRake) {
-        await settleAgent(f.agent.id, rakeAmt);
+      const o = resolveCounterparty(f);
+      // agentPays = money INTO the club (agent → counterparty); clubPays = money OUT (counterparty → agent).
+      const payload = f.direction === 'agentPays'
+        ? { fromPlayerId: f.agent.id, fromBankAccountId: null, fromAdminUsername: null,
+            toPlayerId: o.playerId, toBankAccountId: o.bankAccountId, toAdminUsername: o.adminUsername }
+        : { fromPlayerId: o.playerId, fromBankAccountId: o.bankAccountId, fromAdminUsername: o.adminUsername,
+            toPlayerId: f.agent.id, toBankAccountId: null, toAdminUsername: null };
+      await createTransfer({ ...payload, method: f.method, amount: amt, notes: f.notes || `Agent settle: ${f.agent.username}` });
+      // Update the agent balance: agent paid us reduces what we owe (−amt); we paid the agent (+amt).
+      const ledgerAmt = f.direction === 'agentPays' ? -amt : amt;
+      await addAgentPayment(f.agent.id, { amount: ledgerAmt, notes: f.notes || `Settle via ${f.method}` });
+      // If the other side is ALSO an agent (not the club/a bank/a regular player), this is really
+      // an agent-to-agent payment - update their ledger too, with the opposite sign, so both
+      // balances move. Without this, only the initiating agent's balance ever changed.
+      const counterpartyPlayer = settlePlayers.find(p => String(p.id) === String(f.counterpartyId));
+      if (counterpartyPlayer?.isAgent) {
+        await addAgentPayment(counterpartyPlayer.id, { amount: -ledgerAmt, notes: f.notes || `Settle via ${f.method} (from ${f.agent.username})` });
       }
       setSettleForm(null);
       setMsg({ type: 'success', text: 'Settlement recorded' });
@@ -383,23 +363,6 @@ export default function Agents() {
     } catch { setMsg({ type: 'error', text: 'Failed to update starting balance' }); }
   };
 
-  const handleSettle = async (agentId) => {
-    setSettling(true);
-    setMsg(null);
-    try {
-      const r = await settleAgent(agentId);
-      setMsg({ type: 'success', text: `Settled ${fmt(r.data.agentShare)} for ${r.data.fromDate} – ${r.data.toDate}` });
-      load();
-      if (selected?.id === agentId) {
-        fetchStats(agentId, filterFrom, filterTo);
-        getAgentSummary(agentId).then(r => setSettlementHistory(r.data.settlementHistory || []));
-      }
-    } catch (e) {
-      setMsg({ type: 'error', text: e.response?.data?.error || 'Failed to settle' });
-    }
-    setSettling(false);
-  };
-
   // Filtered settlement history (client-side, same filter as player stats)
   const filteredHistory = settlementHistory.filter(s => {
     if (filterFrom && s.toDate < filterFrom) return false;
@@ -430,7 +393,6 @@ export default function Agents() {
   const summaryTotalPnl = mainAgents.reduce((s, a) => s + Number(a.periodPnl || 0), 0);
   const summaryTotalAgentRake = mainAgents.reduce((s, a) => s + Number(a.agentRake || 0), 0);
   // Grand total excludes club-managed agents (their players are handled directly by the club).
-  const summaryTotalPending = mainAgents.reduce((s, a) => s + Number(a.pendingBalance || 0), 0);
   const summaryTotalCurrentBalance = mainAgents.reduce((s, a) => s + Number(a.currentBalance || 0), 0);
   const summaryTotalStarting = mainAgents.reduce((s, a) => s + Number(a.openingBalance || 0), 0);
 
@@ -446,18 +408,6 @@ export default function Agents() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <strong style={{ color: '#e2e8f0' }}>Settle — {settleForm.agent.username}</strong>
               <button onClick={() => setSettleForm(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
-            </div>
-
-            {/* Agent rake - what gets recorded as a Club Expense, independent of the transfer amount below */}
-            <div className="form-group" style={{ marginBottom: '1rem' }}>
-              <label>Agent Rake (recorded as expense, editable)</label>
-              <input type="number" step="0.01" min="0" value={settleForm.agentRake}
-                onChange={e => setSettleForm(f => ({ ...f, agentRake: e.target.value }))}
-                placeholder="0.00"
-                style={{ width: '100%', background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }} />
-              <div style={{ color: '#64748b', fontSize: '0.72rem', marginTop: '0.25rem' }}>
-                Written to Club Expenses as this agent's rake fee when you record settlement, regardless of the transfer amount below.
-              </div>
             </div>
 
             {/* Direction question */}
@@ -680,7 +630,6 @@ export default function Agents() {
               <th style={{ padding: '10px 12px' }}>Phone</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }}>Total Rake</th>
               <th style={{ padding: '10px 12px', textAlign: 'right', borderLeft: '2px solid #475569' }} title="Balance calc starts here. Agent's cut = rake% × Total Rake (rakeback we owe the agent)">Agent Rake</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }} title="היתרה האמיתית שנותרה להתחשבנות: עמלת הריק שנצברה על המשחקים של השחקנים ועדיין לא נסגרה כהוצאת מועדון (לא סולקה). זה הסכום שכפתור ׳התחשבנות׳ פועל עליו. שונה מ׳Agent Rake׳ שהוא רק הערכה לפי טווח התאריכים ומתעלם מסטטוס הסליקה.">ריק לרישום</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Players' net P&L over the chosen dates (won = +)">P&amp;L</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Starting balance carried from the last התחשבנות">Starting Bal</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Amounts are from the agent's point of view: + (green) = we owe the agent, − (red) = the agent owes us. Starting + Agent Rake + Players' P&L − Payments.">Current Balance</th>
@@ -743,7 +692,6 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: '0.85rem' }}>{a.phone || '—'}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(a.totalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, borderLeft: '2px solid #475569' }} className={balanceClass(a.agentRake)}>{fmt(a.agentRake)}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.pendingBalance)}>{fmt(a.pendingBalance)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600, whiteSpace: 'nowrap' }} className={balanceClass(a.periodPnl)}>
                   {fmt(a.periodPnl)}
                   {a.appPnl != null && Number(a.appPnl) !== Number(a.periodPnl) && (
@@ -792,7 +740,7 @@ export default function Agents() {
               </tr>
             ))}
             {mainAgents.length === 0 && (
-              <tr><td colSpan={15} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
+              <tr><td colSpan={14} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
             )}
             {mainAgents.length > 0 && (
               <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
@@ -804,7 +752,6 @@ export default function Agents() {
                 <td />{/* Phone — no total */}
                 <td style={{ padding: '10px 12px', textAlign: 'right', color: '#e2e8f0', fontWeight: 700 }}>{fmt(summaryTotalRake)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, borderLeft: '2px solid #475569' }} className={balanceClass(summaryTotalAgentRake)}>{fmt(summaryTotalAgentRake)}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalPending)}>{fmt(summaryTotalPending)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalPnl)}>{fmt(summaryTotalPnl)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalStarting)}>{fmt(summaryTotalStarting)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: '1.02rem' }} className={balanceClass(summaryTotalCurrentBalance)}>{fmt(summaryTotalCurrentBalance)}</td>
