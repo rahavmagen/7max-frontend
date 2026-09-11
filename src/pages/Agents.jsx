@@ -50,6 +50,7 @@ export default function Agents() {
   const [ledgerSaving, setLedgerSaving] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [hideInactive, setHideInactive] = useState(true);
+  const [hideNeverPlayed, setHideNeverPlayed] = useState(true); // hide players with zero games (any period)
   const [agentTx, setAgentTx] = useState([]);          // the agent's own player transactions
   const [agentTxOpen, setAgentTxOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('dashboard'); // agent-detail tab: dashboard | players
@@ -274,7 +275,7 @@ export default function Agents() {
     });
   };
 
-  const expandAll = () => setExpandedIds(new Set(playerStats.map(p => p.playerId)));
+  const expandAll = () => setExpandedIds(new Set(visiblePlayerStats.map(p => p.playerId)));
   const collapseAll = () => setExpandedIds(new Set());
 
   // Open ALL agents at once — fetch every agent's player stats (respecting the table date filter).
@@ -372,10 +373,11 @@ export default function Agents() {
   const filteredHistoryRakeTotal = filteredHistory.reduce((s, h) => s + Number(h.totalRake || 0), 0);
   const filteredHistoryShareTotal = filteredHistory.reduce((s, h) => s + Number(h.agentShare || 0), 0);
 
-  // Player stats totals
-  const statsTotalRake = playerStats.reduce((s, p) => s + Number(p.totalRake || 0), 0);
-  const statsTotalShare = playerStats.reduce((s, p) => s + Number(p.agentShare || 0), 0);
-  const statsTotalPnl = playerStats.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
+  // Player stats totals (never-played players excluded from the visible list & totals by default)
+  const visiblePlayerStats = hideNeverPlayed ? playerStats.filter(p => p.lastPlayedDate) : playerStats;
+  const statsTotalRake = visiblePlayerStats.reduce((s, p) => s + Number(p.totalRake || 0), 0);
+  const statsTotalShare = visiblePlayerStats.reduce((s, p) => s + Number(p.agentShare || 0), 0);
+  const statsTotalPnl = visiblePlayerStats.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
 
   // Club-managed agents are settled by the club directly — keep them out of the main table & totals,
   // and show them in their own section below.
@@ -520,6 +522,11 @@ export default function Agents() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: hideInactive ? '#60a5fa' : '#94a3b8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, border: '1px solid #2d3148', borderRadius: '5px', padding: '5px 10px' }}>
             <input type="checkbox" checked={hideInactive} onChange={e => setHideInactive(e.target.checked)} style={{ cursor: 'pointer' }} />
             Hide inactive
+          </label>
+          <label title="Hide players who have never played a single game (no games in their whole history)"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: hideNeverPlayed ? '#60a5fa' : '#94a3b8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, border: '1px solid #2d3148', borderRadius: '5px', padding: '5px 10px' }}>
+            <input type="checkbox" checked={hideNeverPlayed} onChange={e => setHideNeverPlayed(e.target.checked)} style={{ cursor: 'pointer' }} />
+            Hide never played
           </label>
           <button onClick={handleResync} disabled={resyncing}
             title="Re-link players to agents from the latest report and recompute the credit cross-check"
@@ -820,7 +827,7 @@ export default function Agents() {
             <div style={{ color: '#64748b', padding: '1rem', textAlign: 'center' }}>Loading all agents…</div>
           ) : (
             agents.map(a => {
-              const rows = allAgentStats[a.id] || [];
+              const rows = (allAgentStats[a.id] || []).filter(p => !hideNeverPlayed || p.lastPlayedDate);
               const tGames = rows.reduce((s, p) => s + Number(p.gameCount || 0), 0);
               const tRake = rows.reduce((s, p) => s + Number(p.totalRake || 0), 0);
               const tShare = rows.reduce((s, p) => s + Number(p.agentShare || 0), 0);
@@ -1105,7 +1112,7 @@ export default function Agents() {
           <div className="card" style={{ marginBottom: '1.5rem' }}>
             <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
-                <strong style={{ color: '#e2e8f0' }}>Players ({playerStats.length})</strong>
+                <strong style={{ color: '#e2e8f0' }}>Players ({visiblePlayerStats.length}{visiblePlayerStats.length !== playerStats.length ? ` of ${playerStats.length}` : ''})</strong>
                 {(filterFrom || filterTo) && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.75rem' }}>{filterFrom || '…'} – {filterTo || '…'}</span>}
               </div>
               {playerStats.length > 0 && (
@@ -1140,18 +1147,20 @@ export default function Agents() {
                     </tr>
                   </thead>
                   <tbody>
-                    {playerStats.map(p => (
+                    {visiblePlayerStats.map(p => (
                       <AgentPlayerRow key={p.playerId} player={p} showBalance={true} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
                     ))}
-                    {playerStats.length === 0 && (
-                      <tr><td colSpan={8} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
+                    {visiblePlayerStats.length === 0 && (
+                      <tr><td colSpan={8} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>
+                        {playerStats.length === 0 ? 'No data for selected period' : 'No players played a game in this period — uncheck "Hide never played" to see them'}
+                      </td></tr>
                     )}
-                    {playerStats.length > 1 && (
+                    {visiblePlayerStats.length > 1 && (
                       <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
                         <td style={{ padding: '8px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
                         <td />
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(playerStats.reduce((s, p) => s + Number(p.currentChips || 0), 0))}</td>
-                        <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{playerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(visiblePlayerStats.reduce((s, p) => s + Number(p.currentChips || 0), 0))}</td>
+                        <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{visiblePlayerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
                         <td />
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(statsTotalRake)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 700 }}>{fmt(statsTotalShare)}</td>

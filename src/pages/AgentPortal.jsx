@@ -31,6 +31,7 @@ export default function AgentPortal() {
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [balance, setBalance] = useState(null);
   const [tab, setTab] = useState('dashboard');
+  const [hideNeverPlayed, setHideNeverPlayed] = useState(true); // hide players with zero games (any period)
 
   const fetchStats = (from, to) => {
     setStatsLoading(true);
@@ -51,7 +52,7 @@ export default function AgentPortal() {
     });
   };
 
-  const expandAll = () => setExpandedIds(new Set(playerStats.map(p => p.playerId)));
+  const expandAll = () => setExpandedIds(new Set(visiblePlayerStats.map(p => p.playerId)));
   const collapseAll = () => setExpandedIds(new Set());
 
   useEffect(() => {
@@ -76,9 +77,10 @@ export default function AgentPortal() {
     if (filterTo && s.fromDate > filterTo) return false;
     return true;
   });
-  const statsTotalRake = playerStats.reduce((s, p) => s + Number(p.totalRake || 0), 0);
-  const statsTotalShare = playerStats.reduce((s, p) => s + Number(p.agentShare || 0), 0);
-  const statsTotalPnl = playerStats.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
+  const visiblePlayerStats = hideNeverPlayed ? playerStats.filter(p => p.lastPlayedDate) : playerStats;
+  const statsTotalRake = visiblePlayerStats.reduce((s, p) => s + Number(p.totalRake || 0), 0);
+  const statsTotalShare = visiblePlayerStats.reduce((s, p) => s + Number(p.agentShare || 0), 0);
+  const statsTotalPnl = visiblePlayerStats.reduce((s, p) => s + Number(p.periodPnl || 0), 0);
   const historyRakeTotal = filteredHistory.reduce((s, h) => s + Number(h.totalRake || 0), 0);
   const historyShareTotal = filteredHistory.reduce((s, h) => s + Number(h.agentShare || 0), 0);
 
@@ -138,15 +140,22 @@ export default function AgentPortal() {
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
-            <strong style={{ color: '#e2e8f0' }}>Players ({playerStats.length})</strong>
+            <strong style={{ color: '#e2e8f0' }}>Players ({visiblePlayerStats.length}{visiblePlayerStats.length !== playerStats.length ? ` of ${playerStats.length}` : ''})</strong>
             {(filterFrom || filterTo) && <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.75rem' }}>{filterFrom || '…'} – {filterTo || '…'}</span>}
           </div>
-          {playerStats.length > 0 && (
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={expandAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Expand All</button>
-              <button onClick={collapseAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Collapse All</button>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label title="Hide players who have never played a single game (no games in their whole history)"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: hideNeverPlayed ? '#60a5fa' : '#94a3b8', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, border: '1px solid #2d3148', borderRadius: '5px', padding: '5px 10px' }}>
+              <input type="checkbox" checked={hideNeverPlayed} onChange={e => setHideNeverPlayed(e.target.checked)} style={{ cursor: 'pointer' }} />
+              Hide never played
+            </label>
+            {playerStats.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={expandAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Expand All</button>
+                <button onClick={collapseAll} style={{ padding: '4px 10px', borderRadius: '5px', border: '1px solid #2d3148', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: '0.78rem' }}>Collapse All</button>
+              </div>
+            )}
+          </div>
         </div>
         {statsLoading ? <div style={{ color: '#64748b', padding: '1rem', textAlign: 'center' }}>Loading...</div> : (
           <div style={{ overflowX: 'auto' }}>
@@ -163,15 +172,19 @@ export default function AgentPortal() {
                 </tr>
               </thead>
               <tbody>
-                {playerStats.map(p => (
+                {visiblePlayerStats.map(p => (
                   <AgentPlayerRow key={p.playerId} player={p} showBalance={false} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
                 ))}
-                {playerStats.length === 0 && <tr><td colSpan={7} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>}
-                {playerStats.length > 1 && (
+                {visiblePlayerStats.length === 0 && (
+                  <tr><td colSpan={7} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>
+                    {playerStats.length === 0 ? 'No data for selected period' : 'No players played a game in this period — uncheck "Hide never played" to see them'}
+                  </td></tr>
+                )}
+                {visiblePlayerStats.length > 1 && (
                   <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
                     <td style={{ padding: '8px', color: '#e2e8f0', fontWeight: 700 }}>Total</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(playerStats.reduce((s, p) => s + Number(p.currentChips || 0), 0))}</td>
-                    <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{playerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(visiblePlayerStats.reduce((s, p) => s + Number(p.currentChips || 0), 0))}</td>
+                    <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{visiblePlayerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
                     <td />
                     <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(statsTotalRake)}</td>
                     <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 700 }}>{fmt(statsTotalShare)}</td>
