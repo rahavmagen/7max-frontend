@@ -866,6 +866,7 @@ export default function Agents() {
                           <th style={{ padding: '6px' }}>Player</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>Chips</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>Games</th>
+                          <th style={{ padding: '6px', textAlign: 'right' }}>Last Played</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>Club Rake</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>Agent Share</th>
                           <th style={{ padding: '6px', textAlign: 'right' }}>P&L</th>
@@ -880,6 +881,7 @@ export default function Agents() {
                           <td style={{ padding: '6px', color: '#e2e8f0' }}>Total</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(tChips)}</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#94a3b8' }}>{tGames}</td>
+                          <td />
                           <td style={{ padding: '6px', textAlign: 'right', color: '#f59e0b' }}>{fmt(tRake)}</td>
                           <td style={{ padding: '6px', textAlign: 'right', color: '#fbbf24' }}>{fmt(tShare)}</td>
                           <td style={{ padding: '6px', textAlign: 'right' }} className={balanceClass(tPnl)}>
@@ -1131,6 +1133,7 @@ export default function Agents() {
                       <th style={{ padding: '8px', textAlign: 'right' }}>Balance</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Chips</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Games</th>
+                      <th style={{ padding: '8px', textAlign: 'right' }}>Last Played</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Club Rake</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Agent Share</th>
                       <th style={{ padding: '8px', textAlign: 'right' }}>Period P&L</th>
@@ -1141,7 +1144,7 @@ export default function Agents() {
                       <AgentPlayerRow key={p.playerId} player={p} showBalance={true} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
                     ))}
                     {playerStats.length === 0 && (
-                      <tr><td colSpan={7} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
+                      <tr><td colSpan={8} style={{ padding: '1rem', color: '#64748b', textAlign: 'center' }}>No data for selected period</td></tr>
                     )}
                     {playerStats.length > 1 && (
                       <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
@@ -1149,6 +1152,7 @@ export default function Agents() {
                         <td />
                         <td style={{ padding: '8px', textAlign: 'right', color: '#e2e8f0' }}>{fmt(playerStats.reduce((s, p) => s + Number(p.currentChips || 0), 0))}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8' }}>{playerStats.reduce((s, p) => s + p.gameCount, 0)}</td>
+                        <td />
                         <td style={{ padding: '8px', textAlign: 'right', color: '#94a3b8', fontWeight: 600 }}>{fmt(statsTotalRake)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', color: '#fbbf24', fontWeight: 700 }}>{fmt(statsTotalShare)}</td>
                         <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(statsTotalPnl)}>{fmt(statsTotalPnl)}</td>
