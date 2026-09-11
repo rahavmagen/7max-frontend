@@ -32,6 +32,14 @@ export default function AgentPortal() {
   const [balance, setBalance] = useState(null);
   const [tab, setTab] = useState('dashboard');
   const [hideNeverPlayed, setHideNeverPlayed] = useState(true); // hide players with zero games (any period)
+  const [lastPlayedSort, setLastPlayedSort] = useState(null); // null | 'asc' | 'desc' — click the column header to cycle
+  const toggleLastPlayedSort = () => setLastPlayedSort(d => d === null ? 'desc' : d === 'desc' ? 'asc' : null);
+  const sortByLastPlayed = (list) => {
+    if (!lastPlayedSort) return list;
+    const t = (p) => p.lastPlayedDate ? new Date(p.lastPlayedDate).getTime() : -Infinity;
+    return [...list].sort((a, b) => lastPlayedSort === 'asc' ? t(a) - t(b) : t(b) - t(a));
+  };
+  const lastPlayedArrow = lastPlayedSort ? (lastPlayedSort === 'asc' ? ' ▲' : ' ▼') : '';
 
   const fetchStats = (from, to) => {
     setStatsLoading(true);
@@ -165,14 +173,14 @@ export default function AgentPortal() {
                   <th style={{ padding: '8px' }}>Player</th>
                   <th style={{ padding: '8px', textAlign: 'right' }}>Chips</th>
                   <th style={{ padding: '8px', textAlign: 'right' }}>Games</th>
-                  <th style={{ padding: '8px', textAlign: 'right' }}>Last Played</th>
+                  <th onClick={toggleLastPlayedSort} title="Click to sort by last played" style={{ padding: '8px', textAlign: 'right', cursor: 'pointer', userSelect: 'none', color: lastPlayedSort ? '#60a5fa' : '#64748b' }}>Last Played{lastPlayedArrow}</th>
                   <th style={{ padding: '8px', textAlign: 'right' }}>Club Rake</th>
                   <th style={{ padding: '8px', textAlign: 'right' }}>Your Share</th>
                   <th style={{ padding: '8px', textAlign: 'right' }}>Period P&L</th>
                 </tr>
               </thead>
               <tbody>
-                {visiblePlayerStats.map(p => (
+                {sortByLastPlayed(visiblePlayerStats).map(p => (
                   <AgentPlayerRow key={p.playerId} player={p} showBalance={false} expanded={expandedIds.has(p.playerId)} onToggle={() => toggleExpand(p.playerId)} />
                 ))}
                 {visiblePlayerStats.length === 0 && (
