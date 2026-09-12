@@ -13,6 +13,13 @@ export function fmtDateOnly(iso) {
   return `${d}/${m}/${y}`;
 }
 
+// Today as ISO "yyyy-mm-dd", from LOCAL calendar components (NOT toISOString(), which converts to
+// UTC first and so reports the wrong date in the hours after local midnight but before UTC midnight).
+export function todayIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 // ISO date "2026-04-13" + 1 → "2026-04-14" (UTC arithmetic, so no local-timezone rollover surprises)
 export function addDaysIso(iso, days) {
   if (!iso) return iso;

@@ -4,7 +4,7 @@ import { getPlayers, getBankAccounts, createTransfer, getAdminUsers, getPlayerTr
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
 import PlayerSelect from '../components/PlayerSelect';
-import { fmtDateOnly, addDaysIso } from '../utils/dates';
+import { fmtDateOnly, addDaysIso, todayIso } from '../utils/dates';
 
 const SETTLE_METHODS = ['CASH', 'BANK_TRANSFER', 'BIT', 'PAYBOX', 'KASHCASH', 'OTHER'];
 
@@ -75,7 +75,11 @@ export default function Agents() {
   const [settleSaving, setSettleSaving] = useState(false);
 
   const openSettle = (agent) => {
-    setSettleForm({ agent, direction: 'agentPays', counterpartyId: '', clubType: '', adminUser: '', method: 'CASH', amount: '', notes: '' });
+    // Defaults to yesterday, not today: by the time an admin settles, today's session usually
+    // hasn't been played/reported yet, so what's actually being closed out is "through yesterday".
+    // Editable — if today's data IS already in when settling, change it to today.
+    const yesterday = addDaysIso(todayIso(), -1);
+    setSettleForm({ agent, direction: 'agentPays', counterpartyId: '', clubType: '', adminUser: '', method: 'CASH', amount: '', notes: '', date: yesterday });
     if (settlePlayers.length === 0) getPlayers().then(r => setSettlePlayers(r.data || [])).catch(() => {});
     if (settleBanks.length === 0) getBankAccounts().then(r => setSettleBanks(r.data || [])).catch(() => {});
     if (settleAdmins.length === 0) getAdminUsers().then(r => setSettleAdmins(r.data || [])).catch(() => {});
@@ -96,6 +100,7 @@ export default function Agents() {
     const f = settleForm;
     const amt = parseFloat(f?.amount);
     if (isNaN(amt) || amt <= 0) { setMsg({ type: 'error', text: 'Enter a transfer amount' }); return; }
+    if (!f.date) { setMsg({ type: 'error', text: 'Pick the settlement date' }); return; }
     if (!f.counterpartyId) { setMsg({ type: 'error', text: 'Choose the other side (player / bank / admin wallet)' }); return; }
     if (f.counterpartyId === 'CLUB' && !f.clubType) { setMsg({ type: 'error', text: 'Choose Admin Wallet or Bank' }); return; }
     if (f.counterpartyId === 'CLUB' && f.clubType === 'admin' && !f.adminUser) { setMsg({ type: 'error', text: 'Select which admin wallet' }); return; }
@@ -111,13 +116,13 @@ export default function Agents() {
       await createTransfer({ ...payload, method: f.method, amount: amt, notes: f.notes || `Agent settle: ${f.agent.username}` });
       // Update the agent balance: agent paid us reduces what we owe (−amt); we paid the agent (+amt).
       const ledgerAmt = f.direction === 'agentPays' ? -amt : amt;
-      await addAgentPayment(f.agent.id, { amount: ledgerAmt, notes: f.notes || `Settle via ${f.method}` });
+      await addAgentPayment(f.agent.id, { amount: ledgerAmt, effectiveDate: f.date, notes: f.notes || `Settle via ${f.method}` });
       // If the other side is ALSO an agent (not the club/a bank/a regular player), this is really
       // an agent-to-agent payment - update their ledger too, with the opposite sign, so both
       // balances move. Without this, only the initiating agent's balance ever changed.
       const counterpartyPlayer = settlePlayers.find(p => String(p.id) === String(f.counterpartyId));
       if (counterpartyPlayer?.isAgent) {
-        await addAgentPayment(counterpartyPlayer.id, { amount: -ledgerAmt, notes: f.notes || `Settle via ${f.method} (from ${f.agent.username})` });
+        await addAgentPayment(counterpartyPlayer.id, { amount: -ledgerAmt, effectiveDate: f.date, notes: f.notes || `Settle via ${f.method} (from ${f.agent.username})` });
       }
       setSettleForm(null);
       setMsg({ type: 'success', text: 'Settlement recorded' });
@@ -483,6 +488,10 @@ export default function Agents() {
                   onChange={e => setSettleForm(f => ({ ...f, amount: e.target.value }))}
                   style={{ width: '100%', background: '#1a1d2e', border: '1px solid #2d3148', color: '#e2e8f0', padding: '8px 12px', borderRadius: '6px' }} />
               </div>
+            </div>
+            <div className="form-group">
+              <label title="Defaults to yesterday — today's session usually hasn't been played/reported yet, so this closes the books through yesterday. Change it if that's not the case.">Settlement date</label>
+              <DateInput value={settleForm.date} onChange={v => setSettleForm(f => ({ ...f, date: v }))} style={{ width: '100%' }} />
             </div>
             <div className="form-group">
               <label>Note (optional)</label>
