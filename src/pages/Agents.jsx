@@ -233,13 +233,16 @@ export default function Agents() {
 
   const openDetail = (agent) => {
     setSelected(agent);
-    // Agent detail's date filter defaults to whatever range is chosen on the all-agents page.
-    setFilterFrom(summaryFrom);
+    // Agent detail's date filter defaults to whatever range is chosen on the all-agents page; with
+    // no page-level range set, default to (and show, editable) this agent's own last settlement date
+    // instead of all-time, matching the backend's default for player-stats.
+    const initFrom = summaryFrom || agent.lastSettlementDate || '';
+    setFilterFrom(initFrom);
     setFilterTo(summaryTo);
     setOpeningForm(null);
     setPaymentForm(null);
-    fetchStats(agent.id, summaryFrom, summaryTo);
-    loadBalance(agent.id, summaryFrom, summaryTo);
+    fetchStats(agent.id, initFrom, summaryTo);
+    loadBalance(agent.id, initFrom, summaryTo);
     loadAgentTx(agent.id);
     getAgentSummary(agent.id)
       .then(r => setSettlementHistory(r.data.settlementHistory || []))
@@ -939,7 +942,7 @@ export default function Agents() {
               )}
             </h3>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ color: '#64748b', fontSize: '0.82rem' }} title="Dates for THIS agent only. Defaults to the range chosen on the agents page — change freely just for this agent.">Dates (this agent)</span>
+              <span style={{ color: '#64748b', fontSize: '0.82rem' }} title="Dates for THIS agent only. Defaults to the range chosen on the agents page, or (if none) this agent's own last settlement date — change freely just for this agent.">Dates (this agent)</span>
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>From</span>
               <DateInput value={draftFilterFrom} onChange={setDraftFilterFrom} style={inputStyle} />
               <span style={{ color: '#64748b', fontSize: '0.82rem' }}>To</span>
