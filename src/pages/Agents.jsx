@@ -4,7 +4,7 @@ import { getPlayers, getBankAccounts, createTransfer, getAdminUsers, getPlayerTr
 import DateInput from '../components/DateInput';
 import AgentPlayerRow from '../components/AgentPlayerRow';
 import PlayerSelect from '../components/PlayerSelect';
-import { fmtDateOnly } from '../utils/dates';
+import { fmtDateOnly, addDaysIso } from '../utils/dates';
 
 const SETTLE_METHODS = ['CASH', 'BANK_TRANSFER', 'BIT', 'PAYBOX', 'KASHCASH', 'OTHER'];
 
@@ -234,9 +234,11 @@ export default function Agents() {
   const openDetail = (agent) => {
     setSelected(agent);
     // Agent detail's date filter defaults to whatever range is chosen on the all-agents page; with
-    // no page-level range set, default to (and show, editable) this agent's own last settlement date
-    // instead of all-time, matching the backend's default for player-stats.
-    const initFrom = summaryFrom || agent.lastSettlementDate || '';
+    // no page-level range set, default to (and show, editable) the day AFTER this agent's own last
+    // settlement date instead of all-time. Sending the settlement date itself here would backfire:
+    // an explicit "from" is used as-is by the backend (no auto +1), so it would re-include that
+    // day's games and double-count them — the same bug the "Last Settlement" date is meant to avoid.
+    const initFrom = summaryFrom || (agent.lastSettlementDate ? addDaysIso(agent.lastSettlementDate, 1) : '');
     setFilterFrom(initFrom);
     setFilterTo(summaryTo);
     setOpeningForm(null);
