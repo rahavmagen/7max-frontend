@@ -415,7 +415,6 @@ export default function Agents() {
   // Grand total excludes club-managed agents (their players are handled directly by the club).
   const summaryTotalCurrentBalance = mainAgents.reduce((s, a) => s + Number(a.currentBalance || 0), 0);
   const summaryTotalStarting = mainAgents.reduce((s, a) => s + Number(a.openingBalance || 0), 0);
-  const summaryTotalPnlSinceSettlement = mainAgents.reduce((s, a) => s + Number(a.pnlSinceSettlement || 0), 0);
 
   if (loading) return <div className="page-container">Loading...</div>;
 
@@ -660,7 +659,6 @@ export default function Agents() {
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Starting balance carried from the last התחשבנות">Starting Bal</th>
               <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Amounts are from the agent's point of view: + (green) = we owe the agent, − (red) = the agent owes us. Starting + Agent Rake + Players' P&L − Payments.">Current Balance</th>
               <th style={{ padding: '10px 12px' }}>Last Settlement</th>
-              <th style={{ padding: '10px 12px', textAlign: 'right' }} title="Players' net P&L for games from the last settlement date through today — independent of the date filter above, so it always reflects this agent's true current status regardless of what other agents' last settlement dates are.">P&amp;L Since Settlement</th>
               <th style={{ padding: '10px 12px', textAlign: 'center' }} title="בוצע התחשבנות — mark that this agent's weekly settlement is done">
                 בוצע
                 <button onClick={handleUncheckAllSettled} title="Uncheck all"
@@ -752,7 +750,6 @@ export default function Agents() {
                   {fmt(a.currentBalance)}
                 </td>
                 <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '0.85rem' }}>{a.lastSettlementDate ? fmtDateOnly(a.lastSettlementDate) : '—'}</td>
-                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 600 }} className={balanceClass(a.pnlSinceSettlement)}>{fmt(a.pnlSinceSettlement)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                   <input type="checkbox" checked={!!a.settledThisWeek} onChange={() => handleToggleSettledWeek(a)}
                     title="בוצע התחשבנות" style={{ cursor: 'pointer', width: 16, height: 16 }} />
@@ -768,7 +765,7 @@ export default function Agents() {
               </tr>
             ))}
             {mainAgents.length === 0 && (
-              <tr><td colSpan={15} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
+              <tr><td colSpan={14} style={{ padding: '2rem', color: '#64748b', textAlign: 'center' }}>No agents configured</td></tr>
             )}
             {mainAgents.length > 0 && (
               <tr style={{ borderTop: '1px solid #334155', background: '#12151f' }}>
@@ -784,7 +781,6 @@ export default function Agents() {
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalStarting)}>{fmt(summaryTotalStarting)}</td>
                 <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 800, fontSize: '1.02rem' }} className={balanceClass(summaryTotalCurrentBalance)}>{fmt(summaryTotalCurrentBalance)}</td>
                 <td />{/* Last Settlement */}
-                <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className={balanceClass(summaryTotalPnlSinceSettlement)}>{fmt(summaryTotalPnlSinceSettlement)}</td>
                 <td />{/* בוצע */}
                 <td />{/* Action */}
               </tr>
